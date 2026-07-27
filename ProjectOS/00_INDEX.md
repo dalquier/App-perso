@@ -22,7 +22,12 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/CODING_STANDARDS.md` : règles communes de conception et de code.
 - `standards/DOCUMENTATION.md` : exigences de documentation et traçabilité.
 - `standards/TESTING.md` : stratégie de tests et preuves d’exécution.
-- `standards/AGENT_HANDOFFS.md` : compte rendu temporaire obligatoire pour transmettre et vérifier le travail des agents.
+- `standards/AGENT_HANDOFFS.md` : transmissions temporaires et livraisons récupérables des agents.
+- `standards/CONVERSATION_NAMING.md` : convention obligatoire de nommage des discussions ChatGPT et Codex.
+
+## Guides
+
+- `guides/SHORTCUT_AGENT_HANDOFF.md` : flux iOS Raccourcis pour collecter et classer les livraisons d’agents.
 
 ## Prompts
 
