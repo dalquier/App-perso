@@ -1,0 +1,26 @@
+name: ProjectOS Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile Python
+        run: python -m py_compile ProjectOS/scripts/projectos.py
+      - name: Run doctor
+        run: python ProjectOS/scripts/projectos.py doctor
+      - name: Create and inspect backup
+        run: |
+          python ProjectOS/scripts/projectos.py backup
+          test -n "$(find .projectos/backups -name '*.tar.gz' -print -quit)"
+      - name: Reject committed secrets
+        run: |
+          ! git ls-files | grep -E '(^|/)(\.env|token\.json|credentials\.json|secrets\.json)$'
