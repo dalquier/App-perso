@@ -22,6 +22,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/CODING_STANDARDS.md` : règles communes de conception et de code.
 - `standards/DOCUMENTATION.md` : exigences de documentation et traçabilité.
 - `standards/TESTING.md` : stratégie de tests et preuves d’exécution.
+- `standards/AGENT_HANDOFFS.md` : compte rendu temporaire obligatoire pour transmettre et vérifier le travail des agents.
 
 ## Prompts
 
