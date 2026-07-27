@@ -53,67 +53,48 @@ Il doit :
 1. terminer intégralement le travail dans son espace local ;
 2. conserver un arbre de travail propre avec des commits locaux lorsque Git est disponible ;
 3. créer le fichier temporaire de transmission ;
-4. produire un bundle de livraison récupérable, dans cet ordre de préférence :
+4. produire une livraison récupérable, dans cet ordre de préférence :
+   - une archive ZIP contenant les fichiers ajoutés ou modifiés, le compte rendu et `APPLY_INSTRUCTIONS.md` ;
    - un patch Git complet au format `.patch` ;
    - un bundle Git au format `.bundle` ;
-   - une archive ZIP contenant uniquement les fichiers ajoutés ou modifiés et le fichier de transmission ;
    - à défaut, le contenu complet de chaque fichier dans la réponse ;
-5. placer ces éléments sous :
+5. placer les éléments locaux sous :
 
 ```text
 .projectos-temp/delivery-bundles/<date-heure>-<agent>-<sujet>/
 ```
 
-6. inclure un fichier `APPLY_INSTRUCTIONS.md` décrivant précisément :
-   - le commit ou la base attendue ;
-   - la branche cible ;
-   - la liste des fichiers ;
-   - la commande ou la procédure d’application ;
-   - les contrôles à exécuter après reprise ;
-   - la procédure de retour arrière ;
-7. indiquer tous les chemins exacts dans sa réponse finale ;
-8. distinguer clairement le travail terminé localement de la livraison GitHub non réalisée.
+6. inclure `APPLY_INSTRUCTIONS.md` avec la base attendue, la branche cible, la liste des fichiers, la procédure d’application, les contrôles et le retour arrière ;
+7. transmettre réellement les éléments au destinataire : pièce jointe, téléchargement, feuille de partage iOS, archive enregistrée dans Fichiers ou contenu intégré dans la réponse ;
+8. ne jamais considérer un chemin local inaccessible au coordinateur comme une transmission achevée ;
+9. indiquer les chemins exacts et le moyen de récupération dans la réponse finale ;
+10. distinguer clairement le travail terminé localement de la livraison GitHub non réalisée.
 
 Un simple bloc de commandes à exécuter par Damien ne constitue pas une livraison conforme lorsqu’un patch, un bundle, une archive ou le contenu complet des fichiers peut être produit.
 
+## Passage par Raccourcis iOS
+
+Lorsque la livraison est accessible par la feuille de partage de l’iPhone, le mode recommandé est :
+
+1. partager le ZIP, patch, bundle ou texte vers le raccourci `ProjectOS — Importer une livraison` ;
+2. enregistrer l’entrée dans `iCloud Drive/ProjectOS/Inbox/<projet>/<horodatage>/` ;
+3. conserver le nom de discussion, l’axe, la branche cible et l’URL de la conversation dans un fichier `IMPORT_METADATA.json` ou `IMPORT_METADATA.md` ;
+4. ouvrir le dossier enregistré dans Fichiers ou Working Copy ;
+5. notifier que la livraison est prête à être vérifiée ;
+6. après intégration confirmée, déplacer ou supprimer le dossier temporaire.
+
+Raccourcis facilite le transfert et le classement, mais ne remplace pas automatiquement l’application d’un patch Git ni l’ouverture d’une Pull Request sauf si une action tierce ou une API explicitement configurée le permet.
+
 ## Reprise par l’agent coordinateur
 
-L’agent coordinateur doit :
+L’agent coordinateur doit lire le compte rendu, vérifier la livraison, la comparer à la branche canonique vivante, l’appliquer sur une branche dédiée, exécuter les contrôles, ouvrir ou mettre à jour la Pull Request, transférer les décisions durables vers les documents canoniques, puis supprimer les éléments temporaires.
 
-1. lire le fichier de transmission ;
-2. vérifier le bundle ou le patch ;
-3. comparer les fichiers à la branche canonique vivante ;
-4. appliquer la livraison sur une branche dédiée ;
-5. exécuter les contrôles indiqués ;
-6. ouvrir ou mettre à jour la Pull Request ;
-7. transférer les décisions durables vers les documents canoniques ;
-8. supprimer les fichiers temporaires et vérifier qu’ils ne seront pas fusionnés.
+## Sécurité et cycle de vie
 
-## Cycle de vie
+Aucun fichier temporaire ou bundle ne doit être fusionné dans la branche canonique. La suppression ne garantit pas l’effacement cryptographique de l’historique Git : aucun secret, jeton, identifiant sensible, donnée médicale détaillée, donnée personnelle brute ou contenu confidentiel inutile ne doit y figurer.
 
-1. L’agent crée le fichier temporaire et, si nécessaire, le bundle de livraison.
-2. Il indique les chemins exacts dans sa réponse finale.
-3. ChatGPT ou l’agent coordinateur lit, vérifie et reprend la livraison.
-4. Après confirmation de la prise en compte, les fichiers temporaires sont supprimés de la branche active.
-5. Aucun fichier de transmission ou bundle temporaire ne doit être présent dans le contenu final fusionné dans la branche canonique.
-
-La suppression ne garantit pas l’effacement cryptographique de l’historique Git. Ces fichiers ne doivent donc jamais contenir de secret, jeton, identifiant sensible, donnée médicale détaillée, donnée personnelle brute ou contenu confidentiel inutile.
-
-## Portée et exceptions
-
-- Cette règle s’applique aux tâches liées à un projet logiciel ou à ProjectOS.
-- Une réponse triviale ne nécessitant aucune analyse ou livraison persistante peut en être dispensée.
-- Le fichier temporaire ne remplace ni la documentation durable, ni les ADR, ni le résumé de Pull Request.
-- Les décisions durables doivent toujours être reportées dans les références canoniques avant suppression du fichier temporaire.
-- Une limitation d’accès GitHub change le mode de livraison, mais ne réduit pas le niveau d’achèvement attendu.
+Une limitation d’accès GitHub change le mode de livraison, mais ne réduit pas le niveau d’achèvement attendu.
 
 ## Critère de conformité
 
-Une tâche substantielle n’est pas considérée comme complètement transmise tant que :
-
-- le fichier temporaire n’existe pas ou n’est pas accessible ;
-- son chemin n’a pas été communiqué ;
-- son contenu ne permet pas une reprise autonome ;
-- en environnement restreint, aucun patch, bundle, ZIP ou contenu complet récupérable n’a été fourni ;
-- les éléments durables n’ont pas été transférés vers la documentation canonique ;
-- la suppression finale des éléments temporaires n’a pas été vérifiée.
+Une tâche substantielle n’est pas complètement transmise tant que le compte rendu n’est pas accessible, que son chemin et son moyen de récupération ne sont pas communiqués, que la reprise autonome n’est pas possible, ou que les éléments temporaires n’ont pas été supprimés après intégration.
