@@ -1,0 +1,23 @@
+projectos_root: ProjectOS
+backup:
+  source: .
+  local_output: .projectos/backups
+  retention_days: 30
+  include_git: false
+  google_drive:
+    enabled: true
+    rclone_remote: gdrive
+    remote_path: App-perso/ProjectOS-Backups
+    schedule: daily
+    verify_after_upload: true
+icloud:
+  enabled: true
+  workspace_hint: iCloud Drive/App-perso
+security:
+  excluded_names:
+    - .env
+    - secrets.json
+    - token.json
+    - credentials.json
+    - __pycache__
+    - .DS_Store
