@@ -6,17 +6,18 @@
 2. Vérifier les références vivantes.
 3. Déterminer le niveau de risque et de réversibilité.
 4. Classer le travail comme limité ou substantiel selon `standards/CODE_WORK_ROUTING.md`.
-5. Choisir l’outil le plus direct et fiable.
-6. Réaliser le plus petit changement cohérent.
-7. Vérifier le résultat avec des preuves.
-8. Documenter et livrer.
+5. Appliquer `standards/TOOLCHAIN_POLICY.md`.
+6. Choisir l’outil le plus direct et fiable.
+7. Réaliser le plus petit changement cohérent.
+8. Vérifier le résultat avec des preuves.
+9. Documenter et livrer.
 
 ## Choix des outils
 
 - ChatGPT : architecture, analyse, pilotage, rédaction, revue et changements limités.
 - Codex : outil obligatoire pour les nouveaux Builds, les projets multi-fichiers, le développement substantiel, les refactorings, les migrations, le débogage transversal et les tests associés.
 - GitHub : source de vérité, branches, revue et livraison.
-- Replit Starter : exécution cloud et déploiement par défaut.
+- Replit Starter : import du dépôt, exécution cloud, tests fonctionnels, stockage de l’espace de travail, hébergement et déploiement. Son agent IA est interdit par défaut pour le développement ordinaire.
 - Pyto : fonctions iPhone natives, automatisation locale, fichiers et utilitaires.
 - Working Copy : opérations Git sur iPhone.
 - Google Drive : documents collaboratifs et sauvegardes, jamais source canonique du code.
@@ -33,7 +34,17 @@ Avant toute production de code, appliquer le test suivant :
 
 Un travail substantiel ne doit pas être dégradé en succession de blocs de code, fichiers temporaires ou ZIP à recopier manuellement lorsque le dépôt canonique et Codex sont accessibles.
 
-L’outil de construction et le lieu de vérité sont distincts : Codex construit, Replit exécute, Pyto teste les fonctions iPhone, GitHub conserve et livre.
+L’outil de construction et le lieu de vérité sont distincts : ChatGPT conçoit, Codex construit, Replit exécute et teste, Pyto valide les fonctions iPhone, GitHub conserve et livre.
+
+## Test préalable à toute utilisation de l’agent Replit
+
+Avant de consommer des crédits IA Replit, répondre aux trois questions suivantes :
+
+1. La tâche dépend-elle d’une capacité propre à Replit ?
+2. ChatGPT ou Codex sont-ils réellement incapables de la réaliser contre GitHub ?
+3. L’exception, son périmètre et son coût estimé ont-ils été explicitement signalés ?
+
+Si une réponse est négative, ne pas utiliser l’agent Replit.
 
 ## Arbitrages
 
@@ -44,6 +55,7 @@ L’outil de construction et le lieu de vérité sont distincts : Codex construi
 - Expérience native avant contournement WebView fragile sur iPhone.
 - Livraison canonique GitHub avant commodité d’un fichier local.
 - Codex avant génération conversationnelle lorsque le périmètre est substantiel.
+- ChatGPT ou Codex avant l’agent IA Replit.
 
 ## Risque
 
