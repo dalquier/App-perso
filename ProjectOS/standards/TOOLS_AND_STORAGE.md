@@ -6,7 +6,7 @@
 - Codex : outil obligatoire pour les nouveaux Builds, les projets multi-fichiers, les changements de code importants, les refactorings, les migrations, le débogage transversal, les tests et les Pull Requests associées.
 - GitHub : source de vérité de tout contenu versionnable et lieu canonique de livraison.
 - Working Copy : client Git principal sur iPhone.
-- Replit Starter : environnement cloud par défaut pour exécuter et déployer les applications.
+- Replit Starter : environnement cloud d’exécution, de test, de stockage de travail, d’hébergement et de déploiement. Son agent IA n’est pas un outil de développement par défaut.
 - Pyto : compagnon permanent pour fonctions iPhone natives, automatisations locales, accès Fichiers/iCloud et utilitaires.
 - Scriptable : widgets et automatisations iOS simples lorsque JavaScript est le meilleur choix.
 - Google Drive : documents collaboratifs et sauvegardes, jamais source canonique du code.
@@ -25,17 +25,22 @@
 7. Les fichiers volumineux sont indexés ; seuls les fragments utiles sont chargés.
 8. Toute migration conserve une copie de retour arrière.
 9. Un ZIP, un export Pyto, un artefact Replit ou une copie locale est un moyen d’installation, de test ou de sauvegarde, jamais la livraison canonique.
+10. Tout changement durable effectué pendant un test Replit doit être reversé dans GitHub.
 
 ## Routage des développements
 
-Appliquer `CODE_WORK_ROUTING.md` avant toute implémentation :
+Appliquer `CODE_WORK_ROUTING.md` et `TOOLCHAIN_POLICY.md` avant toute implémentation :
 
 - changement limité, local et réversible : ChatGPT peut l’exécuter directement dans GitHub ;
 - nouveau Build, projet multi-fichiers, architecture, refactoring substantiel, migration ou validation approfondie : Codex obligatoire ;
-- exécution et déploiement : Replit lorsque pertinent ;
+- exécution, test fonctionnel, hébergement et déploiement : Replit lorsque pertinent ;
 - fonctions natives iPhone et tests locaux : Pyto ou Scriptable selon la technologie.
 
 Codex travaille contre le dépôt et la branche canoniques. Sa sortie attendue est une livraison GitHub vérifiable, pas un texte à recopier manuellement.
+
+## Maîtrise des crédits Replit
+
+Les crédits IA Replit sont réservés à une capacité propre à Replit qui ne peut raisonnablement être traitée par ChatGPT ou Codex. Toute exception doit être annoncée et justifiée avant consommation. La génération ordinaire de code, les correctifs, refactorings et tests ne constituent pas une exception.
 
 ## Choix d’outil
 
