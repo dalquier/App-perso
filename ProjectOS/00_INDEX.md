@@ -19,6 +19,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 
 - `standards/QUALITY_UX_SECURITY.md` : qualité, UX iPhone et sécurité.
 - `standards/TOOLS_AND_STORAGE.md` : rôle des applications et stockages.
+- `standards/CODE_WORK_ROUTING.md` : routage obligatoire des développements substantiels vers Codex et GitHub.
 - `standards/CODING_STANDARDS.md` : règles communes de conception et de code.
 - `standards/DOCUMENTATION.md` : exigences de documentation et traçabilité.
 - `standards/TESTING.md` : stratégie de tests et preuves d’exécution.
