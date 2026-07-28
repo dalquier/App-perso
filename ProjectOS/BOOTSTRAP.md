@@ -8,6 +8,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 - Ne jamais substituer une copie mémorisée à une référence vivante accessible.
 - Charger uniquement les références utiles à la demande, après le socle obligatoire.
 - Signaler toute référence absente, inaccessible, contradictoire ou manifestement obsolète.
+- La politique de toolchain frugale est permanente : ChatGPT et Codex réalisent le développement ; Replit Starter est réservé à l’exécution, aux tests, au stockage de travail et au déploiement.
 
 ## 2. Séquence obligatoire
 
@@ -17,15 +18,16 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
    - `ProjectOS/core/KERNEL.md` ;
    - `ProjectOS/core/LIFECYCLE.md` ;
    - `ProjectOS/core/DECISION_ENGINE.md`.
-4. Identifier le projet, l’objectif réel et le résultat attendu.
-5. Résoudre le projet dans `PROJECT_REGISTRY.md`.
-6. Charger son `PROJECT_MANIFEST.md`, s’il existe.
-7. Charger les ADR applicables et uniquement la documentation nécessaire.
-8. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
-9. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
-10. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
-11. Présenter brièvement l’état vérifié, les inconnues et les contradictions avant une modification importante.
-12. Exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
+4. Charger `ProjectOS/standards/TOOLCHAIN_POLICY.md` pour toute demande liée à un projet logiciel.
+5. Identifier le projet, l’objectif réel et le résultat attendu.
+6. Résoudre le projet dans `PROJECT_REGISTRY.md`.
+7. Charger son `PROJECT_MANIFEST.md`, s’il existe.
+8. Charger les ADR applicables et uniquement la documentation nécessaire.
+9. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
+10. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
+11. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
+12. Présenter brièvement l’état vérifié, les inconnues et les contradictions avant une modification importante.
+13. Exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
 
 ## 3. Ordre d’autorité
 
@@ -53,6 +55,7 @@ Toujours charger :
 - `00_INDEX.md` ;
 - `PROJECT_REGISTRY.md` ;
 - le noyau ProjectOS ;
+- `standards/TOOLCHAIN_POLICY.md` pour un projet logiciel ;
 - le manifeste du projet concerné, lorsqu’il existe.
 
 Charger ensuite seulement :

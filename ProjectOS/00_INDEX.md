@@ -17,6 +17,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 
 ## Standards transverses
 
+- `standards/TOOLCHAIN_POLICY.md` : politique obligatoire de développement frugal et rôle de chaque outil.
 - `standards/QUALITY_UX_SECURITY.md` : qualité, UX iPhone et sécurité.
 - `standards/TOOLS_AND_STORAGE.md` : rôle des applications et stockages.
 - `standards/CODE_WORK_ROUTING.md` : routage obligatoire des développements substantiels vers Codex et GitHub.
@@ -25,6 +26,10 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/TESTING.md` : stratégie de tests et preuves d’exécution.
 - `standards/AGENT_HANDOFFS.md` : transmissions temporaires et livraisons récupérables des agents.
 - `standards/CONVERSATION_NAMING.md` : convention obligatoire de nommage des discussions ChatGPT et Codex.
+
+## Décisions transverses
+
+- `ADR/ADR-001-FRUGAL-DEVELOPMENT-TOOLCHAIN.md` : ChatGPT et Codex développent ; Replit Starter exécute, teste, stocke et déploie.
 
 ## Guides
 
@@ -74,5 +79,6 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 - Working Copy : copie Git locale sur iPhone.
 - iCloud Drive : fichiers locaux, échanges Pyto et données non versionnées.
 - Google Drive : documents collaboratifs, corpus et sauvegardes horodatées.
+- Replit Starter : environnement d’exécution, de test, de stockage de travail et de déploiement ; jamais source canonique.
 
-Une sauvegarde Drive n’est jamais une source de vérité.
+Une sauvegarde Drive ou Replit n’est jamais une source de vérité.
