@@ -17,37 +17,48 @@ L’agent reprend ce nom dans sa première réponse. Si l’interface ne permet 
 Avant toute modification substantielle, exécuter et rapporter ce contrôle :
 
 ```text
-Avant toute production de code, vérifie que cette tâche s’exécute dans un environnement Codex GitHub relié au dépôt canonique.
+Avant toute production substantielle, vérifie que cette tâche s’exécute dans un environnement relié au dépôt canonique et identifie le mécanisme réel de publication.
 
 1. Confirme le dépôt associé à l’environnement.
 2. Confirme que l’accès Internet de l’agent est activé lorsque GitHub ou des dépendances distantes sont nécessaires.
 3. Vérifie que `origin` pointe vers le dépôt canonique.
 4. Accède réellement à `origin/main` et indique son SHA distant actuel.
-5. Confirme que la publication d’une branche distante et la création d’une Pull Request sont disponibles.
-6. Vérifie que la base locale n’est pas obsolète.
+5. Vérifie que la base locale n’est pas obsolète.
+6. Distingue explicitement :
+   - lecture GitHub disponible ;
+   - écriture Git/CLI disponible ou non ;
+   - publication native Codex ou plateforme disponible ou non ;
+   - handoff récupérable disponible ou non.
+7. Choisis le mode de sortie : `github-natif`, `github-cli` ou `handoff-restreint`.
 
 Un simple `git remote -v`, une branche locale ou un commit local ne constitue pas une preuve d’accès GitHub.
+Un `git push --dry-run` refusé faute de credentials ne prouve pas que la publication native Codex est indisponible.
 
-Si un contrôle échoue, arrête-toi avant de produire du code. Indique le paramétrage à corriger et classe la tâche `bloquée avant exécution`.
+Si aucune méthode de transmission réelle n’est disponible, arrête-toi avant de produire et classe la tâche `bloquée avant exécution`.
+Si GitHub est lisible mais que le terminal n’a pas de credentials, utilise la publication native de la plateforme ou annonce avant exécution le mode `handoff-restreint` avec artefact récupérable.
 ```
 
 ## Règle commune de transmission
 
 Pour toute tâche substantielle, crée avant ta réponse finale un fichier temporaire conforme à `ProjectOS/standards/AGENT_HANDOFFS.md`, indique son chemin exact, puis conserve-le jusqu’à ce que l’agent coordinateur confirme sa prise en compte.
 
-La livraison normale exige une branche distante, des commits accessibles, les fichiers complets dans leur arborescence et une Pull Request vérifiable. Un ZIP peut être ajouté sur une branche temporaire comme facilité de téléchargement, sans remplacer les fichiers du projet.
+La livraison normale peut utiliser :
 
-Le mode `handoff-restreint` n’est utilisé qu’après une panne imprévisible survenue malgré un précontrôle réussi, ou sur instruction explicite de Damien. Un chemin local inaccessible ne constitue jamais une livraison.
+- la publication native Codex ou plateforme, vérifiée ensuite dans GitHub ;
+- Git/GitHub CLI avec credentials ;
+- le mode `handoff-restreint` lorsqu’aucune publication directe n’est possible mais qu’un artefact complet peut être transmis.
+
+L’absence de credentials Git dans le terminal n’est pas à elle seule un défaut de paramétrage si la publication native fonctionne. Un chemin local inaccessible ne constitue jamais une livraison.
 
 Après reprise et validation, supprime les éléments temporaires et vérifie qu’ils ne seront pas fusionnés dans la branche canonique.
 
 ## Développer
 
-> Identifie le projet, charge son manifeste et ses ADR, exécute le précontrôle Codex, vérifie l’état GitHub vivant, crée une branche distante dédiée, implémente la demande, teste, documente et crée le compte rendu temporaire. Livre les fichiers complets dans leur arborescence et ouvre une Pull Request. Si le précontrôle échoue, arrête avant toute implémentation.
+> Identifie le projet, charge son manifeste et ses ADR, exécute le précontrôle des capacités, vérifie l’état GitHub vivant et choisis explicitement `github-natif`, `github-cli` ou `handoff-restreint`. Implémente la demande, teste, documente et crée le compte rendu temporaire. Publie par branche et Pull Request si la plateforme le permet ; sinon transmets un artefact complet et récupérable avec `APPLY_INSTRUCTIONS.md`. Ne te limite jamais à fournir des commandes shell lorsque les fichiers peuvent être transmis.
 
 ## Corriger
 
-> Exécute le précontrôle Codex lorsque la correction est substantielle. Reproduis le défaut à partir des preuves disponibles, identifie la cause racine, applique la correction minimale, ajoute un test de non-régression, crée le compte rendu temporaire et livre par branche distante et Pull Request.
+> Exécute le précontrôle des capacités lorsque la correction est substantielle. Reproduis le défaut à partir des preuves disponibles, identifie la cause racine, applique la correction minimale, ajoute un test de non-régression, crée le compte rendu temporaire et livre via publication native, Git/CLI ou handoff restreint selon les capacités vérifiées.
 
 ## Auditer
 
@@ -55,11 +66,11 @@ Après reprise et validation, supprime les éléments temporaires et vérifie qu
 
 ## Refactorer
 
-> Exécute le précontrôle Codex avant toute modification. Préserve le comportement observable, définis les invariants, procède par changements limités, exécute les tests avant et après, documente les compromis, crée le compte rendu temporaire et livre par branche distante et Pull Request.
+> Exécute le précontrôle des capacités avant toute modification. Préserve le comportement observable, définis les invariants, procède par changements limités, exécute les tests avant et après, documente les compromis, crée le compte rendu temporaire et publie ou transmets selon le mode choisi.
 
 ## Migrer
 
-> Exécute le précontrôle Codex avant toute modification. Inventorie la source et la cible, protège les données, définis un plan de retour arrière, réalise la migration sur une branche distante dédiée, vérifie l’intégrité, mets à jour le registre, le manifeste et les ADR, puis ouvre une Pull Request.
+> Exécute le précontrôle des capacités avant toute modification. Inventorie la source et la cible, protège les données, définis un plan de retour arrière, réalise la migration sur une branche dédiée locale ou distante selon le mode, vérifie l’intégrité, mets à jour le registre, le manifeste et les ADR, puis publie ou transmets la livraison complète.
 
 ## Reprendre un projet
 
