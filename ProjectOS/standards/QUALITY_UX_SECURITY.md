@@ -39,6 +39,17 @@ Une WebView ne doit pas devenir un piège plein écran. Prévoir fermeture, navi
 - dépendances maintenues ;
 - données personnelles minimisées.
 
+## Développement frugal et reproductible
+
+- le projet complet doit être reconstructible depuis GitHub sans dépendre de l’historique Replit ;
+- ChatGPT et Codex réalisent le développement selon `TOOLCHAIN_POLICY.md` ;
+- Replit sert à l’exécution, aux tests fonctionnels, au stockage de travail, à l’hébergement et au déploiement ;
+- aucun changement durable ne doit rester uniquement dans Replit ;
+- les crédits IA Replit ne sont utilisés qu’après justification d’une capacité spécifique à la plateforme ;
+- une économie de crédits ne justifie jamais la suppression des tests, de la documentation ou de la traçabilité.
+
 ## Critères de livraison
 
 Une version n’est pas terminée si elle ne démarre pas, si le parcours principal est bloqué, si les données peuvent être perdues, si des secrets sont exposés, si la documentation d’exécution manque ou si les tests essentiels n’ont pas été exécutés sans justification.
+
+Pour une application exécutée dans Replit, la livraison n’est pas terminée si elle ne peut pas être recréée depuis le dépôt GitHub canonique ou si des changements nécessaires existent uniquement dans l’espace de travail Replit.
