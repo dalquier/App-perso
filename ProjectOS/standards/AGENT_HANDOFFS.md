@@ -2,7 +2,9 @@
 
 ## Objectif
 
-Permettre à ChatGPT, Codex ou tout autre agent intervenant sur un projet logiciel de rendre son résultat vérifiable et récupérable par un autre agent sans dépendre de l’accès à la conversation d’origine ni d’un accès GitHub en écriture.
+Permettre à ChatGPT, Codex ou tout autre agent intervenant sur un projet logiciel de rendre son résultat vérifiable et récupérable par un autre agent sans dépendre de l’accès à la conversation d’origine.
+
+Le handoff ne remplace pas la livraison GitHub normale d’un travail substantiel.
 
 ## Règle obligatoire
 
@@ -22,6 +24,7 @@ Le fichier temporaire doit contenir :
 
 - l’objectif traité ;
 - l’état GitHub vérifié, ou l’impossibilité de le vérifier ;
+- le résultat du précontrôle Codex ;
 - les décisions et hypothèses ;
 - les actions réalisées ;
 - les fichiers créés ou modifiés ;
@@ -34,23 +37,36 @@ Le fichier temporaire doit contenir :
 
 Le compte rendu doit être autonome : un autre agent doit pouvoir le comprendre sans accéder à la conversation source.
 
+## Précondition avant développement substantiel
+
+Avant toute production de code substantielle, appliquer le précontrôle défini dans `CODE_WORK_ROUTING.md`.
+
+Si l’accès au dépôt canonique, à la branche distante, à Internet lorsque nécessaire ou au mécanisme de création de Pull Request est absent, l’agent s’arrête avant d’écrire du code. Il classe la tâche `bloquée avant exécution` et indique le paramétrage à corriger.
+
+Le mode de repli ne doit jamais servir à contourner un échec connu avant le démarrage.
+
 ## Mode normal — accès GitHub disponible
 
 Lorsque l’agent dispose d’un accès GitHub vivant et autorisé en écriture :
 
-1. il travaille sur une branche dédiée ;
-2. il crée le fichier temporaire de transmission ;
-3. il pousse la branche et ouvre une Pull Request vers la branche canonique ;
-4. il indique la branche, la Pull Request et le chemin du fichier temporaire ;
-5. il ne fusionne pas sans instruction explicite.
+1. il travaille sur une branche distante dédiée ;
+2. il crée les fichiers complets dans leur arborescence canonique ;
+3. il crée le fichier temporaire de transmission ;
+4. il pousse la branche et ouvre une Pull Request vers la branche canonique ;
+5. il indique la branche, le commit distant, la Pull Request et le chemin du fichier temporaire ;
+6. il ne fusionne pas sans instruction explicite.
 
-## Mode de repli — environnement restreint
+Un ZIP peut être ajouté sur une branche temporaire pour simplifier le téléchargement, mais ne remplace pas les fichiers du projet.
 
-Si `fetch`, `push`, la création de branche distante ou la création de Pull Request échoue pour une raison d’accès, de proxy, de jeton, de réseau ou de politique d’environnement, l’agent ne doit pas s’arrêter après avoir fourni des commandes shell.
+## Mode de repli — incident imprévisible après précontrôle réussi
 
-Il doit :
+Le mode `handoff-restreint` est autorisé uniquement lorsqu’une panne imprévisible survient après un précontrôle réussi, ou lorsque Damien le demande explicitement.
 
-1. terminer intégralement le travail dans son espace local ;
+Exemples : expiration de jeton pendant la tâche, panne temporaire du service GitHub, rupture réseau après le début de l’exécution ou erreur de publication indépendante du paramétrage initial.
+
+L’agent doit alors :
+
+1. arrêter les modifications supplémentaires non indispensables ;
 2. conserver un arbre de travail propre avec des commits locaux lorsque Git est disponible ;
 3. créer le fichier temporaire de transmission ;
 4. produire une livraison récupérable, dans cet ordre de préférence :
@@ -65,16 +81,16 @@ Il doit :
 ```
 
 6. inclure `APPLY_INSTRUCTIONS.md` avec la base attendue, la branche cible, la liste des fichiers, la procédure d’application, les contrôles et le retour arrière ;
-7. transmettre réellement les éléments au destinataire : pièce jointe, téléchargement, feuille de partage iOS, archive enregistrée dans Fichiers ou contenu intégré dans la réponse ;
-8. ne jamais considérer un chemin local inaccessible au coordinateur comme une transmission achevée ;
-9. indiquer les chemins exacts et le moyen de récupération dans la réponse finale ;
-10. distinguer clairement le travail terminé localement de la livraison GitHub non réalisée.
+7. transmettre réellement les éléments au destinataire par un mécanisme vérifiable ;
+8. vérifier que la pièce jointe, le lien ou le contenu est réellement visible avant d’affirmer sa transmission ;
+9. ne jamais considérer un chemin local inaccessible comme une transmission achevée ;
+10. distinguer clairement `construit localement, non livré` de `livré dans GitHub`.
 
-Un simple bloc de commandes à exécuter par Damien ne constitue pas une livraison conforme lorsqu’un patch, un bundle, une archive ou le contenu complet des fichiers peut être produit.
+Une affirmation de pièce jointe non visible est un échec de transmission et doit être corrigée avant la réponse finale.
 
 ## Passage par Raccourcis iOS
 
-Lorsque la livraison est accessible par la feuille de partage de l’iPhone, le mode recommandé est :
+Lorsque la livraison est réellement accessible par la feuille de partage de l’iPhone, le mode recommandé est :
 
 1. partager le ZIP, patch, bundle ou texte vers le raccourci `ProjectOS — Importer une livraison` ;
 2. enregistrer l’entrée dans `iCloud Drive/ProjectOS/Inbox/<projet>/<horodatage>/` ;
@@ -83,7 +99,7 @@ Lorsque la livraison est accessible par la feuille de partage de l’iPhone, le 
 5. notifier que la livraison est prête à être vérifiée ;
 6. après intégration confirmée, déplacer ou supprimer le dossier temporaire.
 
-Raccourcis facilite le transfert et le classement, mais ne remplace pas automatiquement l’application d’un patch Git ni l’ouverture d’une Pull Request sauf si une action tierce ou une API explicitement configurée le permet.
+Raccourcis facilite le transfert et le classement, mais ne remplace pas automatiquement l’application d’un patch Git ni l’ouverture d’une Pull Request.
 
 ## Reprise par l’agent coordinateur
 
@@ -91,10 +107,12 @@ L’agent coordinateur doit lire le compte rendu, vérifier la livraison, la com
 
 ## Sécurité et cycle de vie
 
-Aucun fichier temporaire ou bundle ne doit être fusionné dans la branche canonique. La suppression ne garantit pas l’effacement cryptographique de l’historique Git : aucun secret, jeton, identifiant sensible, donnée médicale détaillée, donnée personnelle brute ou contenu confidentiel inutile ne doit y figurer.
+Aucun fichier temporaire ou bundle ne doit être fusionné dans la branche canonique. Aucun secret, jeton, identifiant sensible, donnée médicale détaillée, donnée personnelle brute ou contenu confidentiel inutile ne doit y figurer.
 
-Une limitation d’accès GitHub change le mode de livraison, mais ne réduit pas le niveau d’achèvement attendu.
+L’accès Internet de l’agent doit être activé seulement lorsque nécessaire. Les secrets restent dans les gestionnaires de secrets des plateformes et ne sont jamais inscrits dans les prompts, le dépôt ou les bundles.
 
 ## Critère de conformité
 
-Une tâche substantielle n’est pas complètement transmise tant que le compte rendu n’est pas accessible, que son chemin et son moyen de récupération ne sont pas communiqués, que la reprise autonome n’est pas possible, ou que les éléments temporaires n’ont pas été supprimés après intégration.
+Une tâche substantielle est livrée uniquement lorsque sa branche distante, son commit, ses fichiers et sa Pull Request sont vérifiables.
+
+Un handoff restreint est transmis uniquement lorsque l’artefact est réellement accessible et que sa reprise autonome est possible. Sinon l’état reste `construit localement, non livré`.
