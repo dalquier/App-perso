@@ -9,6 +9,16 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 - Le dépôt, la branche par défaut et le dossier canonique doivent être vérifiés avant toute modification.
 - Le manifeste du projet complète ce registre sans le contredire.
 - Toute migration doit mettre à jour ce fichier et le manifeste associé.
+- Tous les projets logiciels appliquent `standards/TOOLCHAIN_POLICY.md` sauf exception explicitement documentée dans leur manifeste ou une ADR plus spécifique.
+
+## Workflow standard commun
+
+1. ChatGPT clarifie, conçoit, spécifie et révise.
+2. Codex réalise les Builds et changements substantiels sur une branche GitHub dédiée.
+3. GitHub reste la source de vérité et le lieu canonique de livraison.
+4. Replit Starter importe le dépôt pour l’exécution, les tests fonctionnels, le stockage de travail, l’hébergement et le déploiement.
+5. Pyto, Scriptable et Working Copy assurent les besoins iPhone et locaux selon leur périmètre.
+6. L’agent IA Replit n’est utilisé qu’en exception justifiée pour une capacité spécifique à Replit.
 
 ## Projets connus
 
