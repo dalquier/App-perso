@@ -62,12 +62,13 @@ Si un binaire doit être versionné, annoncer dès le début que la publication 
 Avant la réponse finale :
 
 ```text
-Contrôle le diff avec git diff --numstat <base>...HEAD.
+Contrôle la nature des fichiers avec les références réellement disponibles dans le sandbox.
+Utilise une référence de base locale fiable si elle existe ; sinon, utilise git diff --numstat, git diff --cached --numstat et un inventaire des extensions.
 Si un fichier binaire apparaît, ne déclare pas le diff publiable par Codex natif sans stratégie compatible.
-Indique les binaires détectés, leur statut source/généré, leur commande de génération et le canal de publication retenu.
+Indique les commandes réellement exécutées, les binaires détectés, leur statut source/généré, leur commande de génération, le canal retenu et les limites du contrôle.
 ```
 
-Il est interdit de contourner la limitation par un gros fichier Base64 ou par la suppression d’une ressource nécessaire.
+L’absence d’une référence de base exploitable ne bloque pas la tâche. Il est interdit de contourner la limitation par un gros fichier Base64 ou par la suppression d’une ressource nécessaire.
 
 ## Autres environnements
 
@@ -85,16 +86,16 @@ En mode Codex natif, le flux normal est :
 
 1. choisir le mode de livraison et la stratégie des ressources ;
 2. produire le code et les tests dans le sandbox ;
-3. produire et contrôler un diff propre ;
+3. produire et contrôler un diff propre avec les références disponibles ;
 4. fournir le résumé, les tests, les limites, les fichiers binaires et le texte proposé de Pull Request ;
 5. publier ensuite par le canal compatible ;
 6. vérifier la branche et la Pull Request dans GitHub.
 
-L’absence de credentials Git dans le terminal n’est pas un défaut de paramétrage dans ce mode.
+L’absence de credentials Git ou de référence de base exploitable dans le terminal n’est pas un défaut de paramétrage dans ce mode.
 
 ## Développer
 
-> Identifie le projet, charge son manifeste, ses ADR et `CODEX_NATIVE_PUBLISHING.md`. Choisis le mode de livraison et inventorie les formats binaires avant de créer les fichiers. Implémente la demande dans le périmètre autorisé, teste, documente, crée le compte rendu temporaire, contrôle `git diff --numstat` et prépare un diff compatible avec le canal annoncé. Ne bloque pas sur l’absence de `origin` ou de jeton dans le sandbox. Ne modifie jamais `main` directement.
+> Identifie le projet, charge son manifeste, ses ADR et `CODEX_NATIVE_PUBLISHING.md`. Choisis le mode de livraison et inventorie les formats binaires avant de créer les fichiers. Implémente la demande dans le périmètre autorisé, teste, documente, crée le compte rendu temporaire, contrôle la nature du diff avec les références réellement disponibles et prépare un diff compatible avec le canal annoncé. Ne bloque pas sur l’absence de `origin`, de jeton ou de référence de base exploitable dans le sandbox. Ne modifie jamais `main` directement.
 
 ## Corriger
 
