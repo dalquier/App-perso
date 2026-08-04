@@ -9,6 +9,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 - Charger uniquement les références utiles à la demande, après le socle obligatoire.
 - Signaler toute référence absente, inaccessible, contradictoire ou manifestement obsolète.
 - La politique de toolchain frugale est permanente : ChatGPT et Codex réalisent le développement ; Replit Starter est réservé à l’exécution, aux tests, au stockage de travail et au déploiement.
+- Dans Codex Cloud, distinguer le sandbox terminal du mécanisme natif de publication GitHub : l’absence de `origin`, d’upstream, de `GH_TOKEN` ou d’authentification `gh` dans le terminal n’est pas bloquante lorsque l’environnement Codex est explicitement relié au dépôt et à la branche de base attendus.
 
 ## 2. Séquence obligatoire
 
@@ -19,15 +20,16 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
    - `ProjectOS/core/LIFECYCLE.md` ;
    - `ProjectOS/core/DECISION_ENGINE.md`.
 4. Charger `ProjectOS/standards/TOOLCHAIN_POLICY.md` pour toute demande liée à un projet logiciel.
-5. Identifier le projet, l’objectif réel et le résultat attendu.
-6. Résoudre le projet dans `PROJECT_REGISTRY.md`.
-7. Charger son `PROJECT_MANIFEST.md`, s’il existe.
-8. Charger les ADR applicables et uniquement la documentation nécessaire.
-9. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
-10. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
-11. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
-12. Présenter brièvement l’état vérifié, les inconnues et les contradictions avant une modification importante.
-13. Exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
+5. Charger `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` pour toute tâche exécutée dans Codex Cloud ou publiée par l’interface native Codex.
+6. Identifier le projet, l’objectif réel et le résultat attendu.
+7. Résoudre le projet dans `PROJECT_REGISTRY.md`.
+8. Charger son `PROJECT_MANIFEST.md`, s’il existe.
+9. Charger les ADR applicables et uniquement la documentation nécessaire.
+10. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
+11. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
+12. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
+13. Présenter brièvement l’état vérifié, les inconnues et les contradictions avant une modification importante.
+14. Exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
 
 ## 3. Ordre d’autorité
 
@@ -56,6 +58,7 @@ Toujours charger :
 - `PROJECT_REGISTRY.md` ;
 - le noyau ProjectOS ;
 - `standards/TOOLCHAIN_POLICY.md` pour un projet logiciel ;
+- `standards/CODEX_NATIVE_PUBLISHING.md` pour une tâche Codex Cloud ;
 - le manifeste du projet concerné, lorsqu’il existe.
 
 Charger ensuite seulement :
@@ -80,7 +83,7 @@ L’amorçage doit aboutir à un état de travail comprenant :
 - projet identifié ou niveau transverse confirmé ;
 - objectif reformulé ;
 - références chargées ;
-- état GitHub vérifié ;
+- état GitHub vérifié selon le mécanisme réel de la plateforme ;
 - risques et contradictions signalés ;
 - prochaine action déterminée.
 

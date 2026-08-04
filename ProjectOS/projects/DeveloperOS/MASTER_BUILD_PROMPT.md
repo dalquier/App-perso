@@ -51,15 +51,16 @@ Les informations sont dispersées entre GitHub, ProjectOS, ChatGPT, Codex, Repli
 - Code applicatif : `apps/developer-os/`.
 - Dépôt historique en lecture seule : `dalquier/Scriptable`.
 - Aucun dépôt séparé `dalquier/DeveloperOS` pour les premiers Builds.
-- Branche BUILD-01 : `developeros/build-01-project-core`.
+- Branche logique BUILD-01 : `developeros/build-01-project-core`.
 
 ## 8. Rôle des outils
 - ChatGPT : audit, architecture, spécification, revue et pilotage.
-- Codex : développements substantiels, tests, commits et Pull Request.
+- Codex : développements substantiels, tests et préparation du diff.
+- Interface Codex : publication native de la branche et de la Pull Request après la tâche.
 - GitHub : source de vérité.
 - Replit Starter : exécution, tests fonctionnels, preview et déploiement du sous-dossier `apps/developer-os/`.
 - Pyto : fonctions locales iPhone complémentaires uniquement.
-- Working Copy : accès Git local contrôlé sur iPhone.
+- Working Copy : accès Git local contrôlé sur iPhone et application de patch de secours.
 - Google Drive : seulement si explicitement référencé.
 
 ## 9. Modèle de données
@@ -136,18 +137,20 @@ Contraintes : un seul projet actif ; nom obligatoire ; aucune suppression défin
 - Monorepo `dalquier/App-perso`.
 - Gouvernance et code séparés par chemins : `ProjectOS/projects/DeveloperOS/` et `apps/developer-os/`.
 - Le kernel Python historique n’est pas fusionné tel quel.
+- Les Builds Codex utilisent la publication native de l’interface après production du diff.
 
 ## 17. Décisions ouvertes
 - Wrapper IndexedDB natif ou dépendance légère.
 - Nom public du déploiement Replit.
-- Méthode ultérieure d’authentification GitHub.
+- Méthode ultérieure d’authentification GitHub dans l’application.
 - Format des liens ChatGPT/Codex pour BUILD-02 ou ultérieur.
 
 ## 18. Règles de versionnement
 - SemVer ; `0.1.0` pour BUILD-01 validé.
 - Schéma de données versionné séparément.
-- Une branche par Build.
+- Une branche ou une Pull Request par Build.
 - Commits focalisés.
+- Une branche technique `codex/...` est acceptable si elle est liée à la tâche et cible `main`.
 - Aucune fusion automatique.
 - Changelog obligatoire.
 
@@ -173,8 +176,9 @@ Contraintes : un seul projet actif ; nom obligatoire ; aucune suppression défin
 - Validation réelle sur iPhone avant fusion.
 
 ## 21. Méthode de déploiement
-- Développer sur branche GitHub.
-- Importer `dalquier/App-perso` dans Replit Starter.
+- Construire dans Codex sur le sandbox lié à `dalquier/App-perso/main`.
+- Publier la branche et la Pull Request par le menu GitHub natif de Codex après la tâche.
+- Importer ensuite `dalquier/App-perso` dans Replit Starter.
 - Configurer les commandes dans `apps/developer-os/` : installation, tests, build et preview/deploy.
 - Aucun secret pour BUILD-01.
 - Preview avant validation iPhone ; stable seulement après revue et fusion.
@@ -184,6 +188,7 @@ Contraintes : un seul projet actif ; nom obligatoire ; aucune suppression défin
 - Export JSON avant migration de schéma.
 - Revenir au dernier tag stable en cas de régression.
 - Replit n’est pas une sauvegarde ; tout déploiement doit être reproductible depuis GitHub.
+- En cas d’échec de publication Codex, conserver le diff et utiliser `Copier git apply` ou `Copier le patch`, sans reconstruire le Build.
 
 ## 23. Prochain Build exact
 `BUILD-01 — Project Core`
@@ -192,17 +197,58 @@ Livrables sous `apps/developer-os/` : PWA TypeScript installable, modèle Projec
 
 ## 24. Prompt Codex prêt à lancer
 
-Nom de la discussion : `DeveloperOS — BUILD-01 — Project Core — construire`
+```text
+Nom de la discussion : DeveloperOS — BUILD-01 — Project Core — construire
 
-Active ProjectOS depuis `dalquier/App-perso`. Charge `ProjectOS/BOOTSTRAP.md`, puis `ProjectOS/projects/DeveloperOS/PROJECT_MANIFEST.md`, les ADR applicables, `docs/RECOVERY_AUDIT.md` et `MASTER_BUILD_PROMPT.md` depuis `main`.
+POS = Active ProjectOS depuis `dalquier/App-perso`.
 
-Effectue le précontrôle GitHub obligatoire. Vérifie `origin/main`, le dépôt canonique `dalquier/App-perso`, la possibilité de publier une branche et une Pull Request, ainsi que l’absence de modifications non liées. Crée `developeros/build-01-project-core` depuis le dernier `origin/main`.
+L’environnement Codex est relié au dépôt GitHub `dalquier/App-perso` avec `main` comme branche de base.
 
-Construis uniquement `BUILD-01 — Project Core` dans `apps/developer-os/`. N’ajoute aucun code applicatif dans `ProjectOS/projects/DeveloperOS/`. Utilise une PWA TypeScript mobile-first, local-first et installable, de préférence React + Vite. Implémente IndexedDB derrière un repository, schéma versionné, liste, fiche, création/modification, vrais contrôles d’état et priorité, prochaine action, source canonique, projet actif unique, persistance, export/import JSON, service worker et états d’erreur.
+Travaille dans le sandbox fourni par Codex.
+Ne vérifie pas GH_TOKEN ou GITHUB_TOKEN.
+Ne lance pas gh auth login.
+Ne tente pas git push depuis le terminal.
+Ne considère pas l’absence de remote origin, d’upstream, de origin/main ou de credentials Git dans le terminal comme bloquante.
+Ne demande pas au sandbox de prouver que les boutons de publication de l’interface existent.
+Produis les modifications, exécute les tests et prépare un diff propre.
+La publication de la branche et de la Pull Request sera réalisée avec le mécanisme natif de Codex après la tâche.
+Ne modifie jamais directement main.
+Ne fusionne jamais la Pull Request.
 
-Ajoute tests unitaires, composants et E2E. Vérifie lint, tests, build et scénarios mobiles. Documente les commandes Replit en ciblant `apps/developer-os/`. Ne configure aucun secret et n’ajoute ni OpenAI, ni synchronisation distante, ni RAG, ni plugin, ni seconde interface.
+Charge :
+- `ProjectOS/BOOTSTRAP.md` ;
+- toutes les références obligatoires qu’il désigne ;
+- `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` ;
+- `ProjectOS/projects/DeveloperOS/PROJECT_MANIFEST.md` ;
+- `ProjectOS/projects/DeveloperOS/MASTER_BUILD_PROMPT.md` ;
+- `ProjectOS/projects/DeveloperOS/ADR/ADR-001-TARGET-ARCHITECTURE.md` ;
+- `ProjectOS/projects/DeveloperOS/ADR/ADR-002-APP-PERSO-MONOREPO.md` ;
+- `ProjectOS/projects/DeveloperOS/docs/RECOVERY_AUDIT.md`.
 
-Publie tous les fichiers dans GitHub, ouvre une Pull Request vers `main`, ne la fusionne pas et fournis un handoff ProjectOS temporaire avec résultats, limites et prochaine validation iPhone.
+Vérifie uniquement que :
+1. le dépôt et la branche de base indiqués par l’environnement correspondent au projet ;
+2. les références attendues sont présentes ;
+3. l’arbre de travail initial est propre ou les changements préexistants sont identifiés ;
+4. le périmètre autorisé est compris ;
+5. les dépendances et tests nécessaires sont exécutables.
+
+Construis uniquement `BUILD-01 — Project Core` sous `apps/developer-os/`.
+
+Utilise une PWA TypeScript mobile-first, local-first et installable, de préférence React + Vite. Implémente IndexedDB derrière un repository, un schéma versionné, la liste, la fiche, la création et modification, de vrais contrôles d’état et priorité, la prochaine action, la source canonique, le projet actif unique, la persistance, la recherche, le filtre, l’export/import JSON, le service worker et les états d’erreur.
+
+Ajoute et exécute les tests unitaires, composants, repository IndexedDB et E2E mobiles. Vérifie lint, TypeScript, build de production, PWA et fonctionnement hors connexion. Documente les commandes Replit en ciblant `apps/developer-os/`.
+
+Ne configure aucun secret et n’ajoute ni OpenAI, ni synchronisation distante, ni RAG, ni plugin, ni seconde interface.
+
+Avant la réponse finale, crée le handoff temporaire ProjectOS requis. Termine avec :
+- le résumé complet ;
+- les fichiers modifiés ;
+- les tests réellement exécutés et leurs résultats ;
+- les limites restantes ;
+- le nom logique de branche `developeros/build-01-project-core` ;
+- un titre et un corps complets de Pull Request vers `main` ;
+- l’indication que le diff est prêt à être publié par le menu GitHub natif de Codex.
+```
 
 ## 25. Ne pas faire
 - Ne pas modifier `main` directement.
@@ -215,3 +261,4 @@ Publie tous les fichiers dans GitHub, ouvre une Pull Request vers `main`, ne la 
 - Ne pas rendre Google Drive ou Replit indispensable aux données.
 - Ne pas commettre de clé, `.env`, donnée personnelle, export réel, journal utilisateur ou capture sensible dans le dépôt public.
 - Ne pas supprimer, renommer ou écraser les prototypes historiques.
+- Ne pas bloquer un Build Codex Cloud à cause de l’absence de remote, d’upstream ou de credentials Git dans le sandbox.

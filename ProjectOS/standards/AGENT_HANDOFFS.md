@@ -2,146 +2,95 @@
 
 ## Objectif
 
-Permettre à ChatGPT, Codex ou tout autre agent intervenant sur un projet logiciel de rendre son résultat vérifiable et récupérable par un autre agent sans dépendre de l’accès à la conversation d’origine.
+Rendre toute analyse ou livraison substantielle compréhensible et récupérable sans dépendre de la conversation d’origine.
 
-Le handoff ne remplace pas la livraison GitHub canonique. Il constitue soit une trace temporaire accompagnant une Pull Request, soit un mécanisme de transfert lorsque l’environnement de l’agent ne peut pas publier directement.
+Le handoff accompagne la livraison GitHub. Il ne remplace la branche et la Pull Request que lorsqu’un incident empêche réellement la publication.
 
-## Règle obligatoire
+## Fichier temporaire obligatoire
 
-Pour toute tâche logicielle produisant une analyse, une spécification, une modification, un audit ou une livraison substantielle, l’agent doit enregistrer un compte rendu exploitable dans un fichier temporaire situé sur sa branche ou dans son espace de travail.
-
-Chemin recommandé :
+Avant sa réponse finale, l’agent crée un compte rendu sous :
 
 ```text
 .projectos-temp/agent-handoffs/<date-heure>-<agent>-<sujet>.md
 ```
 
-Le fichier doit être créé avant la réponse finale de l’agent et son chemin doit être indiqué explicitement dans cette réponse.
+Il contient au minimum :
 
-## Contenu minimal
+- objectif et périmètre ;
+- dépôt, branche de base et mode de livraison ;
+- décisions et hypothèses ;
+- actions réalisées ;
+- fichiers créés ou modifiés ;
+- tests exécutés et résultats ;
+- limites, risques et points ouverts ;
+- prochaine action ;
+- branche, commit et Pull Request lorsqu’ils existent.
 
-Le fichier temporaire doit contenir :
+Le fichier doit être autonome et ne contenir aucun secret ni donnée personnelle inutile.
 
-- l’objectif traité ;
-- l’état GitHub vérifié, ou l’impossibilité de le vérifier ;
-- le résultat du précontrôle des capacités de publication ;
-- les décisions et hypothèses ;
-- les actions réalisées ;
-- les fichiers créés ou modifiés ;
-- les tests ou contrôles exécutés ;
-- les résultats obtenus ;
-- les limites, risques et points ouverts ;
-- la prochaine action recommandée ;
-- la branche, les commits et la Pull Request lorsqu’ils existent ;
-- le mode de livraison utilisé : `github-natif`, `github-cli` ou `handoff-restreint`.
+## Modes de livraison
 
-Le compte rendu doit être autonome : un autre agent doit pouvoir le comprendre sans accéder à la conversation source.
+### Publication native Codex
 
-## Précontrôle des capacités de publication
+Lorsque l’environnement Codex est relié au dépôt GitHub :
 
-Avant toute production substantielle, l’agent distingue trois capacités différentes :
+1. l’agent applique `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` ;
+2. il travaille dans le sandbox fourni ;
+3. il produit les fichiers, les tests, le handoff et un diff propre ;
+4. il ne bloque pas sur l’absence de remote, d’upstream ou d’identifiants Git dans le terminal ;
+5. Damien publie ensuite la branche et la Pull Request par le menu GitHub de l’interface Codex ;
+6. la branche et la Pull Request sont vérifiées dans GitHub ;
+7. aucune fusion n’est effectuée sans instruction explicite.
 
-1. **lecture distante** : consultation du dépôt, de `origin/main`, des fichiers et des références vivantes ;
-2. **écriture Git par credentials locaux** : `git push`, GitHub CLI ou jeton disponible dans le terminal ;
-3. **publication native de la plateforme** : bouton ou intégration Codex permettant de publier une branche ou d’ouvrir une Pull Request sans exposer de credentials Git dans le terminal.
+Une branche locale `work` et une branche GitHub technique préfixée par `codex/` sont acceptables. Le nom logique demandé dans le prompt reste indiqué dans le handoff.
 
-Un `git push --dry-run` refusé faute de credentials ne prouve pas que la publication native Codex est indisponible. Inversement, la lecture seule de GitHub ne prouve pas qu’une branche pourra être publiée.
+### Git ou GitHub CLI
 
-L’agent doit tester ou confirmer le mécanisme réellement prévu pour livrer :
+Lorsque le terminal est réellement authentifié, l’agent peut pousser une branche dédiée, ouvrir une Pull Request, puis vérifier la livraison dans GitHub.
 
-- publication native de la plateforme en priorité lorsqu’elle existe ;
-- sinon Git/CLI avec credentials ;
-- sinon `handoff-restreint`.
+### Handoff restreint
 
-Si aucune méthode de transmission n’est disponible, la tâche est classée `bloquée avant exécution`. Si un handoff récupérable est possible, l’agent peut poursuivre en mode restreint, à condition de l’annoncer avant les modifications et de ne jamais présenter le résultat comme déjà livré dans GitHub.
-
-## Mode normal A — publication native Codex ou plateforme
-
-Lorsque l’environnement fournit une intégration GitHub native :
-
-1. l’agent vérifie le dépôt canonique et la base distante vivante ;
-2. il travaille sur une branche dédiée dans l’espace de travail ;
-3. il crée les fichiers complets dans leur arborescence canonique ;
-4. il crée le fichier temporaire de transmission ;
-5. il utilise le mécanisme natif de publication ou de création de Pull Request ;
-6. il vérifie ensuite dans GitHub que la branche, le commit et la Pull Request existent réellement ;
-7. il indique la branche, le commit distant, la Pull Request et le chemin du fichier temporaire ;
-8. il ne fusionne pas sans instruction explicite.
-
-L’absence de credentials dans le terminal n’est pas une anomalie si la publication native fonctionne.
-
-## Mode normal B — Git ou GitHub CLI autorisé en écriture
-
-Lorsque l’agent dispose de credentials GitHub utilisables dans le terminal :
-
-1. il travaille sur une branche distante dédiée ;
-2. il crée les fichiers complets dans leur arborescence canonique ;
-3. il crée le fichier temporaire de transmission ;
-4. il pousse la branche et ouvre une Pull Request vers la branche canonique ;
-5. il vérifie la présence distante de la branche et de la Pull Request ;
-6. il indique la branche, le commit distant, la Pull Request et le chemin du fichier temporaire ;
-7. il ne fusionne pas sans instruction explicite.
-
-## Mode de repli — environnement en lecture seule ou publication impossible
-
-Le mode `handoff-restreint` est autorisé lorsque :
-
-- l’environnement peut lire le dépôt mais ne possède pas de credentials d’écriture ;
-- la publication native Codex ou plateforme est absente ou échoue ;
-- une panne survient après le début du travail ;
-- Damien le demande explicitement.
-
-Ce mode doit être annoncé dès que la limitation est connue. Il ne sert pas à masquer un échec : son objectif est de produire une livraison récupérable et vérifiable par l’agent coordinateur.
-
-L’agent doit alors :
-
-1. travailler à partir de la référence distante la plus récente qu’il peut vérifier ;
-2. conserver un arbre de travail propre avec des commits locaux lorsque Git est disponible ;
-3. créer le fichier temporaire de transmission ;
-4. produire une livraison récupérable, dans cet ordre de préférence :
-   - une archive ZIP contenant les fichiers ajoutés ou modifiés, le compte rendu et `APPLY_INSTRUCTIONS.md` ;
-   - un patch Git complet au format `.patch` ;
-   - un bundle Git au format `.bundle` ;
-   - à défaut, le contenu complet de chaque fichier dans la réponse ;
-5. placer les éléments locaux sous :
+Si la publication native ou CLI échoue après construction, l’agent produit une livraison récupérable sous :
 
 ```text
 .projectos-temp/delivery-bundles/<date-heure>-<agent>-<sujet>/
 ```
 
-6. inclure `APPLY_INSTRUCTIONS.md` avec la base vérifiée, la branche cible, la liste des fichiers, la procédure d’application, les contrôles et le retour arrière ;
-7. transmettre réellement les éléments au destinataire par un mécanisme vérifiable ;
-8. vérifier que la pièce jointe, le lien ou le contenu est réellement visible avant d’affirmer sa transmission ;
-9. ne jamais considérer un chemin local inaccessible comme une transmission achevée ;
-10. distinguer clairement `construit localement, non publié` de `livré dans GitHub`.
+Ordre de préférence :
 
-Une affirmation de pièce jointe non visible est un échec de transmission et doit être corrigée avant la réponse finale.
+1. `Copier git apply` ou patch Git complet ;
+2. archive ZIP avec fichiers et `APPLY_INSTRUCTIONS.md` ;
+3. bundle Git ;
+4. contenu complet des fichiers, uniquement en dernier recours.
 
-## Passage par Raccourcis iOS
+Un chemin local inaccessible ne constitue jamais une transmission.
 
-Lorsque la livraison est réellement accessible par la feuille de partage de l’iPhone, le mode recommandé est :
+## Échec de publication native
 
-1. partager le ZIP, patch, bundle ou texte vers le raccourci `ProjectOS — Importer une livraison` ;
-2. enregistrer l’entrée dans `iCloud Drive/ProjectOS/Inbox/<projet>/<horodatage>/` ;
-3. conserver le nom de discussion, l’axe, la branche cible et l’URL de la conversation dans un fichier `IMPORT_METADATA.json` ou `IMPORT_METADATA.md` ;
-4. ouvrir le dossier enregistré dans Fichiers ou Working Copy ;
-5. notifier que la livraison est prête à être vérifiée ;
-6. après intégration confirmée, déplacer ou supprimer le dossier temporaire.
+Si Codex a déjà produit un diff :
 
-Raccourcis facilite le transfert et le classement, mais ne remplace pas automatiquement l’application d’un patch Git ni l’ouverture d’une Pull Request.
+- ne pas recommencer le Build ;
+- conserver la tâche et le diff ;
+- copier le patch ou la commande `git apply` ;
+- appliquer la livraison sur une branche dédiée dans Working Copy, ChatGPT ou un autre environnement autorisé ;
+- ouvrir la Pull Request ;
+- qualifier l’événement d’incident de publication.
 
-## Reprise par l’agent coordinateur
+## Reprise par le coordinateur
 
-L’agent coordinateur doit lire le compte rendu, vérifier la livraison, la comparer à la branche canonique vivante, l’appliquer sur une branche dédiée, exécuter les contrôles, ouvrir ou mettre à jour la Pull Request, transférer les décisions durables vers les documents canoniques, puis supprimer les éléments temporaires.
+Le coordinateur lit le handoff, vérifie le diff et les tests, contrôle la branche et la Pull Request, transfère les décisions durables dans les références canoniques et supprime les éléments temporaires avant fusion.
 
-## Sécurité et cycle de vie
+## Sécurité
 
-Aucun fichier temporaire ou bundle ne doit être fusionné dans la branche canonique. Aucun secret, jeton, identifiant sensible, donnée médicale détaillée, donnée personnelle brute ou contenu confidentiel inutile ne doit y figurer.
+- Aucun secret, jeton ou identifiant sensible dans le prompt, le dépôt ou le handoff.
+- Aucun fichier temporaire ne doit être fusionné dans `main`.
+- La connexion GitHub native de Codex est privilégiée.
+- GitHub reste la source de vérité.
 
-Les secrets restent dans les gestionnaires de secrets des plateformes et ne sont jamais inscrits dans les prompts, le dépôt ou les bundles.
+## États de livraison
 
-## Critère de conformité
-
-Une livraison GitHub est achevée uniquement lorsque sa branche distante, son commit, ses fichiers et sa Pull Request sont vérifiables.
-
-Un handoff restreint est transmis uniquement lorsque l’artefact est réellement accessible et que sa reprise autonome est possible. Sinon l’état reste `construit localement, non publié`.
+- `construit` : diff et preuves de tests disponibles ;
+- `publié` : branche et Pull Request visibles dans GitHub ;
+- `livré` : Pull Request relue et conforme ;
+- `intégré` : fusion explicitement décidée ;
+- `transmis, publication en attente` : artefact récupérable fourni sans PR.

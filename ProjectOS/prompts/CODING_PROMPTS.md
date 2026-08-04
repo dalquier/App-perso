@@ -12,53 +12,63 @@ Nom de la discussion : <Projet> — <Vague ou jalon> — <Axe ou mission> — <a
 
 L’agent reprend ce nom dans sa première réponse. Si l’interface ne permet pas le renommage automatique, il demande explicitement à Damien d’appliquer ce nom manuellement.
 
-## Précontrôle obligatoire pour Codex
+## Précontrôle obligatoire pour Codex Cloud
 
-Avant toute modification substantielle, exécuter et rapporter ce contrôle :
+Pour une tâche exécutée dans un environnement Codex relié au dépôt GitHub indiqué, utiliser ce précontrôle et ne pas le remplacer par une recherche de credentials terminal :
 
 ```text
-Avant toute production substantielle, vérifie que cette tâche s’exécute dans un environnement relié au dépôt canonique et identifie le mécanisme réel de publication.
+L’environnement Codex est relié au dépôt GitHub indiqué et à la branche de base indiquée.
 
-1. Confirme le dépôt associé à l’environnement.
-2. Confirme que l’accès Internet de l’agent est activé lorsque GitHub ou des dépendances distantes sont nécessaires.
-3. Vérifie que `origin` pointe vers le dépôt canonique.
-4. Accède réellement à `origin/main` et indique son SHA distant actuel.
-5. Vérifie que la base locale n’est pas obsolète.
-6. Distingue explicitement :
-   - lecture GitHub disponible ;
-   - écriture Git/CLI disponible ou non ;
-   - publication native Codex ou plateforme disponible ou non ;
-   - handoff récupérable disponible ou non.
-7. Choisis le mode de sortie : `github-natif`, `github-cli` ou `handoff-restreint`.
+Travaille dans le sandbox fourni par Codex.
+Ne vérifie pas GH_TOKEN ou GITHUB_TOKEN.
+Ne lance pas gh auth login.
+Ne tente pas git push ou git push --dry-run depuis le terminal.
+Ne considère pas l’absence de remote origin, d’upstream, de origin/main ou de credentials Git dans le terminal comme bloquante.
+Ne demande pas au sandbox de prouver que les boutons de publication de l’interface existent.
 
-Un simple `git remote -v`, une branche locale ou un commit local ne constitue pas une preuve d’accès GitHub.
-Un `git push --dry-run` refusé faute de credentials ne prouve pas que la publication native Codex est indisponible.
+Vérifie uniquement :
+1. que le dépôt et la branche de base affichés par l’environnement correspondent au projet ;
+2. que les références ProjectOS attendues sont présentes ;
+3. que l’arbre de travail initial est propre ou que les modifications préexistantes sont identifiées ;
+4. que le périmètre de fichiers autorisé est compris ;
+5. que les dépendances et tests nécessaires sont exécutables.
 
-Si aucune méthode de transmission réelle n’est disponible, arrête-toi avant de produire et classe la tâche `bloquée avant exécution`.
-Si GitHub est lisible mais que le terminal n’a pas de credentials, utilise la publication native de la plateforme ou annonce avant exécution le mode `handoff-restreint` avec artefact récupérable.
+Produis les modifications, exécute les tests et prépare un diff propre.
+La publication de la branche et de la Pull Request sera réalisée avec le mécanisme natif de Codex après la tâche.
+Ne modifie jamais directement main.
+Ne fusionne jamais la Pull Request sans instruction explicite.
 ```
+
+Une branche locale `work`, un `git remote -v` vide, l’absence de `GH_TOKEN` ou l’échec de `gh auth status` sont des caractéristiques possibles du sandbox Codex et ne justifient pas l’arrêt de la tâche.
+
+## Autres environnements
+
+Lorsque la tâche n’est pas exécutée dans Codex Cloud avec publication native, appliquer `ProjectOS/standards/CODE_WORK_ROUTING.md` et choisir explicitement :
+
+- `github-cli` si le terminal possède réellement les credentials nécessaires ;
+- `handoff-restreint` si un artefact complet et récupérable doit être transmis.
 
 ## Règle commune de transmission
 
-Pour toute tâche substantielle, crée avant ta réponse finale un fichier temporaire conforme à `ProjectOS/standards/AGENT_HANDOFFS.md`, indique son chemin exact, puis conserve-le jusqu’à ce que l’agent coordinateur confirme sa prise en compte.
+Pour toute tâche substantielle, créer avant la réponse finale un fichier temporaire conforme à `ProjectOS/standards/AGENT_HANDOFFS.md`, indiquer son chemin exact et le conserver jusqu’à prise en compte.
 
-La livraison normale peut utiliser :
+En mode Codex natif, le flux normal est :
 
-- la publication native Codex ou plateforme, vérifiée ensuite dans GitHub ;
-- Git/GitHub CLI avec credentials ;
-- le mode `handoff-restreint` lorsqu’aucune publication directe n’est possible mais qu’un artefact complet peut être transmis.
+1. produire le code et les tests dans le sandbox ;
+2. produire un diff propre ;
+3. fournir le résumé, les tests, les limites et le texte proposé de Pull Request ;
+4. publier ensuite par le menu GitHub de l’interface Codex ;
+5. vérifier la branche et la Pull Request dans GitHub.
 
-L’absence de credentials Git dans le terminal n’est pas à elle seule un défaut de paramétrage si la publication native fonctionne. Un chemin local inaccessible ne constitue jamais une livraison.
-
-Après reprise et validation, supprime les éléments temporaires et vérifie qu’ils ne seront pas fusionnés dans la branche canonique.
+L’absence de credentials Git dans le terminal n’est pas un défaut de paramétrage dans ce mode.
 
 ## Développer
 
-> Identifie le projet, charge son manifeste et ses ADR, exécute le précontrôle des capacités, vérifie l’état GitHub vivant et choisis explicitement `github-natif`, `github-cli` ou `handoff-restreint`. Implémente la demande, teste, documente et crée le compte rendu temporaire. Publie par branche et Pull Request si la plateforme le permet ; sinon transmets un artefact complet et récupérable avec `APPLY_INSTRUCTIONS.md`. Ne te limite jamais à fournir des commandes shell lorsque les fichiers peuvent être transmis.
+> Identifie le projet, charge son manifeste, ses ADR et `CODEX_NATIVE_PUBLISHING.md` lorsque la tâche s’exécute dans Codex Cloud. Implémente la demande dans le périmètre autorisé, teste, documente, crée le compte rendu temporaire et prépare un diff propre. Ne bloque pas sur l’absence de `origin` ou de jeton dans le sandbox. La publication sera réalisée par le mécanisme natif Codex après la tâche. Ne modifie jamais `main` directement.
 
 ## Corriger
 
-> Exécute le précontrôle des capacités lorsque la correction est substantielle. Reproduis le défaut à partir des preuves disponibles, identifie la cause racine, applique la correction minimale, ajoute un test de non-régression, crée le compte rendu temporaire et livre via publication native, Git/CLI ou handoff restreint selon les capacités vérifiées.
+> Reproduis le défaut à partir des preuves disponibles, identifie la cause racine, applique la correction minimale, ajoute un test de non-régression, crée le compte rendu temporaire et prépare un diff publiable. Dans Codex Cloud, n’effectue aucun contrôle `GH_TOKEN`, `gh auth login` ou `git push` terminal.
 
 ## Auditer
 
@@ -66,11 +76,11 @@ Après reprise et validation, supprime les éléments temporaires et vérifie qu
 
 ## Refactorer
 
-> Exécute le précontrôle des capacités avant toute modification. Préserve le comportement observable, définis les invariants, procède par changements limités, exécute les tests avant et après, documente les compromis, crée le compte rendu temporaire et publie ou transmets selon le mode choisi.
+> Préserve le comportement observable, définis les invariants, procède par changements limités, exécute les tests avant et après, documente les compromis, crée le compte rendu temporaire et prépare un diff propre pour publication native Codex ou autre mécanisme prévu.
 
 ## Migrer
 
-> Exécute le précontrôle des capacités avant toute modification. Inventorie la source et la cible, protège les données, définis un plan de retour arrière, réalise la migration sur une branche dédiée locale ou distante selon le mode, vérifie l’intégrité, mets à jour le registre, le manifeste et les ADR, puis publie ou transmets la livraison complète.
+> Inventorie la source et la cible, protège les données, définis un plan de retour arrière, réalise la migration sur la branche de travail fournie, vérifie l’intégrité, mets à jour le registre, le manifeste et les ADR, puis prépare la livraison complète. Dans Codex Cloud, la publication intervient après la tâche par l’interface native.
 
 ## Reprendre un projet
 
