@@ -64,7 +64,7 @@ dalquier/App-perso/
     └── equilibre/            # code PWA, tests et documentation d’exécution
 ```
 
-Le dossier `ProjectOS/projects/Equilibre/` ne contient pas les dépendances, artefacts de build ou sources applicatives. Le chemin `projects/Equilibre/` à la racine ne doit pas être créé, afin d’éviter toute confusion.
+Le dossier `ProjectOS/projects/Equilibre/` ne contient pas les dépendances, artefacts de build ou sources applicatives. Le chemin `projects/Equilibre/` à la racine ne doit pas être créé, afin d’éviter toute confusion. Aucun dépôt GitHub concurrent ne doit être créé pour BUILD-01.
 
 ### 6.2 Couches logiques
 
@@ -278,7 +278,7 @@ Livraison : fichiers complets dans apps/equilibre/, tests exécutés, compte ren
 
 ## 20. Ne pas faire
 
-- Ne pas créer `dalquier/Equilibre` pour BUILD-01.
+- Ne pas créer de dépôt GitHub applicatif concurrent pour BUILD-01.
 - Ne pas créer `projects/Equilibre/` à la racine.
 - Ne pas mettre le code PWA dans `ProjectOS/projects/Equilibre/`.
 - Ne pas modifier le prototype historique.
