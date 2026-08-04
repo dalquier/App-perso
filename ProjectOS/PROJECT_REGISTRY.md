@@ -26,7 +26,7 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 |---|---|---|---|---|---|
 | `projectos` | ProjectOS | App perso, App-perso | actif | `dalquier/App-perso` | `ProjectOS/` |
 | `developeros` | DeveloperOS | Developer OS | à migrer/compléter | à confirmer avant modification | à créer sous `ProjectOS/projects/DeveloperOS/` |
-| `equilibre` | Équilibre | Equilibre, compagnon TCC, TCC Budy, TCC Buddy, TCC_Budy | initialisation en cours | gouvernance : `dalquier/App-perso`; code applicatif : à confirmer avant BUILD-01 | `ProjectOS/projects/Equilibre/` |
+| `equilibre` | Équilibre | Equilibre, compagnon TCC, TCC Budy, TCC Buddy, TCC_Budy | reprise définie — dépôt applicatif à matérialiser | gouvernance : `dalquier/App-perso`; code applicatif décidé : `dalquier/Equilibre` | `ProjectOS/projects/Equilibre/` |
 | `assistantia` | AssistantIA | Assistant IA | à migrer/compléter | à confirmer avant modification | à créer sous `ProjectOS/projects/AssistantIA/` |
 
 ## Résolution
