@@ -10,6 +10,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 - Signaler toute référence absente, inaccessible, contradictoire ou manifestement obsolète.
 - La politique de toolchain frugale est permanente : ChatGPT et Codex réalisent le développement ; Replit Starter est réservé à l’exécution, aux tests, au stockage de travail et au déploiement.
 - Dans Codex Cloud, distinguer le sandbox terminal du mécanisme natif de publication GitHub : l’absence de `origin`, d’upstream, de `GH_TOKEN` ou d’authentification `gh` dans le terminal n’est pas bloquante lorsque l’environnement Codex est explicitement relié au dépôt et à la branche de base attendus.
+- La mémoire conversationnelle est facultative et soumise au consentement explicite défini dans `standards/CONVERSATION_MEMORY.md`.
 
 ## 2. Séquence obligatoire
 
@@ -21,15 +22,20 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
    - `ProjectOS/core/DECISION_ENGINE.md`.
 4. Charger `ProjectOS/standards/TOOLCHAIN_POLICY.md` pour toute demande liée à un projet logiciel.
 5. Charger `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` pour toute tâche exécutée dans Codex Cloud ou publiée par l’interface native Codex.
-6. Identifier le projet, l’objectif réel et le résultat attendu.
-7. Résoudre le projet dans `PROJECT_REGISTRY.md`.
-8. Charger son `PROJECT_MANIFEST.md`, s’il existe.
-9. Charger les ADR applicables et uniquement la documentation nécessaire.
-10. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
-11. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
-12. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
-13. Présenter brièvement l’état vérifié, les inconnues et les contradictions avant une modification importante.
-14. Exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
+6. Charger `ProjectOS/standards/CONVERSATION_MEMORY.md` pour toute nouvelle conversation ProjectOS.
+7. Identifier le projet, l’objectif réel et le résultat attendu.
+8. Résoudre le projet dans `PROJECT_REGISTRY.md`.
+9. Charger son `PROJECT_MANIFEST.md`, s’il existe.
+10. Charger les ADR applicables et uniquement la documentation nécessaire.
+11. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
+12. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
+13. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
+14. Présenter brièvement l’état vérifié, les inconnues et les contradictions avant une modification importante.
+15. Terminer la première réponse ProjectOS de la conversation par la question exacte `Enregistrer la conversation ?`, sans aucun texte après.
+16. Attendre la réponse `oui` ou `non` avant de créer tout artefact permanent de mémoire conversationnelle.
+17. Si la réponse est `oui`, activer la mémoire selon `standards/CONVERSATION_MEMORY.md`, puis charger sélectivement l’index, la chronologie et les synthèses pertinentes du projet.
+18. Si la réponse est `non`, poursuivre sans mémoire conversationnelle et sans bloquer le traitement.
+19. Exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
 
 ## 3. Ordre d’autorité
 
@@ -40,7 +46,8 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 5. Règles transverses de ProjectOS.
 6. Documentation versionnée du projet.
 7. Documentation collaborative explicitement référencée sur Google Drive.
-8. Copies locales iCloud et historique conversationnel.
+8. Mémoire conversationnelle enregistrée et synthèses de session.
+9. Copies locales iCloud et historique conversationnel brut.
 
 Une règle spécifique prévaut sur une règle générale dans son périmètre. Une instruction récente et explicite prévaut sur une instruction ancienne, sauf si elle compromet la sécurité ou l’intégrité des données.
 
@@ -59,7 +66,13 @@ Toujours charger :
 - le noyau ProjectOS ;
 - `standards/TOOLCHAIN_POLICY.md` pour un projet logiciel ;
 - `standards/CODEX_NATIVE_PUBLISHING.md` pour une tâche Codex Cloud ;
+- `standards/CONVERSATION_MEMORY.md` au démarrage d’une nouvelle conversation ProjectOS ;
 - le manifeste du projet concerné, lorsqu’il existe.
+
+Après consentement à l’enregistrement, charger seulement :
+- `memory/CONVERSATION_INDEX.md` ;
+- `memory/PROJECT_TIMELINE.md` ;
+- les synthèses de sessions directement pertinentes.
 
 Charger ensuite seulement :
 - les ADR liés à la décision ;
@@ -85,6 +98,7 @@ L’amorçage doit aboutir à un état de travail comprenant :
 - références chargées ;
 - état GitHub vérifié selon le mécanisme réel de la plateforme ;
 - risques et contradictions signalés ;
-- prochaine action déterminée.
+- prochaine action déterminée ;
+- consentement à la mémoire demandé par la question exacte de fin de première réponse.
 
 Ne jamais demander à l’utilisateur d’« activer ProjectOS » lorsque ce fichier a déjà été chargé.
