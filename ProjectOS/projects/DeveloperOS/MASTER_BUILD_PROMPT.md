@@ -216,7 +216,7 @@ Les PNG générés :
 
 Si une ressource binaire doit être versionnée, la tâche annonce avant implémentation que la publication utilisera un client Git prenant en charge les binaires.
 
-Avant la réponse finale, exécuter `git diff --numstat <base>...HEAD` et indiquer les fichiers binaires détectés, leur stratégie et le canal de publication.
+Avant la réponse finale, contrôler la nature du diff avec les références réellement disponibles. Utiliser une référence de base locale fiable si elle existe ; sinon employer `git diff --numstat`, `git diff --cached --numstat` et un inventaire des extensions. Indiquer les commandes exécutées, les fichiers binaires détectés, leur stratégie, le canal de publication et les limites du contrôle.
 
 ## 25. Prompt Codex prêt à lancer
 
@@ -233,12 +233,28 @@ Ne lance pas gh auth login.
 Ne tente pas git push depuis le terminal.
 Ne considère pas l’absence de remote origin, d’upstream, de origin/main ou de credentials Git dans le terminal comme bloquante.
 Ne demande pas au sandbox de prouver que les boutons de publication de l’interface existent.
+Produis les modifications, exécute les tests et prépare un diff propre.
+La publication de la branche et de la Pull Request sera réalisée avec le mécanisme natif de Codex après la tâche si le diff est compatible.
 Ne modifie jamais directement main.
 Ne fusionne jamais la Pull Request.
 
-Charge `ProjectOS/BOOTSTRAP.md`, les références obligatoires, `CODEX_NATIVE_PUBLISHING.md`, le manifeste, ce script maître, les ADR et l’audit de reprise.
+Charge :
+- `ProjectOS/BOOTSTRAP.md` ;
+- toutes les références obligatoires qu’il désigne ;
+- `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` ;
+- `ProjectOS/projects/DeveloperOS/PROJECT_MANIFEST.md` ;
+- `ProjectOS/projects/DeveloperOS/MASTER_BUILD_PROMPT.md` ;
+- `ProjectOS/projects/DeveloperOS/ADR/ADR-001-TARGET-ARCHITECTURE.md` ;
+- `ProjectOS/projects/DeveloperOS/ADR/ADR-002-APP-PERSO-MONOREPO.md` ;
+- `ProjectOS/projects/DeveloperOS/docs/RECOVERY_AUDIT.md`.
 
-Vérifie dépôt, branche, références, état initial, périmètre, dépendances et tests. Inventorie aussi les fichiers attendus, identifie les formats binaires et choisis avant création le mode `codex-native-text`, `codex-native-generated-assets` ou `git-binary-capable`.
+Vérifie uniquement que :
+1. le dépôt et la branche de base indiqués par l’environnement correspondent au projet ;
+2. les références attendues sont présentes ;
+3. l’arbre de travail initial est propre ou les changements préexistants sont identifiés ;
+4. le périmètre autorisé est compris ;
+5. les dépendances et tests nécessaires sont exécutables ;
+6. les fichiers attendus sont inventoriés, les formats binaires sont identifiés et le mode `codex-native-text`, `codex-native-generated-assets` ou `git-binary-capable` est choisi avant création.
 
 Construis uniquement `BUILD-01 — Project Core` sous `apps/developer-os/`.
 
@@ -246,11 +262,20 @@ Utilise une PWA TypeScript mobile-first, local-first et installable, de préfér
 
 Pour les icônes PNG iOS/PWA en publication native Codex, versionne une source textuelle et un script déterministe ; génère les PNG avant tests/build, ignore-les dans Git et vérifie leur présence dans `dist/`.
 
-Ajoute et exécute les tests unitaires, composants, repository IndexedDB et E2E mobiles. Vérifie lint, TypeScript, build de production, PWA, offline, actifs générés et publiabilité du diff.
+Ajoute et exécute les tests unitaires, composants, repository IndexedDB et E2E mobiles. Vérifie lint, TypeScript, build de production, PWA, fonctionnement hors connexion et ressources générées. Documente les commandes Replit en ciblant `apps/developer-os/`.
 
 Ne configure aucun secret et n’ajoute ni OpenAI, ni synchronisation distante, ni RAG, ni plugin, ni seconde interface.
 
-Avant la réponse finale, crée le handoff temporaire requis et exécute `git diff --numstat <base>...HEAD`. Termine avec le résumé, les fichiers, les tests, les limites, les binaires détectés, leur stratégie, le canal compatible, le nom logique de branche et le texte de Pull Request.
+Avant la réponse finale, crée le handoff temporaire ProjectOS requis. Contrôle la nature du diff avec les références réellement disponibles : utilise une référence de base locale fiable si elle existe, sinon `git diff --numstat`, `git diff --cached --numstat` et un inventaire des extensions. Termine avec :
+- le résumé complet ;
+- les fichiers modifiés ;
+- les tests réellement exécutés et leurs résultats ;
+- les limites restantes ;
+- les commandes de contrôle du diff réellement exécutées ;
+- les fichiers binaires prévus ou détectés, leur stratégie et le canal compatible ;
+- le nom logique de branche `developeros/build-01-project-core` ;
+- un titre et un corps complets de Pull Request vers `main` ;
+- l’indication que le diff est prêt à être publié par le canal identifié.
 ```
 
 ## 26. Ne pas faire
@@ -264,6 +289,6 @@ Avant la réponse finale, crée le handoff temporaire requis et exécute `git di
 - Ne pas rendre Google Drive ou Replit indispensable aux données.
 - Ne pas commettre de clé, `.env`, donnée personnelle, export réel, journal utilisateur ou capture sensible dans le dépôt public.
 - Ne pas supprimer, renommer ou écraser les prototypes historiques.
-- Ne pas bloquer un Build Codex Cloud à cause de l’absence de remote, d’upstream ou de credentials Git dans le sandbox.
+- Ne pas bloquer un Build Codex Cloud à cause de l’absence de remote, d’upstream, de credentials Git ou de référence de base exploitable dans le sandbox.
 - Ne pas ajouter de binaire au diff natif Codex sans stratégie compatible.
 - Ne pas encoder un binaire en Base64 pour contourner le canal de publication.
