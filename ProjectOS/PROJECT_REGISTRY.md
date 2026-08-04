@@ -28,6 +28,7 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 | `developeros` | DeveloperOS | Developer OS, gestionnaire de projets, Project Manager Pyto, PWA DeveloperOS | prêt à construire | dépôt `dalquier/App-perso`; code `apps/developer-os/` | `ProjectOS/projects/DeveloperOS/` |
 | `equilibre` | Équilibre | Equilibre, compagnon TCC, TCC Budy, TCC Buddy, TCC_Budy | reprise définie — BUILD-01 à lancer | dépôt `dalquier/App-perso`; code `apps/equilibre/` | `ProjectOS/projects/Equilibre/` |
 | `assistantia` | AssistantIA | Assistant IA | à migrer/compléter | à confirmer avant modification | à créer sous `ProjectOS/projects/AssistantIA/` |
+| `pyto-replit-test` | PytoReplitTest | test Pyto Replit | expérimentation temporaire — à supprimer après validation | dépôt `dalquier/App-perso`; code `apps/pyto-replit-test/` | `ProjectOS/projects/PytoReplitTest/` |
 
 ## Résolution
 
