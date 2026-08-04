@@ -14,20 +14,12 @@ La formulation historique « selon le prompt maître » reste comprise comme un 
 Active ProjectOS depuis `dalquier/App-perso`, puis traite ma demande selon le prompt maître.
 ```
 
-Interprétation obligatoire de cet alias :
-
-1. consulter la branche `main` de `dalquier/App-perso` ;
-2. charger la dernière version de `ProjectOS/BOOTSTRAP.md` ;
-3. suivre sa séquence de chargement dynamique ;
-4. utiliser les références vivantes, manifests et ADR résolus ;
-5. traiter ensuite la demande de l’utilisateur.
-
 Dans le projet ChatGPT `App perso`, ProjectOS est déjà actif : les commandes ci-dessous peuvent être utilisées sans répéter la phrase d’activation.
 
 ## Reprendre un projet
 
 ```text
-Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis identifie le projet concerné, consulte son manifeste, ses ADR et l’état vivant du dépôt. Présente l’état actuel, les travaux en cours, les risques et la prochaine action recommandée avant toute modification.
+Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis identifie le projet concerné, consulte son manifeste, ses ADR, sa mémoire conversationnelle pertinente et l’état vivant du dépôt. Présente l’état actuel, l’évolution historique vérifiée, les travaux en cours, les contradictions, les risques et la prochaine action recommandée avant toute modification.
 ```
 
 ## Modifier du code
@@ -51,7 +43,13 @@ Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, p
 ## Créer un nouveau projet
 
 ```text
-Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis crée le manifeste, l’architecture, les ADR initiales, le README, les tests essentiels, la CI et le plan de livraison. Utilise GitHub comme source de vérité, Replit Starter comme cloud par défaut et Pyto comme compagnon iPhone permanent lorsque pertinent.
+Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis crée le manifeste, l’architecture, les ADR initiales, le README, les tests essentiels, la CI, la mémoire conversationnelle initiale et le plan de livraison. Utilise GitHub comme source de vérité, Replit Starter comme cloud par défaut et Pyto comme compagnon iPhone permanent lorsque pertinent.
+```
+
+## Clôturer une session
+
+```text
+Clôture cette session ProjectOS. Distingue les faits vérifiés, décisions, actions, tests, limites et prochaines étapes. Prépare ou mets à jour la synthèse de session, l’index des conversations et la chronologie, puis transfère les décisions durables vers le manifeste, les ADR, la roadmap ou la documentation appropriée. Indique l’état réel de l’archive brute, de la branche et de la Pull Request.
 ```
 
 ## Sauvegarder et vérifier
