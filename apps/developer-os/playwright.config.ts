@@ -1,0 +1,3 @@
+import { defineConfig } from '@playwright/test';
+const mobile={browserName:'chromium' as const,isMobile:true,hasTouch:true,deviceScaleFactor:2,userAgent:'DeveloperOS mobile automated test'};
+export default defineConfig({testDir:'tests/e2e',fullyParallel:false,retries:0,reporter:'list',use:{baseURL:'http://127.0.0.1:4173',trace:'retain-on-failure'},projects:[{name:'iphone-narrow',use:{...mobile,viewport:{width:320,height:568}}},{name:'iphone-standard',use:{...mobile,viewport:{width:390,height:844},deviceScaleFactor:3}}],webServer:{command:'npm run build && npm run preview -- --port 4173',url:'http://127.0.0.1:4173',reuseExistingServer:false,timeout:120000}});
