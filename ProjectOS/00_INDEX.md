@@ -26,6 +26,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/TESTING.md` : stratégie de tests et preuves d’exécution.
 - `standards/AGENT_HANDOFFS.md` : transmissions temporaires et livraisons récupérables des agents.
 - `standards/CONVERSATION_NAMING.md` : convention obligatoire de nommage des discussions ChatGPT et Codex.
+- `standards/CONVERSATION_MEMORY.md` : mémoire secondaire, indexation, synthèses et archivage des conversations liées aux projets.
 
 ## Décisions transverses
 
@@ -48,13 +49,16 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `projects/<projet>/ADR/` : décisions d’architecture.
 - `projects/<projet>/docs/` : documentation versionnée utile au pilotage.
 - `projects/<projet>/roadmap.md` : trajectoire et jalons lorsque nécessaire.
+- `projects/<projet>/memory/` : index, chronologie et synthèses de sessions significatives.
 
 Le registre central détermine quels projets disposent déjà d’un dossier ProjectOS et quelles références restent à confirmer ou à migrer.
 
 ## Modèles
 
 - `templates/PROJECT_MANIFEST.md` : manifeste type.
-- Les modèles ADR, roadmap et documents complémentaires peuvent être ajoutés sans modifier `BOOTSTRAP.md`, à condition d’être indexés ici.
+- `templates/CONVERSATION_INDEX.md` : registre type des conversations.
+- `templates/PROJECT_TIMELINE.md` : chronologie type d’un projet.
+- `templates/SESSION_SUMMARY.md` : synthèse type d’une session significative.
 
 ## Archives
 
@@ -69,16 +73,16 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 4. ADR applicables ;
 5. règles permanentes de ProjectOS ;
 6. documentation versionnée ;
-7. documentation collaborative explicitement référencée sur Google Drive ;
-8. copie locale iCloud ;
-9. historique conversationnel.
+7. mémoire conversationnelle synthétisée et vérifiée ;
+8. documentation collaborative explicitement référencée sur Google Drive ;
+9. archives brutes, copie locale iCloud et historique conversationnel.
 
 ## Stockages
 
-- GitHub : code, règles, manifests, ADR et documentation versionnée.
+- GitHub : code, règles, manifests, ADR, documentation versionnée, index et synthèses de mémoire.
 - Working Copy : copie Git locale sur iPhone.
-- iCloud Drive : fichiers locaux, échanges Pyto et données non versionnées.
-- Google Drive : documents collaboratifs, corpus et sauvegardes horodatées.
+- iCloud Drive : fichiers locaux, échanges Pyto et boîte d’entrée des archives conversationnelles.
+- Google Drive : documents collaboratifs, corpus, sauvegardes et archives brutes horodatées.
 - Replit Starter : environnement d’exécution, de test, de stockage de travail et de déploiement ; jamais source canonique.
 
-Une sauvegarde Drive ou Replit n’est jamais une source de vérité.
+Une sauvegarde Drive, une archive conversationnelle ou un espace Replit n’est jamais une source de vérité.
