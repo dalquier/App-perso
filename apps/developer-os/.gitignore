@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.DS_Store
+
+# Generated from public/icons/icon-512.svg by scripts/generate-icons.mjs
+public/icons/apple-touch-icon-180.png
+public/icons/icon-192.png
+public/icons/icon-512.png

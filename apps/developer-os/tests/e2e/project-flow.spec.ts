@@ -1,0 +1,83 @@
+import { expect, test } from "@playwright/test";
+
+test("mobile project lifecycle persists after reload and navigates back", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByText("Votre cockpit est prêt")).toBeVisible();
+  await page.getByRole("link", { name: "Créer un projet" }).click();
+  await page.getByLabel(/Nom/).fill("DeveloperOS");
+  await page.getByLabel("État").selectOption("active");
+  await page.getByLabel("Priorité").selectOption("high");
+  await page.getByLabel("Prochaine action").fill("Valider sur iPhone");
+  await page.getByLabel("Dernier état connu").fill("BUILD-01 prêt");
+  await page.getByLabel("Source", { exact: true }).fill("dalquier/App-perso");
+  await page.getByText("Définir comme projet actif").click();
+  await page
+    .locator("form")
+    .getByRole("button", { name: "Enregistrer" })
+    .last()
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "DeveloperOS" }),
+  ).toBeVisible();
+  await expect(page.getByText("● Projet actif")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Valider sur iPhone")).toBeVisible();
+  await page.getByRole("link", { name: "Modifier" }).click();
+  await page.getByLabel("Priorité").selectOption("critical");
+  await page
+    .locator("form")
+    .getByRole("button", { name: "Enregistrer" })
+    .last()
+    .click();
+  await expect(page.getByText("Critique")).toBeVisible();
+  await page.getByRole("button", { name: /Retour/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Mes projets" }),
+  ).toBeVisible();
+});
+
+test("offline production PWA serves cached app and preserves IndexedDB", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/");
+  await expect
+    .poll(async () =>
+      page.evaluate(() => navigator.serviceWorker.controller?.state ?? "none"),
+    )
+    .not.toBe("none");
+  await page.getByRole("link", { name: "Créer un projet" }).click();
+  await page.getByLabel(/Nom/).fill("Offline Project");
+  await page.getByLabel("Source", { exact: true }).fill("dalquier/App-perso");
+  await page
+    .locator("form")
+    .getByRole("button", { name: "Enregistrer" })
+    .last()
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Offline Project" }),
+  ).toBeVisible();
+  await context.setOffline(true);
+  await page.goto("/");
+  await expect(page.getByText("Offline Project")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Offline Project")).toBeVisible();
+  await context.setOffline(false);
+});
+
+test("long settings view scrolls and JSON import errors are handled", async ({
+  page,
+}) => {
+  await page.goto("/settings");
+  await expect(page.getByRole("heading", { name: "Paramètres" })).toBeVisible();
+  await page.locator("input[type=file]").setInputFiles({
+    name: "bad.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"bad":true}'),
+  });
+  await expect(page.getByRole("status")).toContainText("incompatible");
+  await page.getByText("DeveloperOS 0.1.0").scrollIntoViewIfNeeded();
+  await expect(page.getByText("DeveloperOS 0.1.0")).toBeVisible();
+});
