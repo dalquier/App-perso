@@ -21,7 +21,7 @@ Vérification de production : `npm test`, `npm run build`, puis `npm run preview
 
 ```bash
 git fetch origin
-git switch equilibre/build-01-minimal-pwa
+git switch codex/realiser-build-01-pour-pwa-equilibre
 cd apps/equilibre
 npm ci
 npm run build
