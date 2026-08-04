@@ -94,7 +94,11 @@ export function ProjectList() {
           <ProjectCard key={p.id} project={p} />
         ))}
       </div>
-      <Link to="/projects/new" className="fab" aria-label="Créer un projet">
+      <Link
+        to="/projects/new"
+        className="fab"
+        aria-label="Nouvelle création rapide"
+      >
         ＋
       </Link>
     </section>

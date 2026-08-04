@@ -5,7 +5,9 @@ test("mobile project lifecycle persists after reload and navigates back", async 
 }) => {
   await page.goto("/");
   await expect(page.getByText("Votre cockpit est prêt")).toBeVisible();
-  await page.getByRole("link", { name: "Créer un projet" }).click();
+  await page
+    .getByRole("link", { name: "Créer un projet", exact: true })
+    .click();
   await page.getByLabel(/Nom/).fill("DeveloperOS");
   await page.getByLabel("État").selectOption("active");
   await page.getByLabel("Priorité").selectOption("high");
@@ -48,7 +50,9 @@ test("offline production PWA serves cached app and preserves IndexedDB", async (
       page.evaluate(() => navigator.serviceWorker.controller?.state ?? "none"),
     )
     .not.toBe("none");
-  await page.getByRole("link", { name: "Créer un projet" }).click();
+  await page
+    .getByRole("link", { name: "Créer un projet", exact: true })
+    .click();
   await page.getByLabel(/Nom/).fill("Offline Project");
   await page.getByLabel("Source", { exact: true }).fill("dalquier/App-perso");
   await page
