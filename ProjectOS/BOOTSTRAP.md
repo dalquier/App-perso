@@ -12,6 +12,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 - Dans Codex Cloud, distinguer le sandbox terminal du mécanisme natif de publication GitHub : l’absence de `origin`, d’upstream, de `GH_TOKEN` ou d’authentification `gh` dans le terminal n’est pas bloquante lorsque l’environnement Codex est explicitement relié au dépôt et à la branche de base attendus.
 - La mémoire conversationnelle est facultative et soumise au consentement explicite défini dans `standards/CONVERSATION_MEMORY.md`.
 - Pendant l’amorçage d’une nouvelle conversation ProjectOS, les messages intermédiaires visibles par Damien doivent contenir uniquement une estimation concise du temps restant, au format `Temps restant estimé : <durée>.` Aucun détail sur les fichiers, outils, étapes ou résultats ne doit être affiché avant la première réponse.
+- Après l’amorçage, pour toute tâche ProjectOS nécessitant une attente perceptible, des outils ou plusieurs opérations, chaque message intermédiaire visible doit afficher uniquement une estimation actualisée au même format. Ne pas afficher de libellé de progression, d’étape, d’outil, de fichier, de résultat partiel ou de formule telle que `Réflexion en cours`. Cette règle concerne les messages produits par l’agent ; les indicateurs natifs non configurables de l’application restent hors de son contrôle.
 
 ## 2. Séquence obligatoire
 
