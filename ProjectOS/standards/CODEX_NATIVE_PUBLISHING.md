@@ -108,13 +108,17 @@ Le mode est choisi au début de la tâche et rappelé dans la réponse finale.
 
 ## 6. Contrôle de publiabilité
 
-Avant de déclarer le diff prêt à publier, exécuter :
+Le contrôle doit fonctionner même lorsque le sandbox ne possède ni `origin/main` ni référence de base exploitable.
 
-```bash
-git diff --numstat <base>...HEAD
-```
+Ordre recommandé :
+
+1. si une référence de base locale fiable existe, exécuter `git diff --numstat <référence-de-base>...HEAD` ;
+2. sinon, contrôler les changements disponibles avec `git diff --numstat`, `git diff --cached --numstat` et, si nécessaire, les commits locaux identifiables ;
+3. compléter par l’inventaire des extensions et la commande `git check-attr diff -- <fichiers>` lorsque la nature d’un fichier reste ambiguë.
 
 Une ligne dont les colonnes d’ajouts et suppressions valent `-` indique généralement un fichier binaire.
+
+L’absence de référence de base ne doit pas bloquer la tâche : Codex utilise le meilleur contrôle disponible et documente sa limite.
 
 Codex doit alors :
 
@@ -128,7 +132,8 @@ La réponse finale indique obligatoirement :
 - leur caractère source ou généré ;
 - la stratégie retenue ;
 - la commande de génération lorsqu’elle existe ;
-- le résultat du contrôle ;
+- les commandes de contrôle réellement exécutées ;
+- le résultat et les limites du contrôle ;
 - le canal de publication réellement compatible.
 
 ## 7. Séquence normale de livraison
@@ -138,7 +143,7 @@ La réponse finale indique obligatoirement :
 3. Codex choisit le mode de livraison et traite les ressources binaires avant implémentation.
 4. Codex travaille dans le sandbox fourni.
 5. Codex crée les fichiers, exécute les contrôles et produit un diff propre.
-6. Codex contrôle la publiabilité du diff.
+6. Codex contrôle la publiabilité du diff avec les références réellement disponibles.
 7. Codex termine avec le résumé, les tests, les limites, les ressources binaires, le canal de publication, le titre et le corps proposés pour la Pull Request, ainsi que le nom logique de branche.
 8. Damien ouvre le menu GitHub de la tâche et choisit une demande d’extraction ou une ébauche.
 9. La branche et la Pull Request sont vérifiées dans GitHub.
@@ -146,21 +151,34 @@ La réponse finale indique obligatoirement :
 
 ## 8. Nommage des branches
 
-Le prompt indique le nom logique attendu. L’interface Codex peut créer une branche technique différente, souvent préfixée par `codex/`. Cela n’invalide pas la livraison si la Pull Request cible bien le dépôt et `main`, si le contenu est correct et si la branche reste identifiable.
+Le prompt indique le nom logique attendu, par exemple :
+
+```text
+developeros/build-01-project-core
+```
+
+L’interface Codex peut créer une branche technique différente, souvent préfixée par `codex/`. Cela n’invalide pas la livraison si :
+
+- la Pull Request cible bien le dépôt et `main` ;
+- le contenu et le périmètre sont corrects ;
+- la branche est identifiable et liée à la tâche ;
+- la Pull Request est vérifiable dans GitHub.
+
+Le nom exact de branche ne doit donc pas provoquer l’arrêt du Build avant production du diff.
 
 ## 9. Cas réellement bloquants
 
 La tâche s’arrête avant production uniquement si l’un des cas suivants est vérifié :
 
-- le dépôt ou la branche de base affichés ne correspondent pas au projet ;
-- les références nécessaires sont absentes ou contradictoires au point d’empêcher l’exécution ;
-- le sandbox ne contient aucune copie exploitable ;
+- le dépôt ou la branche de base affichés par l’environnement ne correspondent pas au projet ;
+- les références ProjectOS nécessaires sont absentes ou incohérentes au point d’empêcher l’exécution ;
+- le sandbox ne contient pas les fichiers attendus et aucune copie exploitable n’est disponible ;
 - une dépendance indispensable ne peut pas être obtenue ;
 - l’agent ne peut pas produire ou conserver un diff ;
 - une contrainte de sécurité interdit le travail ;
 - un binaire canonique doit être versionné mais aucun canal de publication compatible n’est disponible.
 
-L’absence de credentials Git dans le terminal n’est pas un cas bloquant dans le mode de publication native.
+L’absence de credentials Git ou de référence de base exploitable dans le terminal n’est pas un cas bloquant dans le mode de publication native.
 
 ## 10. Échec de publication après la tâche
 
