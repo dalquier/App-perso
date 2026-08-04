@@ -31,7 +31,8 @@ Vérifie uniquement :
 2. que les références ProjectOS attendues sont présentes ;
 3. que l’arbre de travail initial est propre ou que les modifications préexistantes sont identifiées ;
 4. que le périmètre de fichiers autorisé est compris ;
-5. que les dépendances et tests nécessaires sont exécutables.
+5. que les dépendances et tests nécessaires sont exécutables ;
+6. que les fichiers attendus sont inventoriés, que les formats binaires sont identifiés et que leur stratégie de génération ou leur canal de publication est choisi avant création.
 
 Produis les modifications, exécute les tests et prépare un diff propre.
 La publication de la branche et de la Pull Request sera réalisée avec le mécanisme natif de Codex après la tâche.
@@ -41,12 +42,41 @@ Ne fusionne jamais la Pull Request sans instruction explicite.
 
 Une branche locale `work`, un `git remote -v` vide, l’absence de `GH_TOKEN` ou l’échec de `gh auth status` sont des caractéristiques possibles du sandbox Codex et ne justifient pas l’arrêt de la tâche.
 
+## Compatibilité des ressources et du canal de publication
+
+Avant l’implémentation, choisir l’un des modes définis dans `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` :
+
+- `codex-native-text` ;
+- `codex-native-generated-assets` ;
+- `git-binary-capable`.
+
+Par défaut en publication native Codex :
+
+- versionner les sources textuelles ;
+- générer les artefacts binaires de manière déterministe ;
+- ignorer les binaires générés ;
+- vérifier les artefacts dans le build final.
+
+Si un binaire doit être versionné, annoncer dès le début que la publication utilisera Working Copy ou un client Git compatible.
+
+Avant la réponse finale :
+
+```text
+Contrôle la nature des fichiers avec les références réellement disponibles dans le sandbox.
+Utilise une référence de base locale fiable si elle existe ; sinon, utilise git diff --numstat, git diff --cached --numstat et un inventaire des extensions.
+Si un fichier binaire apparaît, ne déclare pas le diff publiable par Codex natif sans stratégie compatible.
+Indique les commandes réellement exécutées, les binaires détectés, leur statut source/généré, leur commande de génération, le canal retenu et les limites du contrôle.
+```
+
+L’absence d’une référence de base exploitable ne bloque pas la tâche. Il est interdit de contourner la limitation par un gros fichier Base64 ou par la suppression d’une ressource nécessaire.
+
 ## Autres environnements
 
 Lorsque la tâche n’est pas exécutée dans Codex Cloud avec publication native, appliquer `ProjectOS/standards/CODE_WORK_ROUTING.md` et choisir explicitement :
 
 - `github-cli` si le terminal possède réellement les credentials nécessaires ;
-- `handoff-restreint` si un artefact complet et récupérable doit être transmis.
+- `handoff-restreint` si un artefact complet et récupérable doit être transmis ;
+- un client Git capable de binaires lorsque des fichiers binaires canoniques doivent être versionnés.
 
 ## Règle commune de transmission
 
@@ -54,34 +84,35 @@ Pour toute tâche substantielle, créer avant la réponse finale un fichier temp
 
 En mode Codex natif, le flux normal est :
 
-1. produire le code et les tests dans le sandbox ;
-2. produire un diff propre ;
-3. fournir le résumé, les tests, les limites et le texte proposé de Pull Request ;
-4. publier ensuite par le menu GitHub de l’interface Codex ;
-5. vérifier la branche et la Pull Request dans GitHub.
+1. choisir le mode de livraison et la stratégie des ressources ;
+2. produire le code et les tests dans le sandbox ;
+3. produire et contrôler un diff propre avec les références disponibles ;
+4. fournir le résumé, les tests, les limites, les fichiers binaires et le texte proposé de Pull Request ;
+5. publier ensuite par le canal compatible ;
+6. vérifier la branche et la Pull Request dans GitHub.
 
-L’absence de credentials Git dans le terminal n’est pas un défaut de paramétrage dans ce mode.
+L’absence de credentials Git ou de référence de base exploitable dans le terminal n’est pas un défaut de paramétrage dans ce mode.
 
 ## Développer
 
-> Identifie le projet, charge son manifeste, ses ADR et `CODEX_NATIVE_PUBLISHING.md` lorsque la tâche s’exécute dans Codex Cloud. Implémente la demande dans le périmètre autorisé, teste, documente, crée le compte rendu temporaire et prépare un diff propre. Ne bloque pas sur l’absence de `origin` ou de jeton dans le sandbox. La publication sera réalisée par le mécanisme natif Codex après la tâche. Ne modifie jamais `main` directement.
+> Identifie le projet, charge son manifeste, ses ADR et `CODEX_NATIVE_PUBLISHING.md`. Choisis le mode de livraison et inventorie les formats binaires avant de créer les fichiers. Implémente la demande dans le périmètre autorisé, teste, documente, crée le compte rendu temporaire, contrôle la nature du diff avec les références réellement disponibles et prépare un diff compatible avec le canal annoncé. Ne bloque pas sur l’absence de `origin`, de jeton ou de référence de base exploitable dans le sandbox. Ne modifie jamais `main` directement.
 
 ## Corriger
 
-> Reproduis le défaut à partir des preuves disponibles, identifie la cause racine, applique la correction minimale, ajoute un test de non-régression, crée le compte rendu temporaire et prépare un diff publiable. Dans Codex Cloud, n’effectue aucun contrôle `GH_TOKEN`, `gh auth login` ou `git push` terminal.
+> Reproduis le défaut à partir des preuves disponibles, identifie la cause racine, applique la correction minimale, ajoute un test de non-régression, vérifie si la correction introduit des fichiers binaires ou générés, crée le compte rendu temporaire et prépare un diff publiable par le canal choisi. Dans Codex Cloud, n’effectue aucun contrôle `GH_TOKEN`, `gh auth login` ou `git push` terminal.
 
 ## Auditer
 
-> Audite le projet selon le manifeste et les standards ProjectOS. Classe les constats par criticité, cite les preuves, distingue les problèmes vérifiés des hypothèses, propose un ordre de correction et enregistre l’audit dans le compte rendu temporaire.
+> Audite le projet selon le manifeste et les standards ProjectOS. Classe les constats par criticité, cite les preuves, distingue les problèmes vérifiés des hypothèses, vérifie la compatibilité du diff et des ressources avec le canal de publication, propose un ordre de correction et enregistre l’audit dans le compte rendu temporaire.
 
 ## Refactorer
 
-> Préserve le comportement observable, définis les invariants, procède par changements limités, exécute les tests avant et après, documente les compromis, crée le compte rendu temporaire et prépare un diff propre pour publication native Codex ou autre mécanisme prévu.
+> Préserve le comportement observable, définis les invariants, procède par changements limités, exécute les tests avant et après, documente les compromis, contrôle les artefacts générés et prépare un diff propre pour le canal prévu.
 
 ## Migrer
 
-> Inventorie la source et la cible, protège les données, définis un plan de retour arrière, réalise la migration sur la branche de travail fournie, vérifie l’intégrité, mets à jour le registre, le manifeste et les ADR, puis prépare la livraison complète. Dans Codex Cloud, la publication intervient après la tâche par l’interface native.
+> Inventorie la source et la cible, y compris les fichiers binaires et générés, protège les données, définis un plan de retour arrière, réalise la migration sur la branche de travail fournie, vérifie l’intégrité, mets à jour le registre, le manifeste et les ADR, puis prépare la livraison complète avec un canal compatible.
 
 ## Reprendre un projet
 
-> Charge les références vivantes, vérifie branches, Pull Requests, derniers commits, documentation, jalon courant, comptes rendus temporaires et bundles disponibles, puis présente l’état réel avant toute modification.
+> Charge les références vivantes, vérifie branches, Pull Requests, derniers commits, documentation, jalon courant, comptes rendus temporaires, bundles et éventuels incidents de publication, puis présente l’état réel avant toute modification.
