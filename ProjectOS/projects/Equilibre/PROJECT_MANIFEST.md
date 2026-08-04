@@ -5,12 +5,12 @@
 - ID stable : `equilibre`
 - Nom produit : Équilibre
 - Alias historiques : TCC Budy, TCC Buddy, TCC_Budy, compagnon TCC
-- Statut : initialisation documentaire — Vague 0
+- Statut : reprise définie — préparation de BUILD-01
 - Propriétaire : Damien
 
 ## Vision
 
-Équilibre est un compagnon personnel assisté par IA, structuré par les thérapies cognitivo-comportementales, destiné d’abord à Damien. Il doit soutenir les situations quotidiennes, les échanges rapides et les séances approfondies, sans se présenter comme un thérapeute humain ni remplacer un professionnel de santé.
+Équilibre est un compagnon personnel assisté par IA, structuré par les thérapies cognitivo-comportementales, destiné d’abord à Damien. Il soutient les situations quotidiennes, les échanges rapides et les séances approfondies, sans se présenter comme un thérapeute humain ni remplacer un professionnel de santé.
 
 ## Principes structurants
 
@@ -26,9 +26,12 @@
 
 ## Références canoniques
 
-- Gouvernance, manifeste, ADR et spécifications : `dalquier/App-perso`, branche `main`, dossier `ProjectOS/projects/Equilibre/`.
-- Code applicatif : dépôt ou dossier à confirmer avant `BUILD-01`.
-- Branche de Vague 0 : `equilibre/init-wave-0`.
+- Dépôt unique et source de vérité : `dalquier/App-perso`, branche `main`.
+- Gouvernance, manifeste, ADR et spécifications : `ProjectOS/projects/Equilibre/`.
+- Script maître : `ProjectOS/projects/Equilibre/MASTER_BUILD_PROMPT.md`.
+- Code applicatif : `apps/equilibre/`.
+- Prototype historique en lecture seule : `dalquier/Scriptable`, dossiers `TCC_Budy` et instantanés horodatés associés.
+- Branche de reprise documentaire : `equilibre/recovery-master-build-clean`.
 
 ## Périmètre V1
 
@@ -51,32 +54,29 @@
 - analyse clinique automatique ;
 - intégration à DeveloperOS.
 
-## Chantiers parallèles de conception
+## Conception et convergence
 
-1. Produit et UX ;
-2. Mémoire et données ;
-3. Moteur TCC ;
-4. Architecture PWA/Replit/Pyto ;
-5. Qualité, sécurité et validation.
-
-Leur contrat commun est défini dans `PARALLEL_WORK_CONTRACT.md`.
+Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; mémoire et données ; moteur TCC ; architecture PWA/Replit/Pyto ; qualité, sécurité et validation. Ils convergent dans un livrable commun piloté par `MASTER_BUILD_PROMPT.md`.
 
 ## Prochain jalon
 
-`MILESTONE-A` — produire cinq spécifications parallèles cohérentes, puis effectuer une revue de convergence avant tout code applicatif.
+`BUILD-01 — PWA minimale testable` : créer `apps/equilibre/`, produire une PWA installable sur iPhone, intégrer un simulateur local, une séance guidée courte, une persistance locale contrôlée, la reprise, les réglages de confidentialité et un garde-fou sensible.
 
-## Définition de terminé de la Vague 0
+## Définition de terminé de la reprise
 
-- registre unifié ;
-- manifeste créé ;
-- décisions structurantes enregistrées en ADR ;
-- contrat de parallélisation publié ;
-- roadmap initiale publiée ;
-- Pull Request relue et fusionnée dans `main`.
+- audit GitHub et Drive effectué ;
+- prototype historique localisé et classé comme source de migration ;
+- script maître reconstruit ;
+- monorepo et chemin applicatif décidés ;
+- branche et Pull Request documentaires créées ;
+- prompt Codex de BUILD-01 défini ;
+- aucune donnée personnelle réelle ajoutée.
 
 ## Risques ouverts
 
-- dépôt canonique du code applicatif non encore choisi ;
+- `apps/equilibre/` n’existe pas encore avant BUILD-01 ;
+- dépôt `dalquier/App-perso` public : interdiction stricte de versionner données réelles, secrets, historiques ou exports ;
 - exigences cliniques et réglementaires à préciser avant diffusion à des tiers ;
-- modèle de stockage et chiffrement non encore arbitré ;
-- coûts et limites de la voix temps réel non encore évalués.
+- stockage et chiffrement à durcir après BUILD-01 ;
+- scénarios sensibles à valider par des tests dédiés ;
+- migration sélective du prototype Pyto à réaliser sans duplication inutile.
