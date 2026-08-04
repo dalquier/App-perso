@@ -32,11 +32,23 @@ Exemples :
 Équilibre — Vague 1 — Qualité et sécurité — Spécification
 ```
 
-## Transmission
+## Identifiant de session
 
-Le nom de la discussion doit être reproduit dans :
+Toute session significative mémorisée reçoit un identifiant stable :
+
+```text
+SES-AAAAMMJJ-NNN
+```
+
+Cet identifiant relie le nom de discussion, la synthèse de session, l’index, l’archive brute, la branche et la Pull Request lorsqu’elles existent.
+
+## Transmission et mémoire
+
+Le nom de la discussion et l’identifiant de session doivent être reproduits dans :
 
 - le fichier temporaire de transmission ;
+- la synthèse sous `memory/SESSION_SUMMARIES/` ;
+- `memory/CONVERSATION_INDEX.md` ;
 - `IMPORT_METADATA.md` ou `IMPORT_METADATA.json` lorsqu’un raccourci iOS est utilisé ;
 - la description de Pull Request lorsque pertinent ;
 - le nom du bundle ou du dossier temporaire sous une forme compatible avec les noms de fichiers.
