@@ -1,127 +1,77 @@
 # ProjectOS — Routage des travaux de code
 
-## 1. Principe obligatoire
+## Principe
 
-GitHub est la source canonique du code. Les travaux de développement substantiels sont exécutés par Codex contre le dépôt canonique, sur une branche dédiée, puis livrés par Pull Request ou, lorsque l’environnement ne peut pas publier, par un handoff restreint récupérable repris ensuite par l’agent coordinateur.
+GitHub est la source canonique. Les développements substantiels sont réalisés par Codex, dans un environnement relié au dépôt canonique, puis livrés par branche et Pull Request. ChatGPT cadre, spécifie, relit et pilote. Replit, Pyto et Scriptable exécutent ou complètent le code sans devenir sources de vérité.
 
-ChatGPT conçoit, cadre, décompose, pilote, relit et vérifie. Il ne remplace pas Codex pour produire dans la conversation un projet lourd, un Build complet ou une livraison multi-fichiers.
+## Quand Codex est obligatoire
 
-Replit, Pyto, Scriptable et les autres environnements servent à exécuter, tester, déployer ou exploiter le code selon leur rôle. Ils ne deviennent pas la source de vérité.
+Codex est obligatoire pour :
 
-## 2. Déclenchement obligatoire de Codex
+- un nouveau Build ;
+- une modification multi-fichiers ;
+- une architecture, migration ou intégration ;
+- un refactoring substantiel ;
+- une correction transversale ;
+- des tests ou validations nécessitant l’exécution du dépôt.
 
-Le passage par Codex est obligatoire dès qu'au moins un des critères suivants est présent :
+Les changements documentaires ou triviaux peuvent être réalisés directement par ChatGPT sur une branche dédiée.
 
-- création d'un nouveau projet logiciel ou d'un nouveau Build applicatif ;
-- création ou modification coordonnée de plusieurs fichiers de code ;
-- architecture modulaire, nouvelle couche technique ou nouvelle intégration ;
-- refactoring substantiel ou réécriture d'un composant ;
-- correction nécessitant une investigation dans plusieurs modules ;
-- migration de structure, de données, de dépendances ou de plateforme ;
-- ajout ou modification de tests couvrant plusieurs composants ;
-- livraison trop volumineuse pour être fournie intégralement et vérifiée dans une seule réponse ;
-- changement nécessitant une exécution, un débogage ou une validation approfondie dans le dépôt.
+## Modes de livraison
 
-La taille apparente d'une demande ne suffit pas à la classer comme légère. Un changement court mais transversal, risqué ou architectural est un travail substantiel.
+- `github-natif` : Codex Cloud produit le diff dans son sandbox, puis l’interface Codex publie la branche et la Pull Request après la tâche.
+- `github-cli` : un terminal réellement authentifié pousse la branche et ouvre la Pull Request.
+- `handoff-restreint` : un patch, ZIP ou bundle complet est transmis lorsqu’aucune publication directe n’est disponible.
 
-## 3. Travaux autorisés directement dans ChatGPT
+## Codex Cloud
 
-ChatGPT peut réaliser directement :
+Pour toute tâche Codex Cloud, charger `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md`.
 
-- l'architecture, les spécifications, les critères d'acceptation et les plans de tests ;
-- l'analyse, la revue de code et le diagnostic ;
-- la rédaction ou la mise à jour de documentation ;
-- un correctif trivial, local, réversible et limité à un seul fichier lorsque son comportement est compris ;
-- une petite modification de configuration sans migration ni impact transversal ;
-- la préparation d'un prompt Codex précis et vérifiable ;
-- la vérification de la livraison Codex et la préparation de la décision de fusion.
+Lorsque l’interface Codex affiche explicitement le bon dépôt et la bonne branche de base, l’agent travaille dans le sandbox fourni et ne s’arrête pas uniquement parce que :
 
-Un correctif direct reste versionné dans GitHub sur une branche dédiée. Il ne doit pas être livré uniquement sous forme de fichier temporaire, de ZIP ou de bloc de code dans la conversation lorsque le dépôt canonique est accessible.
+- la branche locale s’appelle `work` ;
+- aucun remote ou upstream n’est visible ;
+- aucun identifiant Git n’est exposé au terminal ;
+- les commandes GitHub du terminal ne sont pas authentifiées ;
+- le sandbox ne peut pas inspecter les boutons de l’interface.
 
-## 4. Précontrôle Codex obligatoire
+L’agent vérifie seulement la présence des références, la propreté initiale, le périmètre autorisé, les dépendances, les tests et la capacité à produire un diff propre.
 
-Avant toute production substantielle, l’agent vérifie que la tâche s’exécute dans un environnement relié au dépôt canonique et identifie le mécanisme réel de publication.
+La publication intervient après la tâche via le menu GitHub de Codex. `main` n’est jamais modifiée directement et aucune Pull Request n’est fusionnée automatiquement.
 
-Les contrôles sont :
+## Séquence standard
 
-1. le dépôt associé à l'environnement est exactement le dépôt canonique déclaré ;
-2. l'accès Internet de l'agent est activé lorsque GitHub ou des dépendances distantes sont nécessaires ;
-3. `origin` pointe vers le dépôt canonique ;
-4. `origin/main` ou la branche canonique distante est réellement accessible et son SHA est relevé ;
-5. la base locale n’est pas obsolète ;
-6. l’une des méthodes de sortie suivantes est disponible :
-   - publication native Codex ou plateforme vers GitHub ;
-   - écriture Git/GitHub CLI avec credentials ;
-   - handoff restreint réellement récupérable.
+1. Charger ProjectOS, le registre, le manifeste, les ADR et les standards utiles.
+2. Confirmer le dépôt et la branche de base indiqués par l’environnement.
+3. Définir le périmètre, les critères d’acceptation, les risques, les tests et le retour arrière.
+4. Produire les fichiers dans le sandbox ou la branche de travail.
+5. Exécuter les contrôles et obtenir un diff propre.
+6. Créer le handoff temporaire requis.
+7. Fournir le résumé, les tests, les limites, le nom logique de branche et le texte proposé de Pull Request.
+8. Publier par l’interface Codex, Git/CLI ou handoff selon le mode.
+9. Vérifier la branche et la Pull Request dans GitHub.
+10. Relire avant toute décision de fusion.
 
-Le précontrôle doit distinguer :
+## Branches Codex
 
-- **lecture distante disponible** ;
-- **écriture terminal indisponible faute de credentials** ;
-- **publication native de la plateforme disponible ou non** ;
-- **handoff récupérable disponible ou non**.
+Le prompt peut demander un nom logique tel que `developeros/build-01-project-core`. Codex peut publier une branche technique préfixée par `codex/`. Cette différence n’est pas bloquante si la Pull Request cible le bon dépôt et `main`, et si son contenu est conforme.
 
-Un simple `git remote -v`, une branche locale ou un commit local ne prouve pas l'accès GitHub. Un `git push --dry-run` refusé ne prouve pas non plus que la publication native Codex est impossible.
+## Échec de publication native
 
-Si aucune méthode de sortie n’est disponible, l’agent s’arrête avant d’écrire du code et classe la tâche `bloquée avant exécution`.
+Si le diff existe mais que la publication native échoue :
 
-Si GitHub est lisible mais que le terminal n’a pas de credentials, l’agent poursuit selon l’un des deux cas :
+1. ne pas reconstruire le Build ;
+2. conserver la tâche et le diff ;
+3. utiliser `Copier git apply` ou `Copier le patch` ;
+4. appliquer le patch sur une branche dédiée dans un environnement autorisé ;
+5. ouvrir la Pull Request ;
+6. classer l’événement comme incident de publication, pas comme échec de construction.
 
-- il utilise la publication native Codex ou plateforme puis vérifie la branche et la PR dans GitHub ;
-- à défaut, il annonce le mode `handoff-restreint`, produit un artefact récupérable et laisse l’agent coordinateur publier la branche et la PR.
+## Critères d’état
 
-## 5. Séquence de travail pour un changement substantiel
+- Diff et tests disponibles : `construit`.
+- Branche et Pull Request visibles dans GitHub : `publié`.
+- Pull Request relue et conforme : `livré`.
+- Fusion explicitement décidée : `intégré`.
 
-1. Charger ProjectOS et identifier le projet dans `PROJECT_REGISTRY.md`.
-2. Vérifier le dépôt canonique, la branche de référence et le manifeste.
-3. Exécuter le précontrôle des capacités de lecture, publication et transfert.
-4. Choisir explicitement le mode : `github-natif`, `github-cli` ou `handoff-restreint`.
-5. Créer une branche dédiée dans GitHub ou une branche locale dédiée selon le mode.
-6. Définir le périmètre, les critères d'acceptation, les risques, les tests et le retour arrière.
-7. Réaliser l’implémentation ou la production documentaire.
-8. Exiger des fichiers complets, des tests exécutés et un compte rendu vérifiable.
-9. Publier via la plateforme, Git/CLI ou transmettre un handoff récupérable.
-10. Vérifier l'état vivant de la branche, du commit, des fichiers, des tests et de la Pull Request lorsqu’ils existent.
-11. Relire la livraison, corriger les écarts si nécessaire et seulement ensuite proposer la fusion.
-
-## 6. Règles de livraison
-
-- La livraison canonique finale est constituée des commits distants de la branche et de la Pull Request.
-- Les fichiers complets sont créés ou modifiés dans leur arborescence correcte.
-- Une publication native Codex est valide uniquement après vérification dans GitHub.
-- Un handoff restreint doit être réellement téléchargeable ou visible par l’agent coordinateur.
-- Un ZIP peut faciliter le transfert, mais ne remplace jamais l’arborescence GitHub après reprise.
-- Un fichier local Pyto, un artefact Replit ou une copie iCloud peut faciliter l'installation ou le test, mais ne remplace jamais la livraison GitHub finale.
-- Les changements lourds ne sont jamais fragmentés en une succession de blocs de code à recopier manuellement lorsqu’un artefact complet peut être fourni.
-- Aucun projet ne doit être envoyé vers un dépôt ou un dossier non déclaré sans mise à jour préalable du registre et du manifeste.
-
-Un Build substantiel n'est déclaré `livré dans GitHub` que si la branche distante, le commit, les fichiers et la Pull Request sont vérifiables. Un handoff accessible mais non repris est déclaré `transmis, publication GitHub en attente`. Un artefact laissé seulement dans un workspace inaccessible reste `construit localement, non transmis`.
-
-## 7. Exceptions et environnement restreint
-
-Le routage vers Codex peut être écarté uniquement si :
-
-- Damien demande explicitement un autre mode d'exécution ;
-- Codex est techniquement indisponible et le travail est urgent ;
-- une contrainte de sécurité ou de plateforme l'interdit.
-
-Dans ce cas, l'écart doit être annoncé, justifié et documenté. Le résultat doit malgré tout être versionné dans GitHub dès que possible.
-
-Le mode `handoff-restreint` est une voie de livraison prévue pour les environnements en lecture seule, sans credentials terminal ou sans publication native. Il doit être annoncé au précontrôle, produire un artefact autonome et ne jamais être présenté comme une Pull Request déjà publiée.
-
-## 8. Test de décision rapide
-
-Avant de produire du code, poser ces deux questions :
-
-> Ce travail crée-t-il un Build, touche-t-il plusieurs fichiers, modifie-t-il l'architecture ou nécessite-t-il une validation substantielle ?
-
-- **Non** : ChatGPT peut exécuter le changement limité, toujours dans GitHub lorsque le dépôt est accessible.
-- **Oui** : Codex obligatoire.
-
-Puis :
-
-> Quel mécanisme permet de transmettre réellement le résultat ?
-
-- **Publication native ou Git/CLI autorisé** : branche distante et Pull Request.
-- **Lecture seule mais artefact récupérable** : handoff restreint, puis reprise par le coordinateur.
-- **Aucun transfert possible** : blocage avant exécution.
+Aucun résultat local ou temporaire ne doit être présenté comme déjà intégré dans GitHub.
