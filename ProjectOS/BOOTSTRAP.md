@@ -11,6 +11,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 - La politique de toolchain frugale est permanente : ChatGPT et Codex réalisent le développement ; Replit Starter est réservé à l’exécution, aux tests, au stockage de travail et au déploiement.
 - Dans Codex Cloud, distinguer le sandbox terminal du mécanisme natif de publication GitHub : l’absence de `origin`, d’upstream, de `GH_TOKEN` ou d’authentification `gh` dans le terminal n’est pas bloquante lorsque l’environnement Codex est explicitement relié au dépôt et à la branche de base attendus.
 - La mémoire conversationnelle est facultative et soumise au consentement explicite défini dans `standards/CONVERSATION_MEMORY.md`.
+- Pendant l’amorçage d’une nouvelle conversation ProjectOS, les messages intermédiaires visibles par Damien doivent contenir uniquement une estimation concise du temps restant, au format `Temps restant estimé : <durée>.` Aucun détail sur les fichiers, outils, étapes ou résultats ne doit être affiché avant la première réponse.
 
 ## 2. Séquence obligatoire
 
@@ -30,7 +31,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 11. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
 12. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
 13. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
-14. Présenter brièvement l’état vérifié, les inconnues et les contradictions avant une modification importante.
+14. Dans la première réponse, présenter uniquement un état rapide des vérifications effectuées : source et branche, références obligatoires chargées, projet identifié ou niveau transverse, anomalies éventuelles et disponibilité pour poursuivre. Ne pas détailler le processus de chargement.
 15. Terminer la première réponse ProjectOS de la conversation par la question exacte `Enregistrer la conversation ?`, sans aucun texte après.
 16. Attendre la réponse `oui` ou `non` avant de créer tout artefact permanent de mémoire conversationnelle.
 17. Si la réponse est `oui`, activer la mémoire selon `standards/CONVERSATION_MEMORY.md`, puis charger sélectivement l’index, la chronologie et les synthèses pertinentes du projet.
@@ -92,13 +93,16 @@ Si une référence est modifiée pendant la conversation, recharger sa dernière
 
 ## 7. Sortie d’amorçage
 
+Pendant le chargement, chaque message intermédiaire est limité à l’estimation du temps restant. La première réponse reste courte et ne contient qu’un état des vérifications, puis la question de consentement.
+
 L’amorçage doit aboutir à un état de travail comprenant :
 - projet identifié ou niveau transverse confirmé ;
 - objectif reformulé ;
 - références chargées ;
 - état GitHub vérifié selon le mécanisme réel de la plateforme ;
 - risques et contradictions signalés ;
-- prochaine action déterminée ;
+- anomalies, inconnues ou contradictions signalées en une ligne, ou mention `aucune anomalie détectée` ;
+- disponibilité pour traiter la demande ;
 - consentement à la mémoire demandé par la question exacte de fin de première réponse.
 
 Ne jamais demander à l’utilisateur d’« activer ProjectOS » lorsque ce fichier a déjà été chargé.
