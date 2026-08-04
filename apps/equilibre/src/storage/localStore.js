@@ -24,14 +24,25 @@ export function migrateState(raw) {
 }
 
 export function createStore(storage = globalThis.localStorage) {
+  let clearedSinceLastSave = false;
   const load = () => {
     try { return migrateState(JSON.parse(storage.getItem(STORAGE_KEY))); }
     catch { return defaultState(); }
   };
   const save = (state) => {
-    if (!state.settings.saveLocally) return storage.removeItem(STORAGE_KEY);
-    storage.setItem(STORAGE_KEY, JSON.stringify({ ...state, version: STORAGE_VERSION }));
+    if (!state.settings.saveLocally) {
+      clearedSinceLastSave = true;
+      return storage.removeItem(STORAGE_KEY);
+    }
+    const safeState = clearedSinceLastSave
+      ? { ...state, messages: [], lastSession: null }
+      : state;
+    clearedSinceLastSave = false;
+    storage.setItem(STORAGE_KEY, JSON.stringify({ ...safeState, version: STORAGE_VERSION }));
   };
-  const clear = () => storage.removeItem(STORAGE_KEY);
+  const clear = () => {
+    clearedSinceLastSave = true;
+    storage.removeItem(STORAGE_KEY);
+  };
   return { load, save, clear };
 }
