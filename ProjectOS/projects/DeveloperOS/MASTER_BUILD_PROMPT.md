@@ -56,11 +56,11 @@ Les informations sont dispersées entre GitHub, ProjectOS, ChatGPT, Codex, Repli
 ## 8. Rôle des outils
 - ChatGPT : audit, architecture, spécification, revue et pilotage.
 - Codex : développements substantiels, tests et préparation du diff.
-- Interface Codex : publication native de la branche et de la Pull Request après la tâche.
+- Interface Codex : publication native de la branche et de la Pull Request après la tâche lorsque le diff est compatible.
 - GitHub : source de vérité.
 - Replit Starter : exécution, tests fonctionnels, preview et déploiement du sous-dossier `apps/developer-os/`.
 - Pyto : fonctions locales iPhone complémentaires uniquement.
-- Working Copy : accès Git local contrôlé sur iPhone et application de patch de secours.
+- Working Copy : accès Git local contrôlé sur iPhone, application de patch de secours et publication des binaires canoniques lorsque nécessaire.
 - Google Drive : seulement si explicitement référencé.
 
 ## 9. Modèle de données
@@ -128,6 +128,7 @@ Contraintes : un seul projet actif ; nom obligatoire ; aucune suppression défin
 - WebView fragile.
 - Données dispersées et source canonique ambiguë.
 - CI du kernel historique non prouvée.
+- Publication native Codex refusant certains fichiers binaires si aucune stratégie n’a été choisie avant leur création.
 
 ## 16. Décisions déjà prises
 - DeveloperOS est un poste de pilotage, pas un agent autonome.
@@ -137,7 +138,8 @@ Contraintes : un seul projet actif ; nom obligatoire ; aucune suppression défin
 - Monorepo `dalquier/App-perso`.
 - Gouvernance et code séparés par chemins : `ProjectOS/projects/DeveloperOS/` et `apps/developer-os/`.
 - Le kernel Python historique n’est pas fusionné tel quel.
-- Les Builds Codex utilisent la publication native de l’interface après production du diff.
+- Les Builds Codex utilisent la publication native de l’interface après production d’un diff compatible.
+- Les actifs binaires générables sont produits de manière déterministe à partir de sources textuelles versionnées.
 
 ## 17. Décisions ouvertes
 - Wrapper IndexedDB natif ou dépendance légère.
@@ -164,6 +166,8 @@ Contraintes : un seul projet actif ; nom obligatoire ; aucune suppression défin
 - Fonctionnement hors connexion.
 - Aucun champ inaccessible, écran non défilable, clic inerte ou retour cassé.
 - Tests automatisés verts avec preuves d’exécution.
+- Diff compatible avec le canal de publication choisi.
+- Actifs PWA obligatoires présents dans l’artefact final et reconstructibles.
 
 ## 20. Stratégie de tests
 - Tests unitaires du modèle, validation et migrations.
@@ -173,11 +177,14 @@ Contraintes : un seul projet actif ; nom obligatoire ; aucune suppression défin
 - Viewports iPhone étroit et standard.
 - Audit accessibilité de base.
 - Lint et build de production obligatoires.
+- Contrôle du diff, des binaires et des artefacts générés.
 - Validation réelle sur iPhone avant fusion.
 
 ## 21. Méthode de déploiement
 - Construire dans Codex sur le sandbox lié à `dalquier/App-perso/main`.
-- Publier la branche et la Pull Request par le menu GitHub natif de Codex après la tâche.
+- Choisir au début le mode de livraison défini dans `CODEX_NATIVE_PUBLISHING.md`.
+- Publier la branche et la Pull Request par le menu GitHub natif de Codex seulement si le diff est compatible.
+- Utiliser Working Copy ou un client Git compatible si un binaire canonique doit être versionné.
 - Importer ensuite `dalquier/App-perso` dans Replit Starter.
 - Configurer les commandes dans `apps/developer-os/` : installation, tests, build et preview/deploy.
 - Aucun secret pour BUILD-01.
@@ -188,14 +195,30 @@ Contraintes : un seul projet actif ; nom obligatoire ; aucune suppression défin
 - Export JSON avant migration de schéma.
 - Revenir au dernier tag stable en cas de régression.
 - Replit n’est pas une sauvegarde ; tout déploiement doit être reproductible depuis GitHub.
-- En cas d’échec de publication Codex, conserver le diff et utiliser `Copier git apply` ou `Copier le patch`, sans reconstruire le Build.
+- En cas d’échec de publication Codex, conserver le diff, identifier si la cause est le canal ou un binaire, puis utiliser la stratégie compatible sans reconstruire le Build.
 
 ## 23. Prochain Build exact
 `BUILD-01 — Project Core`
 
 Livrables sous `apps/developer-os/` : PWA TypeScript installable, modèle Project, IndexedDB, liste, fiche, formulaire, paramètres, recherche/filtre, projet actif, export/import, offline, tests et documentation.
 
-## 24. Prompt Codex prêt à lancer
+## 24. Actifs PWA et publication Codex
+
+Les icônes PNG requises par iOS et la PWA doivent être obtenues par une génération déterministe à partir d’une source textuelle versionnée lorsque la tâche utilise la publication native Codex.
+
+Les PNG générés :
+
+- ne sont pas suivis par Git ;
+- sont produits avant les tests PWA et le build ;
+- doivent être présents dans l’artefact `dist/` ;
+- sont contrôlés pour leurs dimensions, formats, noms et chemins ;
+- sont documentés avec leur commande de génération.
+
+Si une ressource binaire doit être versionnée, la tâche annonce avant implémentation que la publication utilisera un client Git prenant en charge les binaires.
+
+Avant la réponse finale, exécuter `git diff --numstat <base>...HEAD` et indiquer les fichiers binaires détectés, leur stratégie et le canal de publication.
+
+## 25. Prompt Codex prêt à lancer
 
 ```text
 Nom de la discussion : DeveloperOS — BUILD-01 — Project Core — construire
@@ -210,47 +233,27 @@ Ne lance pas gh auth login.
 Ne tente pas git push depuis le terminal.
 Ne considère pas l’absence de remote origin, d’upstream, de origin/main ou de credentials Git dans le terminal comme bloquante.
 Ne demande pas au sandbox de prouver que les boutons de publication de l’interface existent.
-Produis les modifications, exécute les tests et prépare un diff propre.
-La publication de la branche et de la Pull Request sera réalisée avec le mécanisme natif de Codex après la tâche.
 Ne modifie jamais directement main.
 Ne fusionne jamais la Pull Request.
 
-Charge :
-- `ProjectOS/BOOTSTRAP.md` ;
-- toutes les références obligatoires qu’il désigne ;
-- `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` ;
-- `ProjectOS/projects/DeveloperOS/PROJECT_MANIFEST.md` ;
-- `ProjectOS/projects/DeveloperOS/MASTER_BUILD_PROMPT.md` ;
-- `ProjectOS/projects/DeveloperOS/ADR/ADR-001-TARGET-ARCHITECTURE.md` ;
-- `ProjectOS/projects/DeveloperOS/ADR/ADR-002-APP-PERSO-MONOREPO.md` ;
-- `ProjectOS/projects/DeveloperOS/docs/RECOVERY_AUDIT.md`.
+Charge `ProjectOS/BOOTSTRAP.md`, les références obligatoires, `CODEX_NATIVE_PUBLISHING.md`, le manifeste, ce script maître, les ADR et l’audit de reprise.
 
-Vérifie uniquement que :
-1. le dépôt et la branche de base indiqués par l’environnement correspondent au projet ;
-2. les références attendues sont présentes ;
-3. l’arbre de travail initial est propre ou les changements préexistants sont identifiés ;
-4. le périmètre autorisé est compris ;
-5. les dépendances et tests nécessaires sont exécutables.
+Vérifie dépôt, branche, références, état initial, périmètre, dépendances et tests. Inventorie aussi les fichiers attendus, identifie les formats binaires et choisis avant création le mode `codex-native-text`, `codex-native-generated-assets` ou `git-binary-capable`.
 
 Construis uniquement `BUILD-01 — Project Core` sous `apps/developer-os/`.
 
 Utilise une PWA TypeScript mobile-first, local-first et installable, de préférence React + Vite. Implémente IndexedDB derrière un repository, un schéma versionné, la liste, la fiche, la création et modification, de vrais contrôles d’état et priorité, la prochaine action, la source canonique, le projet actif unique, la persistance, la recherche, le filtre, l’export/import JSON, le service worker et les états d’erreur.
 
-Ajoute et exécute les tests unitaires, composants, repository IndexedDB et E2E mobiles. Vérifie lint, TypeScript, build de production, PWA et fonctionnement hors connexion. Documente les commandes Replit en ciblant `apps/developer-os/`.
+Pour les icônes PNG iOS/PWA en publication native Codex, versionne une source textuelle et un script déterministe ; génère les PNG avant tests/build, ignore-les dans Git et vérifie leur présence dans `dist/`.
+
+Ajoute et exécute les tests unitaires, composants, repository IndexedDB et E2E mobiles. Vérifie lint, TypeScript, build de production, PWA, offline, actifs générés et publiabilité du diff.
 
 Ne configure aucun secret et n’ajoute ni OpenAI, ni synchronisation distante, ni RAG, ni plugin, ni seconde interface.
 
-Avant la réponse finale, crée le handoff temporaire ProjectOS requis. Termine avec :
-- le résumé complet ;
-- les fichiers modifiés ;
-- les tests réellement exécutés et leurs résultats ;
-- les limites restantes ;
-- le nom logique de branche `developeros/build-01-project-core` ;
-- un titre et un corps complets de Pull Request vers `main` ;
-- l’indication que le diff est prêt à être publié par le menu GitHub natif de Codex.
+Avant la réponse finale, crée le handoff temporaire requis et exécute `git diff --numstat <base>...HEAD`. Termine avec le résumé, les fichiers, les tests, les limites, les binaires détectés, leur stratégie, le canal compatible, le nom logique de branche et le texte de Pull Request.
 ```
 
-## 25. Ne pas faire
+## 26. Ne pas faire
 - Ne pas modifier `main` directement.
 - Ne pas créer un dépôt séparé `dalquier/DeveloperOS`.
 - Ne pas placer le code applicatif dans `ProjectOS/projects/DeveloperOS/`.
@@ -262,3 +265,5 @@ Avant la réponse finale, crée le handoff temporaire ProjectOS requis. Termine 
 - Ne pas commettre de clé, `.env`, donnée personnelle, export réel, journal utilisateur ou capture sensible dans le dépôt public.
 - Ne pas supprimer, renommer ou écraser les prototypes historiques.
 - Ne pas bloquer un Build Codex Cloud à cause de l’absence de remote, d’upstream ou de credentials Git dans le sandbox.
+- Ne pas ajouter de binaire au diff natif Codex sans stratégie compatible.
+- Ne pas encoder un binaire en Base64 pour contourner le canal de publication.
