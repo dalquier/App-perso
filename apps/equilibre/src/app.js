@@ -54,10 +54,15 @@ function sessionView() {
   if (!state.lastSession) state.lastSession = createSession();
   const session = state.lastSession;
   if (session.completed) return `<section class="complete"><span class="complete-mark">✓</span><p class="eyebrow">Séance terminée</p><h1>Un pas à la fois.</h1><p>Vous avez clarifié la situation et choisi une action concrète.</p><dl>${Object.entries(session.answers).map(([key, value]) => `<div><dt>${stepCopy[key][0]}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl><button class="button primary-button" data-view="home">Revenir à l’accueil</button><button class="text-button" data-start-session>Commencer une nouvelle séance</button></section>`;
-  const index = ["situation", "emotion", "thought", "action"].indexOf(session.step);
+  const steps = ["situation", "emotion", "thought", "action"];
+  const index = steps.indexOf(session.step);
   const copy = stepCopy[session.step];
-  return `<section class="session-head"><button class="back" data-view="home">×</button><span>Étape ${index + 1} sur 4</span><span>${Math.round(((index + 1) / 4) * 100)} %</span></section><div class="progress"><i style="width:${((index + 1) / 4) * 100}%"></i></div>
-    <section class="session-card"><span class="session-number">0${index + 1}</span><p class="eyebrow">${copy[0]}</p><h1>${copy[1]}</h1><p>Restez bref si vous le souhaitez. Il n’y a pas de bonne réponse.</p><form id="session-form"><label class="sr-only" for="session-input">${copy[0]}</label><textarea id="session-input" rows="5" maxlength="1000" placeholder="${copy[2]}" required></textarea><button class="button primary-button" type="submit">Continuer <span>→</span></button></form></section>`;
+  const existingAnswer = escapeHtml(session.answers[session.step] || "");
+  const navLeft = index > 0
+    ? `<button class="back" data-prev-step aria-label="Étape précédente">←</button>`
+    : `<button class="back" data-view="home" aria-label="Fermer la séance">×</button>`;
+  return `<section class="session-head">${navLeft}<span>Étape ${index + 1} sur 4</span><span>${Math.round(((index + 1) / 4) * 100)} %</span></section><div class="progress"><i style="width:${((index + 1) / 4) * 100}%"></i></div>
+    <section class="session-card"><span class="session-number">0${index + 1}</span><p class="eyebrow">${copy[0]}</p><h1>${copy[1]}</h1><p>Restez bref si vous le souhaitez. Il n'y a pas de bonne réponse.</p><form id="session-form"><label class="sr-only" for="session-input">${copy[0]}</label><textarea id="session-input" rows="5" maxlength="1000" placeholder="${copy[2]}" required>${existingAnswer}</textarea><button class="button primary-button" type="submit">Continuer <span>→</span></button></form></section>`;
 }
 
 function settingsView() {
@@ -79,6 +84,11 @@ function render() {
 app.addEventListener("click", (event) => {
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) setView(viewButton.dataset.view);
+  if (event.target.closest("[data-prev-step]")) {
+    const steps = ["situation", "emotion", "thought", "action"];
+    const idx = steps.indexOf(state.lastSession?.step);
+    if (idx > 0) { state.lastSession = { ...state.lastSession, step: steps[idx - 1] }; persist(); render(); }
+  }
   if (event.target.closest("[data-start-session]")) { state.lastSession = createSession(); persist(); setView("session"); }
   if (event.target.closest("#clear-data")) {
     if (confirm("Effacer définitivement toutes les données locales d’Équilibre ?")) { store.clear(); state = { ...store.load() }; setView("home"); }
