@@ -10,7 +10,9 @@ La mémoire conversationnelle sert à retrouver le contexte, les décisions, les
 
 La mémoire conversationnelle n’est jamais activée automatiquement.
 
-À la fin de la première réponse ProjectOS d’une nouvelle conversation, après l’amorçage et la présentation de l’état de travail, l’agent doit poser exactement cette question, sur la dernière ligne :
+Pendant l’amorçage, les messages intermédiaires visibles doivent indiquer uniquement le temps restant estimé, sans détail de progression. La première réponse doit rester courte : état rapide des vérifications effectuées, anomalies éventuelles, puis question de consentement.
+
+À la fin de cette première réponse ProjectOS, l’agent doit poser exactement cette question, sur la dernière ligne :
 
 ```text
 Enregistrer la conversation ?
