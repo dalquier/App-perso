@@ -5,7 +5,7 @@
 - ID stable : `equilibre`
 - Nom produit : Équilibre
 - Alias historiques : TCC Budy, TCC Buddy, TCC_Budy, compagnon TCC
-- Statut : initialisation documentaire — Vague 0
+- Statut : reprise définie — préparation de BUILD-01
 - Propriétaire : Damien
 
 ## Vision
@@ -27,8 +27,10 @@
 ## Références canoniques
 
 - Gouvernance, manifeste, ADR et spécifications : `dalquier/App-perso`, branche `main`, dossier `ProjectOS/projects/Equilibre/`.
-- Code applicatif : dépôt ou dossier à confirmer avant `BUILD-01`.
-- Branche de Vague 0 : `equilibre/init-wave-0`.
+- Script maître de construction : `ProjectOS/projects/Equilibre/MASTER_BUILD_PROMPT.md`.
+- Code applicatif décidé : dépôt dédié `dalquier/Equilibre`, à matérialiser avant le premier commit de BUILD-01.
+- Prototype historique en lecture seule : `dalquier/Scriptable`, dossiers `TCC_Budy` et instantanés horodatés associés.
+- Branche de reprise documentaire : `equilibre/recovery-master-build`.
 
 ## Périmètre V1
 
@@ -51,7 +53,9 @@
 - analyse clinique automatique ;
 - intégration à DeveloperOS.
 
-## Chantiers parallèles de conception
+## Conception et convergence
+
+Les cinq axes historiques restent des dimensions obligatoires de revue :
 
 1. Produit et UX ;
 2. Mémoire et données ;
@@ -59,24 +63,27 @@
 4. Architecture PWA/Replit/Pyto ;
 5. Qualité, sécurité et validation.
 
-Leur contrat commun est défini dans `PARALLEL_WORK_CONTRACT.md`.
+Ils ne doivent pas être relancés comme cinq chantiers indépendants sans coordination. Leur convergence est portée par `MASTER_BUILD_PROMPT.md` et par une livraison commune avant BUILD-01.
 
 ## Prochain jalon
 
-`MILESTONE-A` — produire cinq spécifications parallèles cohérentes, puis effectuer une revue de convergence avant tout code applicatif.
+`BUILD-01 — PWA minimale testable` : matérialiser `dalquier/Equilibre`, créer une PWA installable sur iPhone, intégrer un simulateur local, une séance guidée courte, une persistance locale contrôlée, la reprise, les réglages de confidentialité et un garde-fou sensible.
 
-## Définition de terminé de la Vague 0
+## Définition de terminé de la reprise
 
-- registre unifié ;
-- manifeste créé ;
-- décisions structurantes enregistrées en ADR ;
-- contrat de parallélisation publié ;
-- roadmap initiale publiée ;
-- Pull Request relue et fusionnée dans `main`.
+- audit GitHub et Drive effectué ;
+- prototype historique localisé et classé comme source de migration ;
+- script maître reconstruit ;
+- dépôt applicatif décidé ;
+- branche et Pull Request documentaires créées ;
+- prompt Codex de BUILD-01 défini ;
+- aucune donnée personnelle réelle ajoutée.
 
 ## Risques ouverts
 
-- dépôt canonique du code applicatif non encore choisi ;
+- dépôt `dalquier/Equilibre` décidé mais pas encore physiquement créé ;
 - exigences cliniques et réglementaires à préciser avant diffusion à des tiers ;
-- modèle de stockage et chiffrement non encore arbitré ;
-- coûts et limites de la voix temps réel non encore évalués.
+- modèle de stockage et chiffrement à durcir après BUILD-01 ;
+- scénarios sensibles à valider par des tests dédiés ;
+- migration sélective du prototype Pyto à réaliser sans duplication inutile ;
+- coûts et limites de la voix temps réel non évalués, fonctionnalité différée.
