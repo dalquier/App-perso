@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import { useNavigate } from "../routing";
+import { Link, useNavigate } from "../routing";
 import { useProjects } from "../data/ProjectsContext";
 import {
   makeExport,
@@ -187,6 +187,15 @@ export function Settings() {
             </div>
           </article>
         )}
+        <article>
+          <div>
+            <h2>Projets archivés</h2>
+            <p>Consultez les projets mis de côté et ouvrez leur fiche pour les restaurer.</p>
+          </div>
+          <Link className="secondary button" to="/settings/archived-projects">
+            Projets archivés
+          </Link>
+        </article>
         <article>
           <div>
             <h2>Diagnostic local</h2>

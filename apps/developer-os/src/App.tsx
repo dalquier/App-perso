@@ -1,5 +1,6 @@
 import { ProjectDetail } from "./pages/ProjectDetail";
 import { ProjectForm } from "./pages/ProjectForm";
+import { ArchivedProjects } from "./pages/ArchivedProjects";
 import { ProjectList } from "./pages/ProjectList";
 import { Settings } from "./pages/Settings";
 import { ProjectsProvider } from "./data/ProjectsContext";
@@ -30,6 +31,7 @@ export function App() {
                 "/projects/:id": <ProjectDetail />,
                 "/projects/:id/edit": <ProjectForm />,
                 "/settings": <Settings />,
+                "/settings/archived-projects": <ArchivedProjects />,
               }}
               fallback={
                 <section className="empty">

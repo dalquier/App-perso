@@ -39,6 +39,52 @@ describe("IndexedDB repository", () => {
     ).toEqual([second.id]);
   });
 
+  it("archives an active project atomically without activating another project", async () => {
+    const repo = make();
+    const active = createProject({ ...emptyDraft(), name: "Active", isActive: true });
+    const paused = createProject({ ...emptyDraft(), name: "Paused", status: "paused" });
+    await repo.save(active);
+    await repo.save(paused);
+
+    await repo.save({
+      ...active,
+      status: "archived",
+      isActive: false,
+      updatedAt: "2026-08-05T00:00:00.000Z",
+    });
+
+    const all = await repo.list();
+    expect(all.find((project) => project.id === active.id)).toEqual(
+      expect.objectContaining({ status: "archived", isActive: false }),
+    );
+    expect(all.every((project) => !project.isActive)).toBe(true);
+  });
+
+  it("restores an archived project as paused and inactive while preserving data", async () => {
+    const repo = make();
+    const archived = createProject({
+      ...emptyDraft(),
+      name: "Archive",
+      status: "archived",
+      lastKnownState: "Toutes les données",
+    });
+    await repo.save(archived);
+
+    await repo.save({
+      ...archived,
+      status: "paused",
+      isActive: false,
+      updatedAt: "2026-08-05T00:00:00.000Z",
+    });
+
+    expect(await repo.get(archived.id)).toEqual({
+      ...archived,
+      status: "paused",
+      isActive: false,
+      updatedAt: "2026-08-05T00:00:00.000Z",
+    });
+  });
+
   it("replaces all projects inside one transaction and clears explicitly", async () => {
     const repo = make();
     const project = createProject({ ...emptyDraft(), name: "Import" });

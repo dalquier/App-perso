@@ -12,6 +12,7 @@ export function ProjectList() {
     () =>
       projects.filter(
         (p) =>
+          p.status !== "archived" &&
           (filter === "all" || p.status === filter) &&
           `${p.name} ${p.aliases.join(" ")} ${p.nextAction} ${p.lastKnownState}`
             .toLowerCase()
@@ -19,7 +20,7 @@ export function ProjectList() {
       ),
     [projects, q, filter],
   );
-  const active = projects.find((p) => p.isActive);
+  const active = projects.find((p) => p.isActive && p.status !== "archived");
   return (
     <section>
       <div className="hero">
@@ -56,7 +57,7 @@ export function ProjectList() {
             onChange={(e) => setFilter(e.target.value as typeof filter)}
           >
             <option value="all">Tous les états</option>
-            {STATUSES.map((s) => (
+            {STATUSES.filter((status) => status !== "archived").map((s) => (
               <option key={s} value={s}>
                 {labels.status[s]}
               </option>

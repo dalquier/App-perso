@@ -102,6 +102,8 @@ export function RouterSwitch({
   const { path } = useRouter();
   if (routes[path]) return routes[path];
   if (path === "/projects/new") return routes["/projects/new"];
+  if (path === "/settings/archived-projects")
+    return routes["/settings/archived-projects"];
   if (/^\/projects\/[^/]+\/edit$/.test(path))
     return routes["/projects/:id/edit"];
   if (/^\/projects\/[^/]+$/.test(path)) return routes["/projects/:id"];
