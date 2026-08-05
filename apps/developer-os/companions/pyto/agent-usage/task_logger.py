@@ -14,9 +14,28 @@ class TaskLogger:
     def __init__(self, store: JsonlStore) -> None:
         self.store = store
 
+    def _latest_records(self) -> list[TaskRecord]:
+        """Return only the latest event for each task id, preserving event order."""
+        latest: dict[str, TaskRecord] = {}
+        order: list[str] = []
+        for task in self.store.tasks():
+            if task.task_id not in latest:
+                order.append(task.task_id)
+            latest[task.task_id] = task
+        return [latest[task_id] for task_id in order]
+
     def create_task(self, tool: str, project_id: str, title: str, source: str = "manual", started_at: str | None = None, notes: str | None = None) -> TaskRecord:
         when = parse_datetime(started_at, "started_at") if started_at else datetime.now().astimezone()
-        task = TaskRecord.create(task_id=next_identifier("task", [item.task_id for item in self.store.tasks()], when), tool=tool, project_id=project_id, title=title, started_at=when.isoformat(), status="planned", source=source, notes=notes)
+        task = TaskRecord.create(
+            task_id=next_identifier("task", [item.task_id for item in self.store.tasks()], when),
+            tool=tool,
+            project_id=project_id,
+            title=title,
+            started_at=when.isoformat(),
+            status="planned",
+            source=source,
+            notes=notes,
+        )
         self.store.add_task(task)
         return task
 
@@ -30,7 +49,16 @@ class TaskLogger:
         else:
             if tool is None or project_id is None or title is None:
                 raise ValidationError("tool, project_id and title are required")
-            task = TaskRecord.create(task_id=next_identifier("task", [item.task_id for item in self.store.tasks()], when), tool=tool, project_id=project_id, title=title, started_at=when.isoformat(), status="running", source=source, notes=notes)
+            task = TaskRecord.create(
+                task_id=next_identifier("task", [item.task_id for item in self.store.tasks()], when),
+                tool=tool,
+                project_id=project_id,
+                title=title,
+                started_at=when.isoformat(),
+                status="running",
+                source=source,
+                notes=notes,
+            )
         self.store.add_task(task)
         return task
 
@@ -53,17 +81,23 @@ class TaskLogger:
         return closed
 
     def active_task(self, tool: str | None = None, project_id: str | None = None) -> TaskRecord | None:
-        active = [t for t in self.store.tasks() if t.status == "running" and (tool is None or t.tool == tool) and (project_id is None or t.project_id == project_id)]
+        active = [
+            task
+            for task in self._latest_records()
+            if task.status == "running"
+            and (tool is None or task.tool == tool)
+            and (project_id is None or task.project_id == project_id)
+        ]
         return active[-1] if active else None
 
     def filter_tasks(self, week_start: str | None = None, tool: str | None = None, project_id: str | None = None) -> list[TaskRecord]:
-        tasks = self.store.tasks()
+        tasks = self._latest_records()
         if week_start:
             start = parse_datetime(week_start, "week_start")
             end = start + timedelta(days=7)
-            tasks = [t for t in tasks if start <= parse_datetime(t.started_at, "started_at") < end]
+            tasks = [task for task in tasks if start <= parse_datetime(task.started_at, "started_at") < end]
         if tool:
-            tasks = [t for t in tasks if t.tool == tool]
+            tasks = [task for task in tasks if task.tool == tool]
         if project_id:
-            tasks = [t for t in tasks if t.project_id == project_id]
+            tasks = [task for task in tasks if task.project_id == project_id]
         return tasks
