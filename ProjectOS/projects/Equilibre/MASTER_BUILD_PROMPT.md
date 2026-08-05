@@ -6,7 +6,7 @@
 - **Gouvernance** : `ProjectOS/projects/Equilibre/`
 - **Application** : `apps/equilibre/`
 - **Prototype historique** : `dalquier/Scriptable`, en lecture seule
-- **Dernière reconstruction** : 2026-08-04
+- **Dernière mise à jour** : 2026-08-05
 
 ## 1. Identité et vision
 
@@ -75,7 +75,7 @@ Le dossier `ProjectOS/projects/Equilibre/` ne contient pas les dépendances, art
 - `safety` : règles déterministes et formulations ;
 - `export` : export, suppression et restauration contrôlée.
 
-BUILD-01 est local-first, sans synchronisation sensible. Les messages originaux restent les sources primaires. Les données dérivées restent reliées à leurs sources. Recherche structurée et plein texte avant embeddings. Toute migration est versionnée, testée et réversible.
+La base intégrée jusqu’à BUILD-02 est local-first, sans synchronisation sensible. Les messages originaux restent les sources primaires. Les données dérivées restent reliées à leurs sources. Recherche structurée et plein texte avant embeddings. Toute migration est versionnée, testée et réversible.
 
 ## 7. Rôle des outils
 
@@ -108,13 +108,14 @@ Le prototype `dalquier/Scriptable/TCC_Budy` est chargé uniquement pour inventai
 
 ## 9. État vérifié
 
-- Vague 0 fusionnée par `dalquier/App-perso#5` ;
-- gouvernance Équilibre présente dans ProjectOS ;
-- prototype Pyto/WebView substantiel retrouvé dans `dalquier/Scriptable` ;
-- anciens documents Drive et 34 ADR historiques retrouvés ;
-- aucune PWA canonique encore créée ;
-- chemin applicatif décidé : `apps/equilibre/` ;
-- aucun déploiement Replit vérifié.
+- BUILD-01 intégré : socle PWA, séance guidée, persistance locale contrôlée, réglages et garde-fou sensible ;
+- BUILD-02 intégré par la PR #29 au commit `b115989fadd0f3e9f6b503c1b933df4d2b179827` ;
+- conversations locales persistantes, historique, reprise, renommage, suppression et modes conversationnels opérationnels ;
+- stockage version 2, migration BUILD-01 déterministe et protection des versions inconnues ;
+- génération locale progressive, interruption et isolation par conversation ;
+- 48 tests automatisés, build Vite et workflows GitHub réussis ;
+- recette Replit et recette physique iPhone réussies ;
+- aucun fournisseur OpenAI réel et aucune donnée distante dans BUILD-02.
 
 ## 10. Décisions prises
 
@@ -157,14 +158,11 @@ Préserver signifie comparer et documenter, pas copier aveuglément du Python da
 
 ## 13. Dettes connues
 
-- ancien nom `TCC Budy` dans le prototype ;
-- plusieurs instantanés historiques ;
-- aucune application sous `apps/equilibre/` ;
-- aucun test PWA ni CI ;
-- aucune séance guidée PWA vérifiée ;
-- mémoire avancée non construite ;
-- règles sensibles non testées exhaustivement ;
-- aucun déploiement Replit prouvé.
+- mémoire contrôlée et séances enrichies non construites ;
+- fournisseur OpenAI réel et backend sécurisé non construits ;
+- chiffrement, export et synchronisation future à cadrer ;
+- protocoles TCC et règles sensibles à étendre avant diffusion ;
+- dépendance actuelle au fournisseur local dégradé.
 
 ## 14. Critères d’acceptation globaux
 
@@ -220,56 +218,20 @@ Le dépôt `dalquier/App-perso` est public. Sont interdits : données personnell
 
 ## 18. Prochaine étape exacte
 
-Après fusion de la PR de reprise :
+Préparer `BUILD-03 — séances et mémoire contrôlée` depuis `main` à jour :
 
-1. créer `equilibre/build-01-minimal-pwa` depuis `main` ;
-2. créer `apps/equilibre/` dans cette branche ;
-3. inventorier le prototype historique ;
-4. produire la matrice `réutiliser / adapter / réécrire / différer / archiver` ;
-5. construire et tester le parcours minimal ;
-6. ouvrir une PR BUILD-01 ;
-7. importer la branche dans Replit ;
-8. effectuer le test iPhone réel.
+1. consolider les critères produit, données, TCC, sécurité et UX ;
+2. définir le modèle versionné des séances, résumés, plans d’action et éléments de mémoire ;
+3. garantir une mémoire proposée, confirmée, modifiable et supprimable ;
+4. préserver le local-first, la suppression totale, les migrations et le garde-fou déterministe ;
+5. définir les tests automatisés, la recette Replit et la recette iPhone avant implémentation ;
+6. réaliser BUILD-03 avec Codex sur une branche dédiée et une nouvelle Pull Request.
 
-## 19. Prompt Codex — BUILD-01
+## 19. Historique des Builds intégrés
 
-```text
-POS = Active ProjectOS depuis dalquier/App-perso.
-
-Charge ProjectOS/BOOTSTRAP.md et toutes les références obligatoires. Projet : equilibre / Équilibre. Charge le manifeste, la roadmap, le contrat de convergence, MASTER_BUILD_PROMPT.md, les ADR applicables et les standards de code, tests, qualité et handoff.
-
-Dépôt canonique : dalquier/App-perso.
-Gouvernance : ProjectOS/projects/Equilibre/.
-Application : apps/equilibre/.
-Prototype historique à inventorier sans modification : dalquier/Scriptable/TCC_Budy et instantanés associés.
-
-Mission : réaliser BUILD-01, la plus petite PWA réellement testable sur iPhone.
-Branche : equilibre/build-01-minimal-pwa
-
-Avant de coder :
-1. Vérifie main et les PR ouvertes.
-2. Confirme que la PR de reprise est fusionnée.
-3. Vérifie que apps/equilibre/ n’existe pas déjà ou inventorie son contenu avant modification.
-4. Inventorie le prototype historique et crée une matrice réutiliser / adapter / réécrire / différer / archiver.
-5. Ne stocke aucune donnée réelle et n’ajoute aucun secret.
-
-Périmètre obligatoire :
-- shell PWA installable ;
-- accueil simple ;
-- échange écrit avec simulateur local ;
-- séance guidée courte : situation, émotion, pensée, prochaine action ;
-- persistance locale versionnée ;
-- reprise de la dernière session ;
-- réglages de confidentialité ;
-- effacement des données ;
-- garde-fou sensible déterministe ;
-- tests automatisés ;
-- documentation Replit et test iPhone.
-
-Hors périmètre : API OpenAI réelle obligatoire, mémoire avancée, embeddings, cloud sensible, voix, comptes, dashboard riche, DeveloperOS et modification du prototype historique.
-
-Livraison : fichiers complets dans apps/equilibre/, tests exécutés, compte rendu ProjectOS temporaire, PR vers main, limites et retour arrière documentés.
-```
+- BUILD-01 : socle PWA minimal, séance guidée, confidentialité locale et garde-fou.
+- BUILD-02 : conversations persistantes locales, streaming interruptible, historique multi-conversations, migration versionnée et validation iPhone.
+- Les anciens prompts d’exécution BUILD-01/BUILD-02 sont historiques et ne doivent plus être utilisés comme instructions actives.
 
 ## 20. Ne pas faire
 
