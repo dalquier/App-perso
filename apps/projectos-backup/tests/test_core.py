@@ -36,9 +36,10 @@ class MirrorTests(unittest.TestCase):
     def test_legacy_zip_removed_after_success(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('a')
-            (dest/'Current').mkdir(parents=True); (dest/'Current'/'Old.zip').write_text('zip'); (dest/'ProjectOS-Backup-Current.zip').write_text('bundle')
+            (dest/'Current').mkdir(parents=True); (dest/'Current'/'Old.zip').write_text('zip'); (dest/'Current'/'keep').mkdir(); (dest/'Current'/'keep'/'note').write_text('safe'); (dest/'ProjectOS-Backup-Current.zip').write_text('bundle')
             run_backup([Source('one','Source',str(source))],dest)
             self.assertFalse((dest/'Current'/'Old.zip').exists()); self.assertFalse((dest/'ProjectOS-Backup-Current.zip').exists())
+            self.assertEqual((dest/'Current'/'keep'/'note').read_text(),'safe')
             self.assertEqual(json.loads((dest/'Current'/'MANIFEST.json').read_text())['schemaVersion'],2)
 
     def test_collision_and_layout(self):
@@ -51,6 +52,24 @@ class MirrorTests(unittest.TestCase):
     def test_walk_error(self):
         def broken(*args,**kwargs): kwargs['onerror'](OSError(5,'offline','/virtual')); return iter(())
         with patch.object(core.os,'walk',side_effect=broken):
-            with self.assertRaises(SourceAccessError): list(core.iter_source_files(Path('/virtual')))
+                with self.assertRaises(SourceAccessError): list(core.iter_source_files(Path('/virtual')))
+
+    def test_corrupt_mirror_is_repaired(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('good')
+            run_backup([Source('one','Source',str(source))],dest)
+            (dest/'Current'/'Source'/'a').write_text('evil')
+            result=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual(result.copied_files,1)
+            self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'good')
+
+    def test_interrupted_publish_is_recovered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); dest=root/'backup'; current=dest/'Current'; tx=dest/'Transaction'/'old'; rollback=tx/'rollback'/'Current'
+            current.mkdir(parents=True); rollback.mkdir(parents=True)
+            (current/'changed').write_text('partial'); (current/'created').write_text('new'); (rollback/'changed').write_text('stable')
+            (tx/'JOURNAL.json').write_text(json.dumps({'state':'applying','created':['Current/created']}))
+            core._recover_transactions(dest)
+            self.assertEqual((current/'changed').read_text(),'stable'); self.assertFalse((current/'created').exists())
 
 if __name__=='__main__': unittest.main()
