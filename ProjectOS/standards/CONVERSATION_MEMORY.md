@@ -27,7 +27,7 @@ Mémoire Codex : enregistrement activé.
 
 Aucune nouvelle question de consentement n’est requise avec Codex tant que cette décision n’est pas révoquée explicitement.
 
-Ce consentement couvre l’index, la chronologie, les synthèses de session et le transfert des décisions durables vers les références canoniques. Il ne déclenche pas automatiquement l’archivage du verbatim intégral : l’archive brute reste facultative, secondaire et dépend des capacités réelles d’export.
+Ce consentement couvre l’index, la chronologie, les synthèses, le transfert des décisions durables et l’archive intégrale définie dans `CONVERSATION_ARCHIVE_PIPELINE.md`. Pour Codex, le verbatim visible et tous les fichiers accessibles sont enregistrés directement dans Google Drive ; aucun export tardif ni transit iCloud n’est requis.
 
 Le consentement permanent est révocable à tout moment. Une révocation doit être appliquée immédiatement, versionnée dans ProjectOS et ne supprime pas rétroactivement les synthèses existantes sauf demande explicite de Damien.
 
@@ -58,9 +58,11 @@ Après une activation, automatique avec Codex ou ponctuelle après un `oui`, l�
    - `memory/CONVERSATION_INDEX.md` ;
    - `memory/PROJECT_TIMELINE.md` ;
    - uniquement les synthèses de sessions pertinentes ;
-4. crée ou prépare une entrée de session avec le statut `active` ;
-5. conserve uniquement une mémoire structurée et utile ;
-6. transfère les décisions durables vers les références canoniques appropriées.
+4. initialise le dossier Drive et son manifeste selon `CONVERSATION_ARCHIVE_PIPELINE.md` ;
+5. crée ou prépare une entrée de session avec le statut `active` ;
+6. capture ensuite chaque tour visible et chaque fichier accessible ;
+7. conserve dans GitHub uniquement l’index, la synthèse et les décisions durables ;
+8. transfère les décisions durables vers les références canoniques appropriées.
 
 L’activation ne vaut pas autorisation d’archiver des secrets, données personnelles sensibles, données médicales brutes ou contenus confidentiels inutiles.
 
@@ -148,7 +150,7 @@ Une synthèse autonome comprend :
 - limites, risques et contradictions ;
 - prochaine action ;
 - références canoniques mises à jour ;
-- état de l’archive brute : `non demandée`, `à exporter`, `archivée` ou `indisponible`.
+- dossier Drive privé, compteurs et état d’archive : `initializing`, `active`, `complete`, `partial`, `error` ou `revoked`.
 
 ## 10. Clôture
 
@@ -161,17 +163,19 @@ Pour une session enregistrée et significative, avant la réponse finale :
 5. distinguer les faits vérifiés des hypothèses ;
 6. indiquer ce qui n’a pas pu être archivé ou vérifié.
 
-## 11. Conversation brute
+## 11. Archive intégrale
 
-La conversation brute est une archive secondaire facultative.
+L’archive intégrale est une archive secondaire de continuité, jamais une source de vérité.
 
-Stockages recommandés :
+Répartition obligatoire :
 
-- iCloud Drive : boîte d’entrée depuis l’iPhone ;
-- Google Drive : archive durable lorsqu’une exportation est disponible ;
-- GitHub : index, chronologie et synthèses structurées uniquement.
+- GitHub : index, chronologie, synthèses et décisions durables uniquement ;
+- Google Drive : `conversation.jsonl`, `conversation.md`, `MANIFEST.json`, `attachments/` et `deliverables/` ;
+- iCloud Drive : aucun transit requis.
 
-Une archive brute ne doit jamais être nécessaire pour reprendre le projet.
+La capture commence dès l’activation et s’effectue tour par tour selon `CONVERSATION_ARCHIVE_PIPELINE.md`. Elle contient les messages visibles exacts, toutes les pièces jointes réellement accessibles et les livrables générés. Les raisonnements internes et instructions invisibles sont exclus.
+
+Une archive n’est `complete` que si la transcription depuis l’activation et tous les fichiers accessibles ont été vérifiés. Toute limite d’accès, panne de connecteur ou perte d’historique impose `partial` ou `error`, avec cause explicite. Une archive intégrale ne doit jamais être nécessaire pour reprendre le projet.
 
 ## 12. Sécurité
 

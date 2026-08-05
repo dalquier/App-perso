@@ -16,7 +16,7 @@ L’agent doit reprendre ce nom dans sa première réponse et demander à l’in
 
 Le régime de mémoire dépend de l’outil :
 
-- avec Codex, le consentement permanent du 5 août 2026 active automatiquement l’enregistrement ; l’identifiant de session est attribué dès l’amorçage et la première réponse se termine par `Mémoire Codex : enregistrement activé.` ;
+- avec Codex, le consentement permanent du 5 août 2026 active automatiquement la mémoire et l’archive Drive ; l’identifiant de session est attribué dès l’amorçage et la première réponse se termine par `Mémoire Codex : enregistrement activé.` ;
 - avec tout autre outil, la première réponse ProjectOS se termine par la question exacte `Enregistrer la conversation ?`, sans aucun texte après ; l’identifiant de session n’est attribué qu’après une réponse positive.
 
 ## Convention
@@ -45,7 +45,7 @@ Après activation de la mémoire, utiliser :
 SES-AAAAMMJJ-NNN
 ```
 
-L’identifiant doit apparaître dans l’index, la synthèse et les métadonnées d’archive lorsqu’elles existent.
+L’identifiant doit apparaître dans l’index, la synthèse et le manifeste Drive. Le dossier suit `App-perso/ProjectOS/Conversation-Archives/<Projet>/<année>/<Session>/`.
 
 ## Transmission
 

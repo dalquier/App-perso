@@ -7,4 +7,11 @@ Cette chronologie contient uniquement les événements structurants vérifiés d
 - Faits vérifiés : Damien a demandé l’enregistrement de toutes les conversations avec Codex et son intégration à ProjectOS.
 - Décision ou évolution : activation automatique de la mémoire structurée pour chaque conversation ProjectOS exécutée avec Codex ; consentement révocable ; archive brute non automatique.
 - Références GitHub : ADR-002 ; branche `agent/projectos-permanent-codex-memory` ; PR #30.
-- Prochaine action : relire puis fusionner explicitement la PR #30 si elle est conforme.
+- Résultat : PR #30 fusionnée dans `main`.
+
+## 2026-08-05 — Archive directe des conversations sélectionnées
+
+- Faits vérifiés : Damien choisit l’enregistrement pour ChatGPT et maintient l’enregistrement systématique pour Codex.
+- Décision ou évolution : GitHub reçoit seulement index et synthèses ; Google Drive reçoit directement transcription visible, pièces jointes accessibles, livrables et manifeste ; aucun transit iCloud.
+- Références GitHub : ADR-003 ; branche `agent/projectos-direct-drive-conversation-archive` ; PR #36.
+- Preuve Drive pilote : dossier privé `SES-20260805-002`, état `partial`.

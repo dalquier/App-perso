@@ -2,9 +2,10 @@
 
 > Ce registre contient les conversations dont l’enregistrement a été activé conformément à `standards/CONVERSATION_MEMORY.md`.
 
-| Session | Date | Outil | Nom de discussion | Axe | Statut | Branche / PR | Synthèse | Archive brute |
-|---|---|---|---|---|---|---|---|---|
-| `SES-20260805-001` | 2026-08-05 | Codex | ProjectOS — Mémoire Codex — Consentement permanent | Gouvernance de la mémoire | terminée | `agent/projectos-permanent-codex-memory` / PR #30 | `SESSION_SUMMARIES/SES-20260805-001.md` | non demandée |
+| Session | Date | Outil | Projet | Nom de discussion | Axe | Statut | Branche / PR | Synthèse | Dossier Drive | Archive | Messages | Pièces jointes |
+|---|---|---|---|---|---|---|---|---|---|---|---:|---:|
+| `SES-20260805-001` | 2026-08-05 | Codex | ProjectOS | ProjectOS — Mémoire Codex — Consentement permanent | Gouvernance de la mémoire | terminée | `agent/projectos-permanent-codex-memory` / PR #30 | `SESSION_SUMMARIES/SES-20260805-001.md` | — | non archivée | — | — |
+| `SES-20260805-002` | 2026-08-05 | Codex | ProjectOS | ProjectOS — Archive directe des conversations | Archivage conversationnel | terminée | `agent/projectos-direct-drive-conversation-archive` / PR #36 | `SESSION_SUMMARIES/SES-20260805-002.md` | [Drive](https://drive.google.com/drive/folders/1p-DbjbJ0TjDydgkay2r53g40Sv4JRk38) | partial | 3 | 0 |
 
 ## Statuts
 
@@ -14,3 +15,12 @@
 - `à vérifier`
 - `obsolète`
 - `aucune synthèse nécessaire`
+
+## États d’archive
+
+- `initializing`
+- `active`
+- `complete`
+- `partial`
+- `error`
+- `revoked`

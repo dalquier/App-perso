@@ -13,7 +13,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 - Avant chaque prompt opérationnel remis à Damien, annoncer l’outil le plus adapté, la raison du choix, le coût relatif, l’alternative moins coûteuse et la condition observable de bascule. Cette annonce reste distincte du prompt.
 - Toute tâche susceptible de produire une modification ou un artefact doit appliquer `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` avant la première modification. La capacité de livraison est un prérequis, et la récupération effective doit être prouvée avant de déclarer la tâche terminée.
 - Dans Codex Cloud, distinguer le sandbox terminal du mécanisme natif de publication GitHub : l’absence de `origin`, d’upstream, de `GH_TOKEN` ou d’authentification `gh` dans le terminal n’est pas bloquante lorsque l’environnement Codex est explicitement relié au dépôt et à la branche de base attendus.
-- La mémoire conversationnelle est régie par `standards/CONVERSATION_MEMORY.md`. Un consentement permanent spécifique à Codex est actif depuis le 5 août 2026 : toute conversation ProjectOS exécutée avec Codex est enregistrée automatiquement sous forme structurée, jusqu’à révocation explicite. Ce consentement permanent ne vaut pas demande d’archive brute.
+- La mémoire conversationnelle est régie par `standards/CONVERSATION_MEMORY.md` et l’archive intégrale par `standards/CONVERSATION_ARCHIVE_PIPELINE.md`. Un consentement permanent spécifique à Codex est actif depuis le 5 août 2026 : toute conversation ProjectOS exécutée avec Codex est enregistrée automatiquement, avec index et synthèse dans GitHub, puis transcription visible et fichiers accessibles directement dans Google Drive, jusqu’à révocation explicite.
 - Pendant l’amorçage d’une nouvelle conversation ProjectOS, les messages intermédiaires visibles par Damien doivent contenir uniquement une estimation concise du temps restant, au format `Temps restant estimé : <durée>.` Aucun détail sur les fichiers, outils, étapes ou résultats ne doit être affiché avant la première réponse.
 - Après l’amorçage, pour toute tâche ProjectOS nécessitant une attente perceptible, des outils ou plusieurs opérations, chaque message intermédiaire visible doit afficher uniquement une estimation actualisée au même format. Ne pas afficher de libellé de progression, d’étape, d’outil, de fichier, de résultat partiel ou de formule telle que `Réflexion en cours`. Cette règle concerne les messages produits par l’agent ; les indicateurs natifs non configurables de l’application restent hors de son contrôle.
 
@@ -29,7 +29,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 5. Charger `ProjectOS/standards/TOOLCHAIN_POLICY.md` pour toute demande liée à un projet logiciel.
 6. Charger `ProjectOS/standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` pour toute tâche susceptible de produire une modification, une branche, une Pull Request ou un artefact.
 7. Charger `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` pour toute tâche exécutée dans Codex Cloud ou publiée par l’interface native Codex.
-8. Charger `ProjectOS/standards/CONVERSATION_MEMORY.md` pour toute nouvelle conversation ProjectOS.
+8. Charger `ProjectOS/standards/CONVERSATION_MEMORY.md` et `ProjectOS/standards/CONVERSATION_ARCHIVE_PIPELINE.md` pour toute nouvelle conversation ProjectOS.
 9. Identifier le projet, l’objectif réel et le résultat attendu.
 10. Résoudre le projet dans `PROJECT_REGISTRY.md`.
 11. Charger son `PROJECT_MANIFEST.md`, s’il existe.
@@ -41,10 +41,10 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 17. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
 18. Dans la première réponse, présenter uniquement un état rapide des vérifications effectuées : source et branche, références obligatoires chargées, projet identifié ou niveau transverse, anomalies éventuelles et disponibilité pour poursuivre. Ne pas détailler le processus de chargement.
 19. Appliquer le régime de consentement défini dans `standards/CONVERSATION_MEMORY.md` :
-    - avec Codex, activer automatiquement l’enregistrement structuré au titre du consentement permanent du 5 août 2026, attribuer un identifiant de session et terminer la première réponse par `Mémoire Codex : enregistrement activé.` ;
+    - avec Codex, activer automatiquement la mémoire et l’archive intégrale au titre du consentement permanent du 5 août 2026, attribuer un identifiant de session, initialiser le dossier Drive selon le pipeline et terminer la première réponse par `Mémoire Codex : enregistrement activé.` ;
     - avec tout autre outil, terminer la première réponse par la question exacte `Enregistrer la conversation ?`, sans aucun texte après.
 20. Avec Codex, poursuivre sans demander de confirmation supplémentaire. Avec un autre outil, attendre la réponse `oui` ou `non` avant de créer tout artefact permanent de mémoire conversationnelle.
-21. Dès que la mémoire est activée, par consentement permanent Codex ou par réponse positive, charger sélectivement l’index, la chronologie et les synthèses pertinentes du projet.
+21. Dès que la mémoire est activée, par consentement permanent Codex ou par réponse positive, initialiser l’archive Drive, puis charger sélectivement l’index, la chronologie et les synthèses pertinentes du projet.
 22. Si la réponse est `non` dans un régime à consentement ponctuel, poursuivre sans mémoire conversationnelle et sans bloquer le traitement.
 23. Exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
 
@@ -58,7 +58,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 6. Documentation versionnée du projet.
 7. Documentation collaborative explicitement référencée sur Google Drive.
 8. Mémoire conversationnelle enregistrée et synthèses de session.
-9. Copies locales iCloud et historique conversationnel brut.
+9. Archive intégrale privée Google Drive et éventuelles copies locales iCloud.
 
 Une règle spécifique prévaut sur une règle générale dans son périmètre. Une instruction récente et explicite prévaut sur une instruction ancienne, sauf si elle compromet la sécurité ou l’intégrité des données.
 
@@ -79,7 +79,7 @@ Toujours charger :
 - `standards/TOOLCHAIN_POLICY.md` pour un projet logiciel ;
 - `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` pour toute tâche produisant une modification ou un artefact ;
 - `standards/CODEX_NATIVE_PUBLISHING.md` pour une tâche Codex Cloud ;
-- `standards/CONVERSATION_MEMORY.md` au démarrage d’une nouvelle conversation ProjectOS ;
+- `standards/CONVERSATION_MEMORY.md` et `standards/CONVERSATION_ARCHIVE_PIPELINE.md` au démarrage d’une nouvelle conversation ProjectOS ;
 - le manifeste du projet concerné, lorsqu’il existe.
 
 Après activation de l’enregistrement, charger seulement :

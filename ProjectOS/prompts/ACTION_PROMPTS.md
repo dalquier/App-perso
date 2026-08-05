@@ -21,7 +21,7 @@ Interprétation obligatoire de cet alias :
 3. suivre sa séquence de chargement dynamique ;
 4. utiliser les références vivantes, manifests et ADR résolus ;
 5. traiter ensuite la demande de l’utilisateur ;
-6. terminer la première réponse par `Enregistrer la conversation ?`.
+6. avec Codex, activer automatiquement la mémoire et l’archive Drive puis terminer par `Mémoire Codex : enregistrement activé.` ; avec ChatGPT ou un autre outil, terminer par `Enregistrer la conversation ?`.
 
 Dans le projet ChatGPT `App perso`, ProjectOS est déjà actif : les commandes ci-dessous peuvent être utilisées sans répéter la phrase d’activation.
 
@@ -66,7 +66,13 @@ Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, p
 ## Clôturer une session enregistrée
 
 ```text
-Clôture la session ProjectOS enregistrée. Mets à jour la synthèse, l’index et, si nécessaire, la chronologie. Transfère les décisions durables vers les références canoniques, distingue les faits vérifiés des hypothèses et indique l’état de l’archive brute.
+Clôture la session ProjectOS enregistrée. Vérifie l’archive Drive et son manifeste, mets à jour la synthèse, l’index et, si nécessaire, la chronologie. Transfère les décisions durables vers les références canoniques, distingue les faits vérifiés des hypothèses et signale tout élément manquant.
+```
+
+## Retrouver une conversation
+
+```text
+Retrouve la conversation ProjectOS correspondant à <description>. Recherche d’abord l’index et les synthèses GitHub, vérifie le manifeste Drive de la session sélectionnée, puis restitue la transcription et uniquement les pièces jointes demandées.
 ```
 
 ## Sauvegarder et vérifier

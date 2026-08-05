@@ -9,7 +9,7 @@
 - Replit Starter : environnement cloud d’exécution, de test, de stockage de travail, d’hébergement et de déploiement. Son agent IA n’est pas un outil de développement par défaut.
 - Pyto : compagnon permanent pour fonctions iPhone natives, automatisations locales, accès Fichiers/iCloud et utilitaires.
 - Scriptable : widgets et automatisations iOS simples lorsque JavaScript est le meilleur choix.
-- Google Drive : documents collaboratifs et sauvegardes, jamais source canonique du code.
+- Google Drive : documents collaboratifs, sauvegardes et archives conversationnelles intégrales privées ; jamais source canonique du code.
 - Canva : production et modification de supports visuels.
 - AppDeploy : création rapide d’applications web publiques lorsque pertinent.
 - OpenAI API : uniquement dans les applications créées ; ne remplace pas l’application ChatGPT ni Codex pendant le développement.
@@ -20,12 +20,13 @@
 2. Tout nouveau projet doit disposer d’un dépôt ou dossier canonique déclaré dans `PROJECT_REGISTRY.md` et son manifeste avant une livraison substantielle.
 3. Les fichiers complets d’un Build sont créés ou modifiés directement dans le dépôt canonique sur une branche dédiée.
 4. Les secrets restent dans les gestionnaires de secrets des plateformes.
-5. iCloud contient les données locales et les échanges avec Pyto, sans devenir une seconde branche éditable du code.
-6. Drive reçoit des archives horodatées et les documents Google natifs.
+5. iCloud contient les données locales et les échanges avec Pyto, sans devenir une seconde branche éditable du code ni un transit obligatoire pour les conversations.
+6. Drive reçoit des archives horodatées, les documents Google natifs et les archives conversationnelles directes définies dans `CONVERSATION_ARCHIVE_PIPELINE.md`.
 7. Les fichiers volumineux sont indexés ; seuls les fragments utiles sont chargés.
 8. Toute migration conserve une copie de retour arrière.
 9. Un ZIP, un export Pyto, un artefact Replit ou une copie locale est un moyen d’installation, de test ou de sauvegarde, jamais la livraison canonique.
 10. Tout changement durable effectué pendant un test Replit doit être reversé dans GitHub.
+11. Pour une conversation enregistrée, GitHub ne reçoit que l’index et la synthèse ; le verbatim et les fichiers vont directement dans `App-perso/ProjectOS/Conversation-Archives/<Projet>/<année>/<Session>/` sur Drive.
 
 ## Routage des développements
 
