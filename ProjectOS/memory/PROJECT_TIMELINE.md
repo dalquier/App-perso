@@ -1,10 +1,17 @@
 # ProjectOS — Chronologie
 
-Cette chronologie contient uniquement les événements structurants vérifiés de ProjectOS.
+Cette chronologie contient uniquement les événements structurants vérifiés.
 
 ## 2026-08-05 — Consentement permanent à la mémoire Codex
 
-- Faits vérifiés : Damien a demandé l’enregistrement de toutes les conversations avec Codex et son intégration à ProjectOS.
-- Décision ou évolution : activation automatique de la mémoire structurée pour chaque conversation ProjectOS exécutée avec Codex ; consentement révocable ; archive brute non automatique.
-- Références GitHub : ADR-002 ; branche `agent/projectos-permanent-codex-memory` ; PR #30.
-- Prochaine action : relire puis fusionner explicitement la PR #30 si elle est conforme.
+- Damien a demandé l’enregistrement de toutes les conversations ProjectOS avec Codex.
+- ADR-002 et PR #30, désormais fusionnée dans `main`.
+
+## 2026-08-05 — Archive directe des conversations sélectionnées
+
+- ChatGPT : consentement ponctuel pour chaque nouvelle conversation.
+- Codex : enregistrement systématique des conversations ProjectOS.
+- GitHub : index et synthèses uniquement.
+- Google Drive : transcription visible intégrale, pièces jointes, livrables et manifeste.
+- Architecture directe cloud, utilisable depuis l’iPhone, sans transit iCloud.
+- Référence : ADR-003 ; branche `agent/projectos-direct-drive-conversation-archive`.
