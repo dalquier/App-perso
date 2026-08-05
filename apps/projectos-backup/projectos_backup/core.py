@@ -98,7 +98,11 @@ def _inside(path: Path, parent: Path) -> bool:
 def validate_layout(sources: Iterable[Source], destination: Path):
     destination = destination.expanduser().resolve(strict=False)
     resolved = []
+    source_ids = set()
     for source in sources:
+        if source.source_id in source_ids:
+            raise UnsafeLayoutError(f"Identifiant de source dupliqué : {source.source_id}")
+        source_ids.add(source.source_id)
         path = _canonical(Path(source.path))
         if not path.is_dir():
             raise SourceAccessError(f"La source n'est pas un dossier : {source.label}")
@@ -182,11 +186,44 @@ def _write_json(path: Path, payload: dict) -> None:
     os.replace(temporary, path)
 
 
+def _recover_transactions(destination: Path) -> None:
+    """Rollback a publication interrupted by iOS terminating Pyto."""
+    transaction_root = destination / "Transaction"
+    if not transaction_root.exists():
+        return
+    for transaction in sorted(transaction_root.iterdir()):
+        if not transaction.is_dir():
+            continue
+        journal_path = transaction / "JOURNAL.json"
+        try:
+            journal = json.loads(journal_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            shutil.rmtree(transaction, ignore_errors=True)
+            continue
+        if journal.get("state") != "applying":
+            shutil.rmtree(transaction, ignore_errors=True)
+            continue
+        for relative in journal.get("created", []):
+            target = destination / relative
+            if target.is_file():
+                target.unlink(missing_ok=True)
+        rollback = transaction / "rollback"
+        if rollback.exists():
+            for backup in rollback.rglob("*"):
+                if backup.is_file():
+                    target = destination / backup.relative_to(rollback)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(backup, target)
+        _remove_empty(destination / "Current")
+        shutil.rmtree(transaction, ignore_errors=True)
+
+
 def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file: PrepareFile | None = None) -> BackupResult:
     """Make ``Current`` an exact mirror. Deletions occur only after a full readable scan."""
     destination = Path(destination).expanduser()
     resolved = validate_layout(tuple(sources), destination)
     destination.mkdir(parents=True, exist_ok=True)
+    _recover_transactions(destination)
     current = destination / "Current"
     current.mkdir(exist_ok=True)
     previous = _load_manifest(current / "MANIFEST.json")
@@ -218,7 +255,13 @@ def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file:
                 key = f"{source.source_id}:{relative}"
                 old = previous_files.get(key, ({}, {}))[1]
                 mirror = current / folder / relative
-                same = old.get("size") == stat.st_size and old.get("mtimeNs") == stat.st_mtime_ns and mirror.is_file() and mirror.stat().st_size == stat.st_size
+                same = (
+                    old.get("size") == stat.st_size
+                    and old.get("mtimeNs") == stat.st_mtime_ns
+                    and mirror.is_file()
+                    and mirror.stat().st_size == stat.st_size
+                    and sha256_file(mirror) == old.get("sha256")
+                )
                 if same:
                     digest = old["sha256"]; unchanged += 1
                 else:
@@ -234,12 +277,13 @@ def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file:
             if key not in desired:
                 obsolete.append(current / old_source["folder"] / old_file["path"])
         # Remove legacy ZIP/bundle artifacts during the first schema-v2 publication.
-        legacy = [p for p in current.iterdir() if p.name != "MANIFEST.json" and (not previous or p.suffix.lower() == ".zip")]
+        legacy = [p for p in current.iterdir() if p.is_file() and p.suffix.lower() == ".zip"]
         global_bundle = destination / "ProjectOS-Backup-Current.zip"
         if global_bundle.exists(): legacy.append(global_bundle)
 
         changed_targets = [(p, current / p.relative_to(staged)) for p in staged.rglob("*") if p.is_file()]
-        affected = list(dict.fromkeys([target for _, target in changed_targets] + obsolete + legacy))
+        manifest_path = current / "MANIFEST.json"
+        affected = list(dict.fromkeys([target for _, target in changed_targets] + obsolete + legacy + [manifest_path]))
         created = []
         for target in affected:
             if target.exists():
@@ -247,7 +291,15 @@ def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file:
                 backup = rollback / rel
                 backup.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(target, backup)
-            else: created.append(target)
+            else:
+                created.append(target)
+        _write_json(
+            transaction / "JOURNAL.json",
+            {
+                "state": "applying",
+                "created": [str(path.relative_to(destination)) for path in created],
+            },
+        )
         try:
             for source_file, target in changed_targets:
                 target.parent.mkdir(parents=True, exist_ok=True)
@@ -259,12 +311,7 @@ def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file:
             manifest = {"schemaVersion": SCHEMA_VERSION, "appVersion": APP_VERSION, "status": "complete", "runId": run_id, "createdAt": utc_now(), "sourceCount": len(inventory), "fileCount": sum(s["fileCount"] for s in inventory), "sources": inventory}
             _write_json(current / "MANIFEST.json", manifest)
         except Exception as exc:
-            for target in created:
-                if target.is_file(): target.unlink(missing_ok=True)
-            for backup in rollback.rglob("*"):
-                if backup.is_file():
-                    target = destination / backup.relative_to(rollback)
-                    target.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(backup, target)
+            _recover_transactions(destination)
             raise BackupError(f"Publication annulée, sauvegarde précédente restaurée : {exc}") from exc
         _remove_empty(current)
         shutil.rmtree(transaction, ignore_errors=True)
