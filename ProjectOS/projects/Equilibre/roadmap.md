@@ -32,11 +32,11 @@ Sortie : spécification consolidée et plan `BUILD-01`.
 
 ## Jalon C — BUILD-01, socle PWA
 
-Créer le dépôt ou dossier applicatif canonique, le shell PWA, la configuration, la persistance minimale, les diagnostics et la CI.
+Statut : intégré. Le dossier applicatif canonique, le shell PWA, la persistance locale contrôlée, la séance guidée, les réglages et le garde-fou sensible sont présents dans `apps/equilibre/`.
 
 ## Jalon D — BUILD-02, conversation écrite
 
-Livrer le chat persistant, le streaming, la reprise et les modes conversationnels de base.
+Statut : en correction après audit, puis en attente de validation. Le chat persistant, le streaming local, la reprise et les modes conversationnels de base sont dans la PR, avec corrections de migration, confidentialité, interruption, isolation des générations et stockage inconnu. La recette Replit et la recette iPhone physique restent à exécuter avant passage de jalon.
 
 ## Jalon E — BUILD-03, séances et mémoire contrôlée
 

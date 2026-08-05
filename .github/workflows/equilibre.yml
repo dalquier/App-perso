@@ -1,0 +1,28 @@
+name: Équilibre
+
+on:
+  pull_request:
+    paths:
+      - "apps/equilibre/**"
+      - ".github/workflows/equilibre.yml"
+  push:
+    paths:
+      - "apps/equilibre/**"
+      - ".github/workflows/equilibre.yml"
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/equilibre
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/equilibre/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

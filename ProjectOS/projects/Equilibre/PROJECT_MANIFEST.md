@@ -5,7 +5,7 @@
 - ID stable : `equilibre`
 - Nom produit : Équilibre
 - Alias historiques : TCC Budy, TCC Buddy, TCC_Budy, compagnon TCC
-- Statut : reprise définie — préparation de BUILD-01
+- Statut : BUILD-01 intégré ; BUILD-02 en correction et en attente de validation
 - Propriétaire : Damien
 
 ## Vision
@@ -60,7 +60,7 @@ Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; 
 
 ## Prochain jalon
 
-`BUILD-01 — PWA minimale testable` : créer `apps/equilibre/`, produire une PWA installable sur iPhone, intégrer un simulateur local, une séance guidée courte, une persistance locale contrôlée, la reprise, les réglages de confidentialité et un garde-fou sensible.
+`BUILD-02 — conversations persistantes locales` : corriger les régressions bloquantes après audit, conserver BUILD-01 intégré, puis exécuter la recette Replit et la recette iPhone physique avant validation.
 
 ## Définition de terminé de la reprise
 
@@ -74,9 +74,9 @@ Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; 
 
 ## Risques ouverts
 
-- `apps/equilibre/` n’existe pas encore avant BUILD-01 ;
+- recette Replit et recette iPhone physique encore non exécutées pour BUILD-02 ;
 - dépôt `dalquier/App-perso` public : interdiction stricte de versionner données réelles, secrets, historiques ou exports ;
 - exigences cliniques et réglementaires à préciser avant diffusion à des tiers ;
-- stockage et chiffrement à durcir après BUILD-01 ;
+- stockage et chiffrement à durcir après BUILD-02 ;
 - scénarios sensibles à valider par des tests dédiés ;
 - migration sélective du prototype Pyto à réaliser sans duplication inutile.
