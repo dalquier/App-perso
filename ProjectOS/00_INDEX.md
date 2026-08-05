@@ -28,16 +28,18 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/TESTING.md` : stratégie de tests et preuves d’exécution.
 - `standards/AGENT_HANDOFFS.md` : transmissions temporaires et livraisons récupérables des agents.
 - `standards/CONVERSATION_NAMING.md` : convention obligatoire de nommage des discussions ChatGPT et Codex.
-- `standards/CONVERSATION_MEMORY.md` : consentement, indexation, synthèse et archivage de la mémoire conversationnelle.
+- `standards/CONVERSATION_MEMORY.md` : consentement, indexation, synthèse et archivage sélectif de la mémoire conversationnelle.
 
 ## Décisions transverses
 
 - `ADR/ADR-001-FRUGAL-DEVELOPMENT-TOOLCHAIN.md` : ChatGPT et Codex développent ; Replit Starter exécute, teste, stocke et déploie.
 - `ADR/ADR-002-PERMANENT-CODEX-CONVERSATION-MEMORY.md` : consentement permanent à l’enregistrement structuré de toutes les conversations ProjectOS exécutées avec Codex.
+- `ADR/ADR-003-SELECTIVE-CONVERSATION-ARCHIVING.md` : archivage sélectif sur Google Drive des conversations ProjectOS enregistrées et de leurs fichiers associés.
 
 ## Guides
 
 - `guides/SHORTCUT_AGENT_HANDOFF.md` : flux iOS Raccourcis pour collecter et classer les livraisons d’agents.
+- `guides/CONVERSATION_ARCHIVING.md` : préparation, téléversement, vérification, indexation et récupération des archives de conversations.
 
 ## Prompts
 
@@ -63,6 +65,7 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 - `templates/CONVERSATION_INDEX.md` : registre type des conversations enregistrées.
 - `templates/PROJECT_TIMELINE.md` : chronologie structurante type.
 - `templates/SESSION_SUMMARY.md` : synthèse autonome type d’une session.
+- `templates/CONVERSATION_ARCHIVE_MANIFEST.json.example` : inventaire et preuve d’intégrité d’une archive Drive.
 - Les modèles ADR, roadmap et documents complémentaires peuvent être ajoutés sans modifier `BOOTSTRAP.md`, à condition d’être indexés ici.
 
 ## Archives
@@ -84,10 +87,10 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 
 ## Stockages
 
-- GitHub : code, règles, manifests, ADR, documentation versionnée, index et synthèses conversationnelles.
+- GitHub : code, règles, manifests, ADR, documentation versionnée, index et synthèses conversationnelles ; jamais le verbatim ou les pièces jointes non canoniques d’une archive de conversation.
 - Working Copy : copie Git locale sur iPhone.
-- iCloud Drive : fichiers locaux, échanges Pyto et boîte d’entrée éventuelle des exports de conversation.
-- Google Drive : documents collaboratifs, corpus, sauvegardes horodatées et archives brutes lorsqu’elles sont explicitement exportées.
+- iCloud Drive : données locales, échanges Pyto et boîte d’entrée temporaire des exports de conversation.
+- Google Drive : documents collaboratifs, sauvegardes horodatées et archives vérifiées des seules conversations ProjectOS enregistrées, avec leurs fichiers associés non canoniques.
 - Replit Starter : environnement d’exécution, de test, de stockage de travail et de déploiement ; jamais source canonique.
 
 Une sauvegarde Drive ou Replit et une archive brute de conversation ne sont jamais une source de vérité.
