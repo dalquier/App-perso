@@ -302,4 +302,7 @@ app.addEventListener("submit", (event) => {
 });
 
 render();
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
+if ("serviceWorker" in navigator) window.addEventListener("load", async () => {
+  const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+  await registration.update();
+});
