@@ -17,6 +17,7 @@ import re
 import shutil
 import time
 from typing import Iterable
+import unicodedata
 import zipfile
 
 
@@ -90,7 +91,8 @@ def unique_suffix() -> str:
 
 
 def sanitize_name(value: str) -> str:
-    normalized = re.sub(r"[^A-Za-z0-9._-]+", "-", value.strip()).strip(".-")
+    ascii_value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    normalized = re.sub(r"[^A-Za-z0-9._-]+", "-", ascii_value.strip()).strip(".-")
     return normalized or "source"
 
 
@@ -142,7 +144,12 @@ def validate_layout(sources: Iterable[Source], destination: Path) -> tuple[tuple
 
 def iter_source_files(root: Path) -> Iterable[tuple[Path, str]]:
     """Yield regular files in deterministic order without following symlinks."""
-    for current, directories, filenames in os.walk(root, topdown=True, followlinks=False):
+    def fail_on_walk_error(error: OSError) -> None:
+        raise SourceAccessError(f"Lecture impossible : {error.filename or root}") from error
+
+    for current, directories, filenames in os.walk(
+        root, topdown=True, onerror=fail_on_walk_error, followlinks=False
+    ):
         current_path = Path(current)
         directories[:] = sorted(
             name
@@ -165,10 +172,17 @@ def build_source_archive(source: Source, root: Path, output: Path, run_id: str) 
     try:
         with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
             for path, relative in iter_source_files(root):
-                digest = sha256_file(path)
-                size = path.stat().st_size
-                archive.write(path, arcname=f"files/{relative}")
-                records.append(FileRecord(relative, size, digest))
+                digest = hashlib.sha256()
+                size = 0
+                with path.open("rb") as source_handle, archive.open(f"files/{relative}", "w") as target:
+                    while True:
+                        chunk = source_handle.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        target.write(chunk)
+                        digest.update(chunk)
+                        size += len(chunk)
+                records.append(FileRecord(relative, size, digest.hexdigest()))
             source_manifest = {
                 "schemaVersion": SCHEMA_VERSION,
                 "appVersion": APP_VERSION,
@@ -190,11 +204,7 @@ def build_source_archive(source: Source, root: Path, output: Path, run_id: str) 
         output.unlink(missing_ok=True)
         raise SourceAccessError(f"Lecture impossible dans {source.label}: {exc}") from exc
 
-    with zipfile.ZipFile(output, "r") as archive:
-        bad = archive.testzip()
-        if bad is not None or "SOURCE_MANIFEST.json" not in archive.namelist():
-            output.unlink(missing_ok=True)
-            raise BackupError(f"Archive invalide pour {source.label}: {bad or 'manifeste absent'}")
+    verify_source_archive(output, source.label)
 
     return ArchiveRecord(
         source_id=source.source_id,
@@ -205,6 +215,34 @@ def build_source_archive(source: Source, root: Path, output: Path, run_id: str) 
         archive_bytes=output.stat().st_size,
         sha256=sha256_file(output),
     )
+
+
+def verify_source_archive(path: Path, label: str = "source") -> None:
+    """Verify CRC, inventory, byte counts and hashes from the bytes stored in ZIP."""
+    try:
+        with zipfile.ZipFile(path, "r") as archive:
+            bad = archive.testzip()
+            if bad is not None or "SOURCE_MANIFEST.json" not in archive.namelist():
+                raise BackupError(f"Archive invalide pour {label}: {bad or 'manifeste absent'}")
+            manifest = json.loads(archive.read("SOURCE_MANIFEST.json").decode("utf-8"))
+            records = manifest.get("files")
+            if not isinstance(records, list) or manifest.get("fileCount") != len(records):
+                raise BackupError(f"Inventaire incohérent pour {label}")
+            for record in records:
+                member = f"files/{record['path']}"
+                digest = hashlib.sha256()
+                size = 0
+                with archive.open(member, "r") as handle:
+                    while True:
+                        chunk = handle.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        digest.update(chunk)
+                        size += len(chunk)
+                if size != record.get("size") or digest.hexdigest() != record.get("sha256"):
+                    raise BackupError(f"Empreinte invalide pour {label}/{record['path']}")
+    except (KeyError, json.JSONDecodeError, OSError, zipfile.BadZipFile) as exc:
+        raise BackupError(f"Archive illisible pour {label}: {exc}") from exc
 
 
 def _write_json_atomic(path: Path, payload: dict) -> None:
@@ -218,7 +256,7 @@ def _write_json_atomic(path: Path, payload: dict) -> None:
 
 def _make_bundle(candidate: Path, run_id: str) -> Path:
     bundle = candidate.parent / "ProjectOS-Backup-Current.zip"
-    with zipfile.ZipFile(bundle, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+    with zipfile.ZipFile(bundle, "w", compression=zipfile.ZIP_STORED) as archive:
         for path in sorted(candidate.iterdir(), key=lambda item: item.name):
             if path.is_file():
                 archive.write(path, arcname=f"Current/{path.name}")
@@ -233,19 +271,29 @@ def _publish_candidate(destination: Path, candidate: Path, bundle: Path, run_id:
     current_bundle = destination / "ProjectOS-Backup-Current.zip"
     previous = destination / f".previous-{run_id}"
     previous_bundle = destination / f".previous-{run_id}.zip"
+    moved_current = False
+    moved_bundle = False
+    installed_current = False
+    installed_bundle = False
     try:
         if current.exists():
             os.replace(current, previous)
+            moved_current = True
         if current_bundle.exists():
             os.replace(current_bundle, previous_bundle)
+            moved_bundle = True
         os.replace(candidate, current)
+        installed_current = True
         os.replace(bundle, current_bundle)
+        installed_bundle = True
     except OSError as exc:
-        if current.exists() and not previous.exists():
+        if installed_current and current.exists():
             shutil.rmtree(current, ignore_errors=True)
-        if previous.exists() and not current.exists():
+        if installed_bundle and current_bundle.exists():
+            current_bundle.unlink(missing_ok=True)
+        if moved_current and previous.exists():
             os.replace(previous, current)
-        if previous_bundle.exists() and not current_bundle.exists():
+        if moved_bundle and previous_bundle.exists():
             os.replace(previous_bundle, current_bundle)
         raise BackupError(f"Publication atomique impossible : {exc}") from exc
     shutil.rmtree(previous, ignore_errors=True)
@@ -253,11 +301,48 @@ def _publish_candidate(destination: Path, candidate: Path, bundle: Path, run_id:
     return current, current_bundle
 
 
+def _recover_interrupted_publish(destination: Path) -> None:
+    """Restore the previous pair when an earlier process stopped mid-publication."""
+    current = destination / "Current"
+    current_bundle = destination / "ProjectOS-Backup-Current.zip"
+    previous_directories = sorted(destination.glob(".previous-*"), key=lambda item: item.name)
+    previous_directories = [item for item in previous_directories if item.is_dir()]
+    for previous in previous_directories:
+        suffix = previous.name.removeprefix(".previous-")
+        previous_bundle = destination / f".previous-{suffix}.zip"
+        if current.exists() and current_bundle.exists():
+            shutil.rmtree(previous, ignore_errors=True)
+            previous_bundle.unlink(missing_ok=True)
+            continue
+        if current.exists():
+            shutil.rmtree(current, ignore_errors=True)
+        if current_bundle.exists() and previous_bundle.exists():
+            current_bundle.unlink(missing_ok=True)
+        os.replace(previous, current)
+        if previous_bundle.exists():
+            os.replace(previous_bundle, current_bundle)
+    if current.exists() and current_bundle.exists():
+        for orphan in destination.glob(".previous-*.zip"):
+            orphan.unlink(missing_ok=True)
+
+
+def _clean_staging(destination: Path) -> None:
+    staging = destination / "Staging"
+    if not staging.exists():
+        return
+    for child in staging.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child, ignore_errors=True)
+        else:
+            child.unlink(missing_ok=True)
+
+
 def run_backup(sources: Iterable[Source], destination: str | Path) -> BackupResult:
     """Build, verify and publish one current snapshot for all active sources."""
     destination_path = Path(destination).expanduser()
-    destination_path.mkdir(parents=True, exist_ok=True)
     resolved = validate_layout(tuple(sources), destination_path)
+    destination_path.mkdir(parents=True, exist_ok=True)
+    _recover_interrupted_publish(destination_path)
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + unique_suffix()
     run_root = destination_path / "Staging" / run_id
     candidate = run_root / "Current"
@@ -294,6 +379,7 @@ def run_backup(sources: Iterable[Source], destination: str | Path) -> BackupResu
         current, current_bundle = _publish_candidate(destination_path, candidate, bundle, run_id)
         bundle_sha256 = sha256_file(current_bundle)
         shutil.rmtree(run_root, ignore_errors=True)
+        _clean_staging(destination_path)
         return BackupResult(
             status="complete",
             run_id=run_id,
