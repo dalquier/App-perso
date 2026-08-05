@@ -3,6 +3,7 @@ import { answerSession, createSession } from "../src/domain/session.js";
 import { addMessage, changeConversationMode, createConversation, createMessage, MESSAGE_STATUS, renameConversation, updateMessage } from "../src/domain/conversation.js";
 import { createLocalConversationProvider, DEFAULT_LOCAL_STREAM_DELAY_MS } from "../src/providers/conversationProvider.js";
 import { isIOSDevice, isStandaloneDisplay, localStorageContextNotice } from "../src/platform/displayMode.js";
+import { scrollChatToBottom } from "../src/platform/viewport.js";
 import { detectSensitiveContent, SAFETY_MESSAGE } from "../src/safety/sensitiveGuard.js";
 import { BUILD01_BACKUP_KEY, createStore, defaultState, migrateBuild01, migrateState, STORAGE_KEY, STORAGE_VERSION } from "../src/storage/localStore.js";
 
@@ -55,6 +56,23 @@ describe("contexte local Safari et PWA", () => {
   it("explique la séparation des espaces locaux dans Safari", () => expect(localStorageContextNotice(safariIOS)?.body).toContain("deux espaces locaux distincts"));
   it("explique l'absence de transfert automatique dans la PWA", () => expect(localStorageContextNotice(pwaIOS)?.body).toContain("ne sont pas transférées automatiquement"));
   it("n'affiche pas la note iPhone sur les autres plateformes", () => expect(localStorageContextNotice({ navigator: { userAgent: "Desktop" } })).toBeNull());
+});
+
+describe("affichage du fil", () => {
+  it("recale la dernière réponse après chaque rendu", () => {
+    const scrollIntoView = vi.fn();
+    const scrollTo = vi.fn();
+    const schedule = vi.fn((callback) => callback());
+    const root = {
+      documentElement: { scrollHeight: 2400 },
+      defaultView: { scrollTo },
+      querySelector: () => ({ lastElementChild: { scrollIntoView } }),
+    };
+    scrollChatToBottom(root, schedule);
+    expect(schedule).toHaveBeenCalledOnce();
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "end", behavior: "auto" });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 2400, behavior: "auto" });
+  });
 });
 
 describe("séance guidée et garde-fou", () => {

@@ -13,6 +13,7 @@ import {
 } from "./domain/conversation.js";
 import { createLocalConversationProvider } from "./providers/conversationProvider.js";
 import { localStorageContextNotice } from "./platform/displayMode.js";
+import { scrollChatToBottom } from "./platform/viewport.js";
 import { detectSensitiveContent, SAFETY_MESSAGE } from "./safety/sensitiveGuard.js";
 import { createStore, defaultState } from "./storage/localStore.js";
 
@@ -71,11 +72,11 @@ export function interruptConversationGeneration(currentState, conversationId, re
 
 const activeConversation = () => state.conversations.find((c) => c.id === state.activeConversationId) || null;
 const persist = () => store.save(state);
+
 const refresh = () => {
-  render();
+  render({ followChat: view === "chat" });
   requestAnimationFrame(() => {
     document.querySelector("main")?.focus();
-    document.querySelector(".chat-log")?.scrollTo(0, 999999);
   });
 };
 const setView = (nextView) => { view = nextView; refresh(); };
@@ -111,7 +112,7 @@ function homeView() {
 }
 
 function conversationsView() {
-  const rows = state.conversations.map((c) => `<article class="conversation-row ${c.id === state.activeConversationId ? "active" : ""}"><button data-open-conversation="${c.id}"><strong>${escapeHtml(c.title)}</strong><small>${CONVERSATION_MODES[c.mode]?.label} · ${c.messages.length} message(s)</small><small>Modifiée ${new Date(c.updatedAt).toLocaleString("fr-FR")}</small></button><button class="mini" data-rename-conversation="${c.id}">Renommer</button><button class="mini danger" data-delete-conversation="${c.id}">Supprimer</button></article>`).join("");
+  const rows = state.conversations.map((c) => `<article class="conversation-row ${c.id === state.activeConversationId ? "active" : ""}"><button data-open-conversation="${c.id}"><strong>${escapeHtml(c.title)}</strong><small>${CONVERSATION_MODES[c.mode]?.label} · ${c.messages.length} message(s) · ${new Date(c.updatedAt).toLocaleString("fr-FR")}</small></button><button class="mini" data-rename-conversation="${c.id}" aria-label="Renommer ${escapeHtml(c.title)}">Renommer</button><button class="mini danger" data-delete-conversation="${c.id}" aria-label="Supprimer ${escapeHtml(c.title)}">Supprimer</button></article>`).join("");
   return `<section class="page-heading"><button class="back" data-view="home">←</button><div><p class="eyebrow">Reprise</p><h1>Conversations</h1></div><button class="small-primary" data-new-conversation aria-label="Nouvelle conversation">＋</button></section><div class="conversation-list">${rows || `<div class="empty-state"><span>✦</span><h2>Aucune conversation</h2><p>Créez un premier échange. Il restera disponible dans cet espace local.</p></div>`}</div>`;
 }
 
@@ -119,7 +120,7 @@ function chatView() {
   const conversation = ensureConversation();
   const generating = conversation.messages.some((m) => [MESSAGE_STATUS.generating, MESSAGE_STATUS.partial].includes(m.status));
   const messages = conversation.messages.map((m) => `<div class="message ${m.role} ${m.status}"><small>${m.role === "user" ? "Vous" : m.provenance === "safety-guard" ? "Garde-fou" : `Équilibre · ${m.status}`}</small><p>${escapeHtml(m.content)}</p>${m.errorRef ? `<small>Référence : ${escapeHtml(m.errorRef)}</small>` : ""}</div>`).join("");
-  return `<section class="page-heading"><button class="back" data-view="home">←</button><div><p class="eyebrow">${provider.degraded ? "Mode local" : "Fournisseur"}</p><h1>${escapeHtml(conversation.title)}</h1></div></section><label class="mode-picker">Mode<select id="mode-select">${Object.entries(CONVERSATION_MODES).map(([key, m]) => `<option value="${key}" ${conversation.mode === key ? "selected" : ""}>${m.label}</option>`).join("")}</select></label><div class="chat-log" aria-live="polite">${messages || `<div class="empty-state"><span>✦</span><h2>Écrivez quelques mots</h2><p>Le fil, son mode et les messages resteront ordonnés après réouverture.</p></div>`}</div><form class="composer" id="chat-form"><textarea id="chat-input" maxlength="1500" rows="2" placeholder="Écrivez ici…" ${generating ? "disabled" : "required"}></textarea>${generating ? `<button type="button" data-stop-generation="${conversation.id}">Stop</button>` : `<button type="submit">↑</button>`}</form>`;
+  return `<div class="chat-toolbar"><section class="page-heading chat-heading"><button class="back" data-view="home">←</button><div><p class="eyebrow">${provider.degraded ? "Mode local" : "Fournisseur"}</p><h1>${escapeHtml(conversation.title)}</h1></div></section><label class="mode-picker">Mode<select id="mode-select">${Object.entries(CONVERSATION_MODES).map(([key, m]) => `<option value="${key}" ${conversation.mode === key ? "selected" : ""}>${m.label}</option>`).join("")}</select></label></div><div class="chat-log" aria-live="polite">${messages || `<div class="empty-state"><span>✦</span><h2>Écrivez quelques mots</h2><p>Le fil, son mode et les messages resteront ordonnés après réouverture.</p></div>`}</div><form class="composer" id="chat-form"><textarea id="chat-input" maxlength="1500" rows="2" placeholder="Écrivez ici…" ${generating ? "disabled" : "required"}></textarea>${generating ? `<button type="button" data-stop-generation="${conversation.id}">Stop</button>` : `<button type="submit">↑</button>`}</form>`;
 }
 
 function sessionView() {
@@ -136,12 +137,13 @@ function settingsView() {
   return `<section class="page-heading"><button class="back" data-view="home">←</button><div><p class="eyebrow">Vos choix</p><h1>Confidentialité</h1></div></section><section class="settings-list"><label class="setting"><span><strong>Enregistrer sur cet appareil</strong><small>Désactiver efface les données sauvegardées et en mémoire.</small></span><input id="save-setting" type="checkbox" ${state.settings.saveLocally ? "checked" : ""}></label><label class="setting"><span><strong>Apparence</strong><small>Clair, sombre ou système.</small></span><select id="theme-setting"><option value="system">Système</option><option value="light">Clair</option><option value="dark">Sombre</option></select></label></section><section class="danger-zone"><h2>Vos données</h2><p>Supprime conversations, messages, séance et réglages locaux.</p><button id="clear-data" class="danger-button">Effacer toutes mes données</button></section>`;
 }
 
-function render() {
+function render({ followChat = false } = {}) {
   const content = view === "chat" ? chatView() : view === "conversations" ? conversationsView() : view === "session" ? sessionView() : view === "settings" ? settingsView() : homeView();
   app.innerHTML = shell(content);
   document.documentElement.dataset.theme = state.settings.theme;
   const theme = document.querySelector("#theme-setting");
   if (theme) theme.value = state.settings.theme;
+  if (followChat) scrollChatToBottom();
 }
 
 async function generateReply(conversationId, assistantId) {
@@ -157,7 +159,7 @@ async function generateReply(conversationId, assistantId) {
         provenance: provider.id,
       }));
       persist();
-      if (activeConversation()?.id === conversationId) render();
+      if (activeConversation()?.id === conversationId) render({ followChat: true });
     }
   } catch (error) {
     if (!generations.has(conversationId)) return;
@@ -173,7 +175,7 @@ async function generateReply(conversationId, assistantId) {
     persist();
   } finally {
     generations.delete(conversationId);
-    render();
+    render({ followChat: activeConversation()?.id === conversationId && view === "chat" });
   }
 }
 
