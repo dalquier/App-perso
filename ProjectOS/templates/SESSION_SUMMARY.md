@@ -3,7 +3,7 @@
 - Date :
 - Projet :
 - Outil / agent :
-- Consentement : oui
+- Consentement : permanent Codex / ponctuel oui
 - Statut : active / terminée / interrompue / à vérifier
 - Branche :
 - Pull Request :
