@@ -1,10 +1,10 @@
-# <Session ID> — <Nom>
+# <Session ID> — <Nom de discussion>
 
 - Date :
 - Projet :
-- Outil :
+- Outil / agent :
 - Consentement : permanent Codex / ponctuel oui
-- Statut :
+- Statut : active / terminée / interrompue / à vérifier
 - Branche :
 - Pull Request :
 - Dossier Drive privé :
@@ -29,7 +29,7 @@
 
 ## Résultats
 
-## Limites, manques et contradictions
+## Limites, manques, risques et contradictions
 
 ## Références canoniques mises à jour
 
