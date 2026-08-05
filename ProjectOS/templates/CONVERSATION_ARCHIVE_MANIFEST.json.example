@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "session_id": "SES-AAAAMMJJ-NNN",
+  "project_id": "ProjectOS",
+  "source_tool": "Codex",
+  "date": "AAAA-MM-JJ",
+  "archive_status": "a_preparer",
+  "drive_folder_url": "",
+  "github_summary_path": "ProjectOS/memory/SESSION_SUMMARIES/SES-AAAAMMJJ-NNN.md",
+  "conversation_export": {
+    "status": "indisponible",
+    "path": ""
+  },
+  "files": [
+    {
+      "role": "attachment",
+      "path": "attachments/exemple.ext",
+      "size_bytes": 0,
+      "sha256": "",
+      "canonical_source": ""
+    }
+  ],
+  "file_count": 0,
+  "total_size_bytes": 0,
+  "bundle_path": "",
+  "bundle_sha256": "",
+  "unavailable_items": [],
+  "created_at": "",
+  "verified_at": ""
+}
