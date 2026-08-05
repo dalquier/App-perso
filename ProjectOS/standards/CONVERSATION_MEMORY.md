@@ -1,185 +1,77 @@
 # ProjectOS — Mémoire conversationnelle
 
-## 1. Objet
+## Objet
 
-Ce standard organise la continuité entre les conversations ChatGPT, Codex et autres agents sans transformer l’historique conversationnel en source de vérité.
+La mémoire permet de retrouver les conversations, décisions, travaux et prochaines actions sans faire de l’historique une source de vérité. Les règles et décisions durables restent dans GitHub ; le verbatim et les fichiers restent dans Google Drive.
 
-La mémoire conversationnelle sert à retrouver le contexte, les décisions, les travaux et les prochaines actions d’un projet. Elle reste secondaire par rapport au dépôt vivant, au manifeste, aux ADR, à la roadmap, à la documentation canonique et aux preuves GitHub.
+## Consentement
 
-## 2. Consentement et activation au démarrage
+### Codex
 
-La mémoire conversationnelle n’est jamais activée silencieusement : elle repose soit sur un consentement permanent explicite et versionné, soit sur un consentement ponctuel.
+Le consentement permanent donné le 5 août 2026 couvre toutes les conversations ProjectOS exécutées avec Codex. Au démarrage, l’agent :
 
-### 2.1 Consentement permanent spécifique à Codex
+1. attribue un identifiant `SES-AAAAMMJJ-NNN` ;
+2. crée l’archive Drive et active la capture incrémentale ;
+3. charge les seules mémoires pertinentes ;
+4. termine sa première réponse par `Mémoire Codex : enregistrement activé.`
 
-Damien a donné le 5 août 2026 un consentement permanent pour enregistrer toutes les conversations ProjectOS exécutées avec Codex.
+Aucune question supplémentaire n’est requise jusqu’à révocation explicite.
 
-En conséquence, au démarrage de chaque conversation ProjectOS avec Codex, l’agent :
+### ChatGPT et autres outils
 
-1. active automatiquement l’enregistrement structuré ;
-2. attribue un identifiant stable au format `SES-AAAAMMJJ-NNN` ;
-3. charge sélectivement l’index, la chronologie et les synthèses pertinentes ;
-4. termine sa première réponse par la ligne exacte :
+La première réponse se termine exactement par :
 
-```text
-Mémoire Codex : enregistrement activé.
-```
+`Enregistrer la conversation ?`
 
-Aucune nouvelle question de consentement n’est requise avec Codex tant que cette décision n’est pas révoquée explicitement.
+Aucun texte ne suit. Avant un `oui`, aucun artefact permanent de mémoire n’est créé. Après `oui`, l’identifiant et l’archive sont initialisés avant de poursuivre. Après `non`, la conversation continue sans index, synthèse ni archive.
 
-Ce consentement couvre l’index, la chronologie, les synthèses de session et le transfert des décisions durables vers les références canoniques. Il ne déclenche pas automatiquement l’archivage du verbatim intégral : l’archive brute reste facultative, secondaire et dépend des capacités réelles d’export.
+## Contenu et emplacement
 
-Le consentement permanent est révocable à tout moment. Une révocation doit être appliquée immédiatement, versionnée dans ProjectOS et ne supprime pas rétroactivement les synthèses existantes sauf demande explicite de Damien.
+GitHub ne reçoit que :
 
-### 2.2 Consentement ponctuel pour les autres outils
+- l’entrée d’index ;
+- la synthèse ;
+- les décisions durables transférées dans les références canoniques ;
+- l’identifiant ou l’URL privée du dossier Drive, son statut et ses compteurs.
 
-Pour ChatGPT et tout autre outil ne bénéficiant pas d’un consentement permanent versionné, la première réponse ProjectOS doit se terminer par la question exacte :
+Google Drive reçoit directement :
 
-```text
-Enregistrer la conversation ?
-```
+- `conversation.jsonl`, journal machine incrémental ;
+- `conversation.md`, transcription lisible de tous les messages visibles ;
+- `attachments/`, toutes les pièces jointes accessibles ;
+- `deliverables/`, tous les fichiers générés accessibles ;
+- `MANIFEST.json`, inventaire, intégrité, manques et état.
 
-Aucun texte ne doit suivre cette ligne.
+Les raisonnements internes, messages système non visibles, secrets et données sensibles inutiles sont exclus.
 
-Réponses attendues :
+## Capture
 
-- `oui` : activer la mémoire de cette conversation ;
-- `non` : ne créer ni index, ni synthèse, ni archive pour cette conversation.
+Chaque tour activé est enregistré avant l’envoi de la réponse : message utilisateur visible, réponse assistant visible, références des fichiers et état du manifeste. Le protocole détaillé est défini dans `CONVERSATION_ARCHIVE_PIPELINE.md`.
 
-Une réponse équivalente et non ambiguë peut être comprise. Tant que Damien n’a pas répondu, l’état est `consentement-en-attente` et aucun artefact permanent de mémoire ne doit être créé.
+Une archive est `complete` seulement si tous les messages visibles depuis l’activation et tous les fichiers accessibles sont présents et inventoriés. Sinon elle est `partial` ou `error`, avec la cause explicite. Ne jamais présenter comme intégral un historique reconstitué après compactage ou indisponibilité.
 
-## 3. Effet d’une activation
+## Index, synthèse et chronologie
 
-Après une activation, automatique avec Codex ou ponctuelle après un `oui`, l’agent :
+L’index contient au minimum : session, date, outil, projet, nom, statut, branche/PR, synthèse, dossier Drive, état de l’archive et compteurs.
 
-1. attribue un identifiant stable au format `SES-AAAAMMJJ-NNN` ;
-2. confirme brièvement l’activation ;
-3. charge, s’ils existent :
-   - `memory/CONVERSATION_INDEX.md` ;
-   - `memory/PROJECT_TIMELINE.md` ;
-   - uniquement les synthèses de sessions pertinentes ;
-4. crée ou prépare une entrée de session avec le statut `active` ;
-5. conserve uniquement une mémoire structurée et utile ;
-6. transfère les décisions durables vers les références canoniques appropriées.
+La synthèse contient : objectif, état initial, références, décisions, actions, fichiers, tests, résultats, limites, prochaine action, lien Drive et état vérifié.
 
-L’activation ne vaut pas autorisation d’archiver des secrets, données personnelles sensibles, données médicales brutes ou contenus confidentiels inutiles.
+La chronologie n’est modifiée que pour un événement structurant.
 
-## 4. Effet d’un non ou d’une révocation
+## Restitution
 
-Après un `non` dans un régime à consentement ponctuel :
+Pour retrouver une conversation :
 
-- poursuivre normalement la conversation ;
-- ne pas créer de synthèse de session ;
-- ne pas modifier l’index conversationnel ;
-- ne pas archiver la conversation brute ;
-- continuer néanmoins à documenter dans GitHub toute décision ou livraison que la tâche exige indépendamment de la mémoire conversationnelle.
+1. rechercher l’index et les synthèses GitHub ;
+2. sélectionner la session ;
+3. ouvrir le dossier Drive privé ;
+4. contrôler `MANIFEST.json` ;
+5. restituer la transcription et uniquement les fichiers nécessaires.
 
-Le refus de mémoire ne bloque jamais le traitement du projet.
+La recherche naturelle peut interroger titres, projets, dates, mots-clés, décisions, branches et Pull Requests présents dans l’index et les synthèses.
 
-## 5. Hiérarchie et statut
+## Clôture et sécurité
 
-La mémoire conversationnelle :
+Avant la réponse finale d’une session significative : actualiser archive, synthèse, index et éventuellement chronologie ; transférer les décisions durables ; signaler tout manque.
 
-- aide à comprendre l’historique ;
-- n’atteste pas qu’un changement existe dans GitHub ;
-- ne remplace pas une branche, un commit, une Pull Request ou un test ;
-- ne prévaut jamais sur une référence canonique plus récente ;
-- doit signaler les contradictions et éléments devenus obsolètes.
-
-## 6. Structure par projet
-
-Chemins recommandés :
-
-```text
-ProjectOS/projects/<Projet>/memory/
-├── CONVERSATION_INDEX.md
-├── PROJECT_TIMELINE.md
-└── SESSION_SUMMARIES/
-```
-
-L’absence du dossier n’empêche pas l’amorçage. Après activation, il peut être initialisé sur une branche dédiée lorsque la tâche autorise une modification GitHub.
-
-## 7. Chargement sélectif
-
-Après activation, ne jamais charger tout l’historique par défaut.
-
-Sélectionner uniquement les synthèses liées :
-
-- au projet et au jalon ;
-- à l’axe ou la mission ;
-- à la branche ou Pull Request ;
-- aux fichiers, fonctionnalités ou décisions concernés ;
-- à la période utile.
-
-## 8. Sessions à mémoriser
-
-Une session mérite une synthèse lorsqu’elle produit au moins un élément structurant :
-
-- décision ;
-- spécification ;
-- audit ou diagnostic ;
-- modification ou livraison ;
-- branche, commit ou Pull Request ;
-- résultat de test ;
-- changement de trajectoire ;
-- clarification importante ;
-- prochaine action structurante.
-
-Les échanges triviaux ou purement pratiques peuvent rester sans synthèse même après activation, à condition que l’index indique `aucune synthèse nécessaire` si une session avait été ouverte.
-
-## 9. Contenu minimal d’une synthèse
-
-Une synthèse autonome comprend :
-
-- identifiant de session ;
-- date ;
-- projet ;
-- outil ou agent ;
-- nom de discussion ;
-- objectif ;
-- état initial vérifié ;
-- références consultées ;
-- décisions et hypothèses ;
-- actions réalisées ;
-- fichiers concernés ;
-- branches, commits et Pull Requests ;
-- tests et contrôles exécutés ;
-- résultats ;
-- limites, risques et contradictions ;
-- prochaine action ;
-- références canoniques mises à jour ;
-- état de l’archive brute : `non demandée`, `à exporter`, `archivée` ou `indisponible`.
-
-## 10. Clôture
-
-Pour une session enregistrée et significative, avant la réponse finale :
-
-1. préparer ou mettre à jour la synthèse ;
-2. mettre à jour l’index ;
-3. mettre à jour la chronologie uniquement si un événement structurant a eu lieu ;
-4. transférer les décisions durables vers le manifeste, une ADR, la roadmap ou la documentation ;
-5. distinguer les faits vérifiés des hypothèses ;
-6. indiquer ce qui n’a pas pu être archivé ou vérifié.
-
-## 11. Conversation brute
-
-La conversation brute est une archive secondaire facultative.
-
-Stockages recommandés :
-
-- iCloud Drive : boîte d’entrée depuis l’iPhone ;
-- Google Drive : archive durable lorsqu’une exportation est disponible ;
-- GitHub : index, chronologie et synthèses structurées uniquement.
-
-Une archive brute ne doit jamais être nécessaire pour reprendre le projet.
-
-## 12. Sécurité
-
-Ne jamais conserver dans la mémoire :
-
-- clé API, jeton, mot de passe ou secret ;
-- donnée médicale détaillée non indispensable ;
-- donnée personnelle brute inutile ;
-- contenu confidentiel sans nécessité de projet.
-
-En cas de doute, résumer ou masquer l’information sensible.
+Ne jamais archiver clé API, jeton, mot de passe ou secret. Masquer les données personnelles ou médicales non indispensables. La révocation arrête les futures captures ; toute suppression rétroactive exige une demande explicite.
