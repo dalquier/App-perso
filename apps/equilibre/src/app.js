@@ -126,7 +126,7 @@ function chatView() {
 function sessionView() {
   if (!state.lastSession) state.lastSession = createSession();
   const session = state.lastSession;
-  if (session.completed) return `<section class="complete"><span class="complete-mark">✓</span><h1>Un pas à la fois.</h1><dl>${Object.entries(session.answers).map(([key, value]) => `<div><dt>${stepCopy[key][0]}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl><button class="button primary-button" data-view="home">Accueil</button></section>`;
+  if (session.completed) return `<section class="session-complete"><span class="complete-mark">✓</span><h1>Un pas à la fois.</h1><dl>${Object.entries(session.answers).map(([key, value]) => `<div><dt>${stepCopy[key][0]}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl><button class="button primary-button" data-view="home">Accueil</button></section>`;
   const steps = ["situation", "emotion", "thought", "action"];
   const index = steps.indexOf(session.step);
   const copy = stepCopy[session.step];
