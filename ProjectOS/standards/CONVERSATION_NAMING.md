@@ -14,13 +14,10 @@ Nom de la discussion : <nom demandé>
 
 L’agent doit reprendre ce nom dans sa première réponse et demander à l’interface de l’utiliser lorsqu’elle permet le renommage automatique. Si l’interface ne permet pas à l’agent de renommer la discussion, il doit indiquer clairement à Damien le nom exact à appliquer manuellement.
 
-La première réponse ProjectOS doit ensuite se terminer par la question exacte :
+Le régime de mémoire dépend de l’outil :
 
-```text
-Enregistrer la conversation ?
-```
-
-Aucun texte ne doit suivre cette question. L’identifiant de session n’est attribué qu’après une réponse positive.
+- avec Codex, le consentement permanent du 5 août 2026 active automatiquement l’enregistrement ; l’identifiant de session est attribué dès l’amorçage et la première réponse se termine par `Mémoire Codex : enregistrement activé.` ;
+- avec tout autre outil, la première réponse ProjectOS se termine par la question exacte `Enregistrer la conversation ?`, sans aucun texte après ; l’identifiant de session n’est attribué qu’après une réponse positive.
 
 ## Convention
 
@@ -42,7 +39,7 @@ Exemples :
 
 ## Identifiant de session
 
-Après consentement, utiliser :
+Après activation de la mémoire, utiliser :
 
 ```text
 SES-AAAAMMJJ-NNN
@@ -52,7 +49,7 @@ L’identifiant doit apparaître dans l’index, la synthèse et les métadonné
 
 ## Transmission
 
-Le nom de la discussion et, après consentement, l’identifiant de session doivent être reproduits dans :
+Le nom de la discussion et, après activation, l’identifiant de session doivent être reproduits dans :
 
 - le fichier temporaire de transmission ;
 - `IMPORT_METADATA.md` ou `IMPORT_METADATA.json` lorsqu’un raccourci iOS est utilisé ;
