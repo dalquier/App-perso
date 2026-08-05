@@ -1,4 +1,9 @@
-"""Data models for DeveloperOS Agent Usage."""
+"""Data models for DeveloperOS Agent Usage.
+
+Serialization convention (BUILD-00): records are JSON objects stored as UTF-8
+JSONL with sorted keys; datetimes are timezone-aware ISO 8601 strings.
+Optional numeric fields keep ``null`` distinct from numeric zero.
+"""
 
 from __future__ import annotations
 
@@ -10,9 +15,11 @@ from config import SCHEMA_VERSION
 
 TOOLS = {"codex", "work"}
 TASK_STATUSES = {"planned", "running", "completed", "failed", "cancelled"}
+TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
 SOURCES = {"manual", "projectos", "shortcut", "import"}
 CONFIDENCES = {"observed", "attributed", "interval_only", "estimated", "unknown"}
 ATTRIBUTION_MODES = {"single_task", "multi_task", "no_task", "reset_or_correction", "not_comparable"}
+QUOTA_EVENTS = {"reset", "correction", "recharge", "unknown"}
 
 
 @dataclass(frozen=True)
@@ -65,10 +72,14 @@ class UsageSnapshot:
     remaining_percent: float
     reset_at: str
     measurement_scope: str
+    quota_scope: str
+    quota_cycle_id: str
     purchased_credits_remaining: Optional[float]
     source: str
     confidence: str
     validated_at: str
+    human_validated: bool
+    quota_event: str = "unknown"
     raw_text_hash: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -77,8 +88,12 @@ class UsageSnapshot:
     @classmethod
     def create(cls, **kwargs: Any) -> "UsageSnapshot":
         kwargs.setdefault("schemaVersion", SCHEMA_VERSION)
+        kwargs.setdefault("quota_scope", kwargs.get("measurement_scope", "default"))
+        kwargs.setdefault("quota_cycle_id", kwargs.get("reset_at", "unknown"))
         kwargs.setdefault("purchased_credits_remaining", None)
         kwargs.setdefault("confidence", "observed")
+        kwargs.setdefault("human_validated", False)
+        kwargs.setdefault("quota_event", "unknown")
         kwargs.setdefault("raw_text_hash", None)
         return cls(**kwargs)
 
@@ -89,18 +104,61 @@ class UsageInterval:
     interval_id: str
     from_snapshot_id: str
     to_snapshot_id: str
+    started_at: str
+    ended_at: str
+    quota_scope: str
+    quota_cycle_id: str
     delta_percent: Optional[float]
     task_ids: list[str]
     attribution_mode: str
     confidence: str
     is_same_quota_cycle: bool
     invalid_reason: Optional[str]
+    calculation_evidence: Optional[str]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class UsageForecast:
+    method: str
+    interval_count: int
+    confidence: str
+    exhausts_at: Optional[str]
+    daily_burn_percent: Optional[float]
+    unavailable_reason: Optional[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def __getitem__(self, key: str) -> Any:
+        return self.to_dict()[key]
+
+
+@dataclass(frozen=True)
+class WeeklyUsageSummary:
+    week_start: str
+    week_end: str
+    tool: Optional[str]
+    project_id: Optional[str]
+    task_count: int
+    completed_task_count: int
+    attributable_interval_count: int
+    total_delta_percent: float
+    average_delta_percent_per_task: Optional[float]
+    forecast: UsageForecast
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["forecast"] = self.forecast.to_dict()
+        return data
+
+
 def parse_datetime(value: str, field_name: str) -> datetime:
     if not isinstance(value, str):
         raise ValueError(f"{field_name} must be an ISO 8601 string")
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name} must include a timezone offset")
+    return parsed
