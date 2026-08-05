@@ -90,6 +90,10 @@ class JsonlStore:
 
     def append(self, collection: str, record: dict) -> None:
         report = self.read_report(collection)
+        if report.skipped:
+            raise StorageError(
+                f"cannot append to {collection}: {len(report.skipped)} corrupt line(s); run integrity-check and recover first"
+            )
         self._atomic_write_records(collection, report.records + [record])
 
     def read_report(self, collection: str) -> ReadReport:
