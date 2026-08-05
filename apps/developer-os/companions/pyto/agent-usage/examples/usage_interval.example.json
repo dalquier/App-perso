@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "interval_id": "INT-20260805-001",
+  "from_snapshot_id": "SNP-20260805-001",
+  "to_snapshot_id": "SNP-20260805-002",
+  "delta_percent": 6,
+  "task_ids": ["TSK-20260805-001"],
+  "attribution_mode": "single_task",
+  "confidence": "attributed",
+  "is_same_quota_cycle": true,
+  "invalid_reason": null
+}

@@ -1,0 +1,6 @@
+# Real local Pyto/iCloud journals must never be committed.
+tasks.jsonl
+usage_snapshots.jsonl
+usage_intervals.jsonl
+*.local.json
+*.real.json
