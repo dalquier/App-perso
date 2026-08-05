@@ -60,7 +60,8 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 
 ## Jalons
 
-- BUILD-01 : moteur Pyto et interface de sources dynamiques — construit.\n- BUILD-01.1 : miroir incrémental, rollback et préchargement iCloud — en revue.
+- BUILD-01 : moteur Pyto et interface de sources dynamiques — construit.
+- BUILD-01.1 : miroir incrémental, rollback et préchargement iCloud — en revue.
 - BUILD-02 : Raccourci iOS vers Google Drive, remplacement vérifié et automatisation personnelle.
 - BUILD-03 : capture cloud de `dalquier/App-perso`, restauration guidée et recette de crise.
 
