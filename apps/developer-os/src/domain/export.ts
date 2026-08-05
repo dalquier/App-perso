@@ -38,6 +38,8 @@ const CANONICAL_KEYS = [
 
 const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 const CANONICAL_KEY_SET = new Set<string>(CANONICAL_KEYS);
+const ROUTE_SAFE_PROJECT_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const isString = (value: unknown): value is string => typeof value === "string";
 
@@ -121,9 +123,9 @@ function parseProject(
     );
 
   const id = raw.id;
-  if (!isString(id) || !id || ids.has(id))
+  if (!isString(id) || !ROUTE_SAFE_PROJECT_ID.test(id) || ids.has(id))
     throw new Error(
-      "Un projet importé possède un identifiant invalide ou dupliqué.",
+      "Un projet importé possède un identifiant invalide, non sûr pour les routes ou dupliqué.",
     );
   ids.add(id);
 

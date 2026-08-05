@@ -37,7 +37,12 @@ describe("ProjectForm", () => {
   it("uses native reliable selects and reports validation", async () => {
     renderForm();
     await screen.findByRole("heading", { name: "Créer un projet" });
-    expect(screen.getByLabelText("État")).toBeInstanceOf(HTMLSelectElement);
+    expect(screen.getByRole("combobox", { name: "État" })).toBeInstanceOf(
+      HTMLSelectElement,
+    );
+    expect(screen.getByRole("combobox", { name: "Priorité" })).toBeInstanceOf(
+      HTMLSelectElement,
+    );
     await userEvent.click(
       screen.getAllByRole("button", { name: "Enregistrer" })[0],
     );

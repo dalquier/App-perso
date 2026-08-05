@@ -4,6 +4,7 @@ import { useProjects } from "../data/ProjectsContext";
 import {
   makeExport,
   parseExportFile,
+  type ParseExportResult,
   type ProjectExport,
 } from "../domain/export";
 
@@ -25,9 +26,10 @@ export function Settings() {
   const file = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [backupOffered, setBackupOffered] = useState(false);
-  const [pendingImport, setPendingImport] = useState<ProjectExport | null>(
+  const [pendingImport, setPendingImport] = useState<ParseExportResult | null>(
     null,
   );
+  const [warningsAccepted, setWarningsAccepted] = useState(false);
 
   const exportData = () => {
     downloadJson(makeExport(projects), "developeros-export");
@@ -44,12 +46,14 @@ export function Settings() {
       downloadJson(backup, "developeros-backup-before-import");
       setPendingImport(parsed);
       setBackupOffered(true);
+      setWarningsAccepted(false);
       setMessage(
         `Import validé (${parsed.projects.length} projet(s)). Une sauvegarde récupérable vient d’être proposée au téléchargement. Confirmez le remplacement pour continuer.`,
       );
     } catch (err) {
       setPendingImport(null);
       setBackupOffered(false);
+      setWarningsAccepted(false);
       setMessage(err instanceof Error ? err.message : "Import impossible.");
     } finally {
       event.target.value = "";
@@ -58,6 +62,12 @@ export function Settings() {
 
   const confirmImport = async () => {
     if (!pendingImport || !backupOffered) return;
+    if (pendingImport.warnings.length > 0 && !warningsAccepted) {
+      setMessage(
+        "Acceptez explicitement les avertissements d’import avant de remplacer les données locales.",
+      );
+      return;
+    }
     if (
       !confirm(
         `Confirmer le remplacement local par ${pendingImport.projects.length} projet(s) validé(s) ?`,
@@ -67,12 +77,14 @@ export function Settings() {
     await replaceAll(pendingImport.projects);
     setPendingImport(null);
     setBackupOffered(false);
+    setWarningsAccepted(false);
     setMessage("Import terminé avec succès.");
   };
 
   const cancelImport = () => {
     setPendingImport(null);
     setBackupOffered(false);
+    setWarningsAccepted(false);
     setMessage("Import annulé. Les données locales sont inchangées.");
   };
 
@@ -138,12 +150,40 @@ export function Settings() {
                 Backup proposé : confirmez seulement après l’avoir téléchargé ou
                 sauvegardé.
               </p>
+              {pendingImport.warnings.length > 0 && (
+                <div role="alert">
+                  <h3>Avertissements d’import</h3>
+                  <ul>
+                    {pendingImport.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      checked={warningsAccepted}
+                      onChange={(event) =>
+                        setWarningsAccepted(event.target.checked)
+                      }
+                    />
+                    <span>
+                      J’accepte que les champs signalés soient ignorés pendant
+                      le remplacement.
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
             <div className="inline-actions">
               <button className="secondary" onClick={cancelImport}>
                 Annuler
               </button>
-              <button onClick={() => void confirmImport()}>Confirmer</button>
+              <button
+                disabled={pendingImport.warnings.length > 0 && !warningsAccepted}
+                onClick={() => void confirmImport()}
+              >
+                Confirmer
+              </button>
             </div>
           </article>
         )}

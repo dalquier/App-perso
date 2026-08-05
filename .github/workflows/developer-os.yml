@@ -10,6 +10,7 @@ on:
     branches:
       - "codex/renommer-la-tache-en-developeros-build-01-project-core-5sskd7"
       - "developeros/build-01-project-core"
+      - "codex/construire-build-01-project-core"
     paths:
       - "apps/developer-os/**"
       - ".github/workflows/developer-os.yml"
@@ -33,6 +34,8 @@ jobs:
           node-version: "20.20.2"
           cache: npm
           cache-dependency-path: apps/developer-os/package-lock.json
+      - name: Setup npm 11.4.2
+        run: npm install -g npm@11.4.2
       - name: Install locked dependencies
         run: npm ci
       - name: Install Playwright Chromium and Linux dependencies

@@ -9,7 +9,7 @@ import type { Project } from "../domain/project";
 import { Settings } from "./Settings";
 
 const existing: Project = {
-  id: "existing",
+  id: "11111111-1111-4111-8111-111111111111",
   schemaVersion: 1,
   name: "Existing",
   aliases: [],
@@ -26,7 +26,7 @@ const existing: Project = {
 
 const incoming: Project = {
   ...existing,
-  id: "incoming",
+  id: "22222222-2222-4222-8222-222222222222",
   name: "Incoming",
   isActive: false,
 };
@@ -107,6 +107,48 @@ describe("Settings import backup", () => {
     );
 
     await waitFor(() => expect(replaceAll).toHaveBeenCalledWith([incoming]));
+  });
+
+  it("shows import warnings and requires explicit acknowledgement before replacement", async () => {
+    const replaceAll = vi.fn();
+    setup({
+      list: async () => [existing],
+      get: async () => existing,
+      save: vi.fn(),
+      replaceAll,
+      clear: vi.fn(),
+    });
+
+    const file = new File(
+      [
+        JSON.stringify(
+          makeExport([{ ...incoming, unexpected: "drop me" } as Project]),
+        ),
+      ],
+      "warning.json",
+      { type: "application/json" },
+    );
+    await userEvent.upload(
+      screen.getByLabelText("Fichier JSON à importer"),
+      file,
+    );
+
+    expect(await screen.findByText("Avertissements d’import")).toBeVisible();
+    expect(screen.getByText(/champs ignorés/)).toBeVisible();
+    const confirm = screen.getByRole("button", { name: "Confirmer" });
+    expect(confirm).toBeDisabled();
+
+    await userEvent.click(
+      screen.getByLabelText(/J’accepte que les champs signalés soient ignorés/),
+    );
+    expect(confirm).toBeEnabled();
+    await userEvent.click(confirm);
+
+    await waitFor(() =>
+      expect(replaceAll).toHaveBeenCalledWith([
+        expect.objectContaining({ id: incoming.id, name: incoming.name }),
+      ]),
+    );
   });
 
   it("keeps data untouched on invalid import", async () => {
