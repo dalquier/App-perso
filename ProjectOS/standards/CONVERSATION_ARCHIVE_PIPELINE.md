@@ -13,14 +13,14 @@ Avant activation, aucune écriture permanente de mémoire n’est autorisée.
 2. Créer `App-perso/ProjectOS/Conversation-Archives/<Projet>/<année>/<Session>/`.
 3. Créer `attachments/` et `deliverables/`.
 4. Initialiser `conversation.jsonl`, `conversation.md` et `MANIFEST.json`.
-5. Créer l’entrée GitHub `active` avec le lien Drive privé.
+5. Créer l’entrée GitHub `active` avec le lien Drive privé ; ne mettre GitHub à jour ensuite qu’à la clôture ou lors d’un changement d’état, pas à chaque tour.
 6. Si Drive est indisponible, marquer `error` et le signaler ; ne jamais simuler une archive complète.
 
 ## Capture atomique de chaque tour
 
 Avant d’envoyer une réponse visible :
 
-1. capturer le message utilisateur visible exact ;
+1. capturer le message utilisateur visible exact ainsi que tout message assistant intermédiaire visible depuis le tour précédent ;
 2. inventorier les pièces jointes du tour ;
 3. copier chaque pièce jointe accessible dans `attachments/`, avec un nom stable ;
 4. copier chaque livrable généré accessible dans `deliverables/` ;
@@ -31,7 +31,7 @@ Avant d’envoyer une réponse visible :
 9. relire les fichiers écrits ou leurs métadonnées ;
 10. envoyer la réponse.
 
-Une écriture impossible n’efface pas le tour : l’agent poursuit, marque `partial` ou `error`, consigne la cause et prévient Damien.
+Une écriture impossible n’efface pas le tour : l’agent poursuit si la sécurité le permet, marque `partial` ou `error`, consigne la cause et prévient Damien. La garantie d’intégralité ne vaut que pour les conversations ProjectOS où le connecteur Drive est disponible et autorisé.
 
 ## Format JSONL
 
