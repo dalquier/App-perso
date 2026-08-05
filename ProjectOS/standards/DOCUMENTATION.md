@@ -22,7 +22,10 @@ Pour une conversation enregistrée :
 - les décisions durables sont transférées vers le manifeste, une ADR, la roadmap ou la documentation appropriée ;
 - la synthèse de session distingue faits vérifiés, hypothèses et informations manquantes ;
 - l’index et la chronologie renvoient vers les branches, commits et Pull Requests réels lorsqu’ils existent ;
-- une archive brute reste facultative et secondaire ;
+- le verbatim et les fichiers associés non canoniques sont archivés sur Google Drive seulement lorsqu’ils sont disponibles et après vérification ;
+- GitHub ne conserve que la synthèse, les références et les métadonnées minimales de l’archive Drive ;
+- les fichiers canoniques de projet restent dans leur dépôt, même s’ils figurent parmi les pièces jointes ;
+- une copie iCloud de transit n’est supprimée qu’après vérification de l’archive Drive et action explicite ;
 - aucun secret ni contenu sensible inutile n’est conservé.
 
 Un refus d’enregistrement n’empêche jamais de documenter les changements imposés par la tâche elle-même.
