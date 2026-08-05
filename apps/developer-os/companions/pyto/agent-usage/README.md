@@ -4,12 +4,12 @@ BUILD-01 fournit le cœur Python local du suivi d’usage agentique DeveloperOS.
 
 ## Périmètre inclus
 
-- modèles `TaskRecord`, `UsageSnapshot` et `UsageInterval` ;
-- validation des identifiants, dates, pourcentages et valeurs contrôlées ;
-- stockage JSONL local ;
+- modèles `TaskRecord`, `UsageSnapshot`, `UsageInterval`, `UsageForecast` et `WeeklyUsageSummary` ;
+- validation des identifiants, dates, pourcentages, cycles et valeurs contrôlées ;
+- stockage JSONL local avec sauvegarde, récupération et export ;
 - journal de tâches Codex et Work ;
 - calcul des intervalles d’usage ;
-- statistiques et prévision simple d’épuisement ;
+- statistiques et prévision prudente d’épuisement ;
 - exemples fictifs et tests automatisés.
 
 ## Hors périmètre
@@ -32,38 +32,22 @@ Fichiers JSONL locaux :
 
 Ne pas committer ces fichiers lorsqu’ils contiennent des données réelles.
 
-## Exécution
+## Architecture et sérialisation
 
-```bash
-python apps/developer-os/companions/pyto/agent-usage/main.py
-```
+- `models.py` : contrat JSONL et modèles typés ;
+- `validation.py` : validation stricte, dates timezone-aware, cycles et attribution ;
+- `storage.py` : persistance UTF-8 JSONL, lecture tolérante, sauvegardes, intégrité et export ;
+- `task_logger.py` : transitions du cycle de vie et filtres ;
+- `analytics.py` : attribution, prévision sur cycle courant et résumé hebdomadaire ;
+- `main.py` : commandes CLI locales.
 
-## Tests
+Les enregistrements utilisent un objet JSON par ligne avec clés triées. Les dates ISO doivent inclure un fuseau. Pyto doit utiliser `Europe/Paris` via `zoneinfo`, sans dépendance externe. `null` reste distinct de `0` pour les crédits optionnels.
 
-```bash
-python -m unittest discover apps/developer-os/companions/pyto/agent-usage/tests
-```
+## Récupération, sauvegardes et intégrité
 
-## BUILD-01 blocking-review completion notes
+Les réécritures JSONL utilisent un fichier temporaire, `fsync`, une sauvegarde `.bak` et `os.replace`. Les lectures tolèrent les lignes corrompues et retournent les données valides accompagnées d’un rapport structuré. Si le fichier principal manque, sa sauvegarde est utilisée. `integrity-check` détecte les lignes ignorées et les identifiants dupliqués. `export` n’écrit que les données valides et n’inclut aucun secret.
 
-### Architecture and serialization
-
-The companion remains a local-only Pyto/Python module made of:
-
-- `models.py` for the JSONL contract (`TaskRecord`, `UsageSnapshot`, `UsageInterval`, `UsageForecast`, `WeeklyUsageSummary`).
-- `validation.py` for schema, controlled values, timezone-aware datetime, cycle, import and attribution validation.
-- `storage.py` for UTF-8 JSONL persistence with tolerant reads, structured skipped-line reports, integrity checks, backups and valid-data export.
-- `task_logger.py` for task lifecycle transitions and filters.
-- `analytics.py` for interval attribution, current-cycle forecasting and weekly summaries.
-- `main.py` for local CLI commands.
-
-Records are serialized as one sorted-key JSON object per line. ISO datetimes must include a timezone offset; naïve ISO dates are rejected. Pyto operators should use `Europe/Paris` wall time, provided through the Python standard-library `zoneinfo` module without an external dependency. `null` is intentionally distinct from `0` for optional credit fields.
-
-### Recovery, backups, and integrity
-
-JSONL rewrites use a temporary file in the target directory, file `fsync`, atomic `os.replace`, and directory `fsync`. Before replacement, the previous file is copied to `<name>.jsonl.bak`. Reads tolerate corrupt lines by returning valid records plus a structured skipped-line report; if the primary file is missing, the matching backup is used. `integrity-check` reports skipped lines and duplicate identifiers. `export` writes only parsed valid records and does not include environment variables or secrets.
-
-### Commands
+## Commandes
 
 ```bash
 python apps/developer-os/companions/pyto/agent-usage/main.py init
@@ -77,8 +61,15 @@ python apps/developer-os/companions/pyto/agent-usage/main.py integrity-check
 python apps/developer-os/companions/pyto/agent-usage/main.py export /tmp/agent-usage-export.json
 ```
 
-All CLI responses are structured JSON. Success exits with `0`; validation, storage and integrity failures exit non-zero.
+Toutes les réponses CLI sont en JSON structuré. Le succès retourne `0`; les erreurs de validation, de stockage ou d’intégrité retournent un code non nul.
 
-### Known limits and Pyto recipe still required
+## Tests
 
-This build is the offline core. Remaining Pyto integration work is to wire iOS Shortcut capture/import UI, choose the user iCloud data directory, and add a human validation screen before imported snapshots are accepted. Forecasting is intentionally unavailable when there are fewer than two compatible current-cycle intervals or when a reset/correction/recharge is unresolved.
+```bash
+python -m unittest discover apps/developer-os/companions/pyto/agent-usage/tests
+python -m compileall apps/developer-os/companions/pyto/agent-usage
+```
+
+## Limites et recette Pyto restante
+
+Ce BUILD fournit le cœur hors ligne. Restent à réaliser : le flux d’import Raccourcis iOS, la sélection du dossier iCloud local, l’écran de validation humaine et le widget. La prévision reste indisponible lorsqu’il existe moins de deux intervalles compatibles dans le cycle courant ou lorsqu’un reset, une correction ou une recharge n’est pas résolu.
