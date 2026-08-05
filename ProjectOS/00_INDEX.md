@@ -32,6 +32,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 ## Décisions transverses
 
 - `ADR/ADR-001-FRUGAL-DEVELOPMENT-TOOLCHAIN.md` : ChatGPT et Codex développent ; Replit Starter exécute, teste, stocke et déploie.
+- `ADR/ADR-002-PERMANENT-CODEX-CONVERSATION-MEMORY.md` : consentement permanent à l’enregistrement structuré de toutes les conversations ProjectOS exécutées avec Codex.
 
 ## Guides
 
