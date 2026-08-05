@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from helpers import ROOT  # noqa: F401
 from projectos_backup.state import ConfigStore, infer_source_label
 
 
