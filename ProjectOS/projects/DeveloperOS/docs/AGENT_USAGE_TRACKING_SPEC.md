@@ -15,8 +15,8 @@ Le système doit permettre de :
 - enregistrer séparément les crédits supplémentaires lorsqu’ils sont visibles ;
 - démarrer, clôturer et classer une tâche Codex ou Work ;
 - rattacher une tâche à un projet DeveloperOS ;
-- calculer une variation observée entre deux relevés ;
-- distinguer attribution certaine, intervalle multi-tâches et estimation ;
+- calculer une variation observée entre deux relevés comparables ;
+- distinguer attribution certaine, intervalle multi-tâches, reset/correction et estimation ;
 - produire des indicateurs hebdomadaires ;
 - afficher ces indicateurs dans un widget Pyto moderne et professionnel.
 
@@ -65,14 +65,18 @@ Champs requis :
 - `ended_at` ;
 - `status` ;
 - `source` ;
+- `usage_interval_id` ;
 - `quota_before_percent` ;
 - `quota_after_percent` ;
 - `observed_delta_percent` ;
 - `credits_observed` ;
 - `credits_estimated` ;
+- `estimation_method` ;
 - `confidence` ;
 - `evidence` ;
 - `notes`.
+
+Les champs liés à l’usage peuvent être `null`. `observed_delta_percent` n’est renseigné sur la tâche que lorsque l’intervalle lui est attribuable exclusivement.
 
 ### 4.2 UsageSnapshot
 
@@ -83,6 +87,7 @@ Champs requis :
 - `captured_at` ;
 - `remaining_percent` ;
 - `reset_at` ;
+- `measurement_scope` ;
 - `purchased_credits_remaining` ;
 - `source` ;
 - `confidence` ;
@@ -93,19 +98,23 @@ Champs requis :
 
 Objet calculé reliant deux relevés :
 
+- `interval_id` ;
 - `from_snapshot_id` ;
 - `to_snapshot_id` ;
 - `delta_percent` ;
 - `task_ids` ;
 - `attribution_mode` ;
-- `confidence`.
+- `confidence` ;
+- `is_same_quota_cycle` ;
+- `invalid_reason` ou `null`.
 
 ## 5. Règles de calcul
 
-- `delta_percent = before.remaining_percent - after.remaining_percent`.
-- Une valeur négative signale probablement une réinitialisation ou une correction et ne constitue pas une consommation.
-- Une tâche unique entre deux relevés peut recevoir la variation observée.
+- `delta_percent = before.remaining_percent - after.remaining_percent` uniquement pour deux relevés du même périmètre et du même cycle de quota.
+- Une valeur négative, une hausse du pourcentage ou un changement incompatible de date de reset signale une réinitialisation ou une correction et ne constitue pas une consommation.
+- Une tâche unique entre deux relevés valides peut recevoir la variation observée, tout en conservant la référence à l’intervalle source.
 - Plusieurs tâches entre deux relevés partagent un intervalle, sans ventilation fictive.
+- Aucun pourcentage ne doit être converti en crédits sans méthode explicite et marquage `estimated`.
 - Une prévision d’épuisement n’est affichée que si au moins deux variations valides existent dans la période active.
 - La prévision doit afficher son niveau de confiance.
 - Une donnée âgée de plus de 24 heures est signalée comme obsolète ; ce seuil reste configurable.
@@ -185,6 +194,7 @@ Le design doit couvrir :
 - Aucun secret ni cookie ChatGPT.
 - Aucun texte intégral de conversation.
 - Aucun screenshot dans GitHub.
+- Aucun texte OCR brut conservé après validation ; seule une empreinte ou une référence locale non sensible peut subsister.
 - Les exemples versionnés sont fictifs.
 - Les exports locaux doivent pouvoir être supprimés depuis l’application.
 - La collecte de métadonnées d’usage est distincte du consentement à la mémoire conversationnelle.
