@@ -6,12 +6,15 @@ Application Pyto locale pour créer une sauvegarde vérifiée des dossiers de co
 
 - le dépôt GitHub/Working Copy `dalquier/Scriptable` est explicitement hors périmètre ;
 - aucun dossier n'est découvert ou ajouté silencieusement ;
+- une source déjà enregistrée n'est pas ajoutée une seconde fois ;
 - les dossiers iCloud sont accordés une fois depuis le sélecteur Fichiers ;
 - les sources ne sont jamais modifiées ;
 - chaque source produit un ZIP et un manifeste contenant les SHA-256 des fichiers ;
+- les empreintes sont recalculées depuis les octets réellement écrits dans chaque ZIP ;
 - la nouvelle sauvegarde est intégralement construite dans `Staging` ;
 - `Current` n'est remplacé que lorsque toutes les archives sont vérifiées ;
 - une seule sauvegarde courante reste après succès ;
+- les restes de staging et de publication interrompue sont récupérés ou nettoyés ;
 - `.git`, les caches Python et `.DS_Store` sont exclus ; les anciennes versions déjà présentes dans une source restent des fichiers de la source et sont donc conservées.
 
 ## Installation dans Pyto
@@ -84,4 +87,3 @@ Les tests couvrent la construction et la vérification ZIP, le remplacement de `
 - sauvegarde cloud du seul dépôt GitHub `dalquier/App-perso` à construire séparément ;
 - les fichiers iCloud non téléchargés peuvent provoquer un échec sûr : `Current` reste alors inchangé ;
 - aucun secret Google ou GitHub n'est stocké dans le dépôt.
-
