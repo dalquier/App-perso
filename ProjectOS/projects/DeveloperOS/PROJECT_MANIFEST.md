@@ -24,6 +24,8 @@ Damien, utilisateur principal sur iPhone, pilotant plusieurs projets avec ChatGP
 ## Architecture cible
 PWA TypeScript principale, installable sur iPhone, local-first et utilisable hors connexion. Replit Starter exécute, teste et déploie le sous-dossier `apps/developer-os/`. Pyto reste un compagnon limité aux fonctions locales iPhone qui ne peuvent pas être réalisées proprement dans la PWA.
 
+Le suivi d’usage agentique est un module officiel de DeveloperOS. Son code compagnon Pyto est prévu sous `apps/developer-os/companions/pyto/agent-usage/`. Il suit les tâches Codex et Work, les relevés de quota et les prévisions, conformément à `ProjectOS/standards/AGENT_USAGE_TRACKING.md` et `ProjectOS/projects/DeveloperOS/docs/AGENT_USAGE_TRACKING_SPEC.md`.
+
 ## Règles permanentes
 - GitHub est la source de vérité.
 - `main` n’est jamais modifiée directement.
@@ -33,6 +35,8 @@ PWA TypeScript principale, installable sur iPhone, local-first et utilisable hor
 - Aucun prototype historique n’est supprimé ou écrasé avant inventaire et sauvegarde.
 - Une seule interface principale est développée.
 - Aucune donnée personnelle, clé, export utilisateur, journal réel ou fichier `.env` ne doit être commis dans le dépôt public.
+- Les données réelles de quota et de tâches agentiques restent locales ; seuls le code, les schémas et les exemples anonymisés sont versionnés.
+- Toute valeur estimée est visuellement et techniquement distincte d’une valeur observée.
 
 ## État vérifié au 2026-08-04
 - Une Draft Python/Pyto autonome existe sous `dalquier/Scriptable/Scriptable/DeveloperOS/`.
@@ -42,5 +46,16 @@ PWA TypeScript principale, installable sur iPhone, local-first et utilisable hor
 - Aucun workflow GitHub Actions n’a été retrouvé pour le commit de tête de cette PR.
 - Aucun déploiement PWA ou Replit canonique n’est confirmé.
 
-## Prochain jalon
-Créer `apps/developer-os/` sur la branche `developeros/build-01-project-core`, puis réaliser `BUILD-01 — Project Core` : liste, fiche, création/modification, état, priorité, prochaine action, source canonique, persistance locale, export/import et UX iPhone fiable.
+## Jalons actifs
+
+### BUILD-01 — Project Core
+Créer `apps/developer-os/` et livrer la liste, la fiche, la création/modification, l’état, la priorité, la prochaine action, la source canonique, la persistance locale, l’export/import et une UX iPhone fiable.
+
+### Agent Usage — BUILD-00
+Formaliser le suivi du quota agentique et des tâches Codex/Work : gouvernance, modèle de données, attribution, confidentialité, architecture Pyto et direction UX du widget.
+
+### Agent Usage — Builds suivants
+- `BUILD-01` : core Pyto local, stockage et tests.
+- `BUILD-02` : import par Raccourci iOS et validation humaine.
+- `BUILD-03` : widget Pyto moderne, esthétique et professionnel en trois tailles.
+- `BUILD-04` : intégration à l’interface principale DeveloperOS.
