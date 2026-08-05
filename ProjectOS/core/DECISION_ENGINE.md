@@ -17,7 +17,8 @@
 - ChatGPT : architecture, analyse, pilotage, rédaction, revue et changements limités.
 - Codex : outil obligatoire pour les nouveaux Builds, les projets multi-fichiers, le développement substantiel, les refactorings, les migrations, le débogage transversal et les tests associés.
 - GitHub : source de vérité, branches, revue et livraison.
-- Replit Starter : import du dépôt, exécution cloud, tests fonctionnels, stockage de l’espace de travail, hébergement et déploiement. Son agent IA est interdit par défaut pour le développement ordinaire.
+- Replit Starter sans IA : import du dépôt, exécution cloud, tests fonctionnels, consultation des logs, stockage de l’espace de travail, hébergement et déploiement.
+- Agent IA Replit : interdit par défaut ; usage ponctuel uniquement après franchissement de la barrière d’exception et autorisation explicite de Damien.
 - Pyto : fonctions iPhone natives, automatisation locale, fichiers et utilitaires.
 - Working Copy : opérations Git sur iPhone.
 - Google Drive : documents collaboratifs et sauvegardes, jamais source canonique du code.
@@ -34,17 +35,36 @@ Avant toute production de code, appliquer le test suivant :
 
 Un travail substantiel ne doit pas être dégradé en succession de blocs de code, fichiers temporaires ou ZIP à recopier manuellement lorsque le dépôt canonique et Codex sont accessibles.
 
-L’outil de construction et le lieu de vérité sont distincts : ChatGPT conçoit, Codex construit, Replit exécute et teste, Pyto valide les fonctions iPhone, GitHub conserve et livre.
+L’outil de construction et le lieu de vérité sont distincts : ChatGPT conçoit, Codex construit, Replit exécute et teste sans IA, Pyto valide les fonctions iPhone, GitHub conserve et livre.
 
-## Test préalable à toute utilisation de l’agent Replit
+## Flux de diagnostic et de correction
 
-Avant de consommer des crédits IA Replit, répondre aux trois questions suivantes :
+Pour toute anomalie observée dans Replit :
 
-1. La tâche dépend-elle d’une capacité propre à Replit ?
-2. ChatGPT ou Codex sont-ils réellement incapables de la réaliser contre GitHub ?
-3. L’exception, son périmètre et son coût estimé ont-ils été explicitement signalés ?
+1. reproduire le problème sans agent IA ;
+2. relever le parcours, les captures, les logs et le résultat observable ;
+3. transmettre ces preuves à ChatGPT pour diagnostic ;
+4. router vers Codex si la correction est substantielle ;
+5. publier le correctif dans GitHub ;
+6. récupérer la branche dans Replit sans agent IA ;
+7. retester et consigner le résultat.
 
-Si une réponse est négative, ne pas utiliser l’agent Replit.
+Une anomalie observée dans Replit ne justifie pas automatiquement l’utilisation de son agent IA.
+
+## Barrière préalable à toute utilisation de l’agent IA Replit
+
+Avant tout prompt, plan, analyse, diagnostic, modification ou relance confié à l’agent Replit, vérifier successivement :
+
+1. **Capacité exclusive** : la tâche dépend-elle réellement d’une capacité propre à Replit, et non de la simple présence du code ou des logs dans Replit ?
+2. **Alternatives** : ChatGPT, Codex, GitHub direct, le Shell Replit sans IA ou une opération manuelle déterminée sont-ils insuffisants ?
+3. **Périmètre** : le résultat attendu, les fichiers ou ressources concernés et la condition d’arrêt sont-ils bornés ?
+4. **Coût** : le mode le moins coûteux, le coût relatif et un plafond de consommation ont-ils été annoncés ?
+5. **Livraison** : tout résultat durable peut-il être reversé dans une branche GitHub et une Pull Request vérifiable ?
+6. **Autorisation** : Damien a-t-il explicitement autorisé cette tâche précise après présentation du bloc `EXCEPTION IA REPLIT` défini dans `standards/TOOLCHAIN_POLICY.md` et `standards/CREDIT_OPTIMIZATION.md` ?
+
+Si une réponse est négative ou inconnue, ne pas utiliser l’agent IA Replit.
+
+Une autorisation antérieure ne s’étend jamais à une nouvelle tâche, une relance, un changement de mode ou un élargissement de périmètre.
 
 ## Arbitrages
 
@@ -56,6 +76,9 @@ Si une réponse est négative, ne pas utiliser l’agent Replit.
 - Livraison canonique GitHub avant commodité d’un fichier local.
 - Codex avant génération conversationnelle lorsque le périmètre est substantiel.
 - ChatGPT ou Codex avant l’agent IA Replit.
+- Replit sans IA avant tout usage de l’agent Replit.
+- Opération mécanique directe avant agent IA.
+- Une itération mieux spécifiée avant plusieurs essais coûteux.
 
 ## Risque
 
@@ -64,6 +87,8 @@ Si une réponse est négative, ne pas utiliser l’agent Replit.
 - Élevé : suppression, sécurité, secrets, données, production, branche canonique.
 
 Pour un risque élevé : sauvegarde, branche dédiée, plan de retour arrière et validation renforcée obligatoires.
+
+Toute utilisation de l’agent IA Replit avec coût non prévisible est traitée comme un risque financier élevé jusqu’à preuve contraire.
 
 ## Contradictions
 
