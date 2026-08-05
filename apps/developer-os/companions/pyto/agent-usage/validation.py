@@ -8,7 +8,7 @@ from typing import Any
 from config import SCHEMA_VERSION
 from errors import ValidationError
 from identifiers import validate_identifier
-from models import ATTRIBUTION_MODES, CONFIDENCES, SOURCES, TASK_STATUSES, TOOLS, TaskRecord, UsageInterval, UsageSnapshot, parse_datetime
+from models import ATTRIBUTION_MODES, CONFIDENCES, QUOTA_EVENTS, SOURCES, TASK_STATUSES, TERMINAL_STATUSES, TOOLS, TaskRecord, UsageInterval, UsageSnapshot, parse_datetime
 
 
 def _percent(value: Any, name: str, required: bool = False) -> None:
@@ -49,8 +49,10 @@ def validate_snapshot(record: UsageSnapshot, now: datetime | None = None) -> Usa
     if record.schemaVersion != SCHEMA_VERSION or not validate_identifier(record.snapshot_id, "snapshot"):
         raise ValidationError("invalid snapshot schema or id")
     _percent(record.remaining_percent, "remaining_percent", required=True)
-    if not record.measurement_scope or record.source not in SOURCES or record.confidence not in CONFIDENCES:
+    if not record.measurement_scope or not record.quota_scope or not record.quota_cycle_id or record.source not in SOURCES or record.confidence not in CONFIDENCES or record.quota_event not in QUOTA_EVENTS:
         raise ValidationError("invalid snapshot controlled value")
+    if record.source == "import" and not record.human_validated:
+        raise ValidationError("imports require explicit human validation")
     captured = parse_datetime(record.captured_at, "captured_at")
     reset = parse_datetime(record.reset_at, "reset_at")
     validated = parse_datetime(record.validated_at, "validated_at")
@@ -71,6 +73,10 @@ def validate_interval(record: UsageInterval) -> UsageInterval:
     _percent(record.delta_percent, "delta_percent")
     if record.attribution_mode not in ATTRIBUTION_MODES or record.confidence not in CONFIDENCES:
         raise ValidationError("invalid interval controlled value")
+    parse_datetime(record.started_at, "started_at")
+    parse_datetime(record.ended_at, "ended_at")
+    if not record.quota_scope or not record.quota_cycle_id:
+        raise ValidationError("interval quota scope and cycle are required")
     if record.attribution_mode in {"reset_or_correction", "not_comparable"} and not record.invalid_reason:
         raise ValidationError("invalid intervals require invalid_reason")
     return record
