@@ -118,3 +118,19 @@ Une livraison respecte cette politique lorsque :
 ## 7. Exception
 
 Toute exception doit préciser : le besoin propre à Replit, les alternatives écartées, le coût ou quota estimé, le périmètre exact et la manière dont le résultat sera reversé dans GitHub.
+
+## 8. Optimisation systématique des crédits
+
+Le standard `ProjectOS/standards/CREDIT_OPTIMIZATION.md` est obligatoire pour toute recommandation d’outil et pour tout prompt opérationnel remis à Damien.
+
+Avant chaque prompt destiné à un outil, l’agent doit préciser au minimum :
+
+- l’outil recommandé ;
+- la raison principale du choix ;
+- le coût relatif estimé ;
+- l’alternative moins coûteuse évaluée ;
+- la condition observable justifiant une bascule vers un autre outil.
+
+L’agent doit privilégier l’outil le moins coûteux capable d’atteindre le résultat vérifiable requis, sans sacrifier la qualité, la sécurité, les tests, la traçabilité ou la livraison.
+
+Un prompt ne doit pas être transmis à Codex, Replit ou un autre outil coûteux tant que son périmètre n’est pas suffisamment défini pour éviter les itérations exploratoires inutiles.

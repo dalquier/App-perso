@@ -18,6 +18,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 ## Standards transverses
 
 - `standards/TOOLCHAIN_POLICY.md` : politique obligatoire de développement frugal et rôle de chaque outil.
+- `standards/CREDIT_OPTIMIZATION.md` : optimisation obligatoire des crédits, quotas et appels payants, avec recommandation d’outil avant chaque prompt opérationnel.
 - `standards/QUALITY_UX_SECURITY.md` : qualité, UX iPhone et sécurité.
 - `standards/TOOLS_AND_STORAGE.md` : rôle des applications et stockages.
 - `standards/CODE_WORK_ROUTING.md` : routage obligatoire des développements substantiels vers Codex et GitHub.

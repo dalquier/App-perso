@@ -9,6 +9,8 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 - Charger uniquement les références utiles à la demande, après le socle obligatoire.
 - Signaler toute référence absente, inaccessible, contradictoire ou manifestement obsolète.
 - La politique de toolchain frugale est permanente : ChatGPT et Codex réalisent le développement ; Replit Starter est réservé à l’exécution, aux tests, au stockage de travail et au déploiement.
+- L’optimisation des crédits, quotas, appels payants et ressources cloud est permanente et régie par `standards/CREDIT_OPTIMIZATION.md`.
+- Avant chaque prompt opérationnel remis à Damien, annoncer l’outil le plus adapté, la raison du choix, le coût relatif, l’alternative moins coûteuse et la condition observable de bascule. Cette annonce reste distincte du prompt.
 - Toute tâche susceptible de produire une modification ou un artefact doit appliquer `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` avant la première modification. La capacité de livraison est un prérequis, et la récupération effective doit être prouvée avant de déclarer la tâche terminée.
 - Dans Codex Cloud, distinguer le sandbox terminal du mécanisme natif de publication GitHub : l’absence de `origin`, d’upstream, de `GH_TOKEN` ou d’authentification `gh` dans le terminal n’est pas bloquante lorsque l’environnement Codex est explicitement relié au dépôt et à la branche de base attendus.
 - La mémoire conversationnelle est régie par `standards/CONVERSATION_MEMORY.md`. Un consentement permanent spécifique à Codex est actif depuis le 5 août 2026 : toute conversation ProjectOS exécutée avec Codex est enregistrée automatiquement sous forme structurée, jusqu’à révocation explicite. Ce consentement permanent ne vaut pas demande d’archive brute.
@@ -23,26 +25,28 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
    - `ProjectOS/core/KERNEL.md` ;
    - `ProjectOS/core/LIFECYCLE.md` ;
    - `ProjectOS/core/DECISION_ENGINE.md`.
-4. Charger `ProjectOS/standards/TOOLCHAIN_POLICY.md` pour toute demande liée à un projet logiciel.
-5. Charger `ProjectOS/standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` pour toute tâche susceptible de produire une modification, une branche, une Pull Request ou un artefact.
-6. Charger `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` pour toute tâche exécutée dans Codex Cloud ou publiée par l’interface native Codex.
-7. Charger `ProjectOS/standards/CONVERSATION_MEMORY.md` pour toute nouvelle conversation ProjectOS.
-8. Identifier le projet, l’objectif réel et le résultat attendu.
-9. Résoudre le projet dans `PROJECT_REGISTRY.md`.
-10. Charger son `PROJECT_MANIFEST.md`, s’il existe.
-11. Charger les ADR applicables et uniquement la documentation nécessaire.
-12. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
-13. Avant toute première modification, exécuter le Delivery Preflight : dépôt, référence de base, branche cible, SHA source, canal de livraison, compatibilité des fichiers, plan de récupération et preuve externe attendue.
-14. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
-15. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
-16. Dans la première réponse, présenter uniquement un état rapide des vérifications effectuées : source et branche, références obligatoires chargées, projet identifié ou niveau transverse, anomalies éventuelles et disponibilité pour poursuivre. Ne pas détailler le processus de chargement.
-17. Appliquer le régime de consentement défini dans `standards/CONVERSATION_MEMORY.md` :
+4. Charger `ProjectOS/standards/CREDIT_OPTIMIZATION.md` pour toute demande ProjectOS.
+5. Charger `ProjectOS/standards/TOOLCHAIN_POLICY.md` pour toute demande liée à un projet logiciel.
+6. Charger `ProjectOS/standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` pour toute tâche susceptible de produire une modification, une branche, une Pull Request ou un artefact.
+7. Charger `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` pour toute tâche exécutée dans Codex Cloud ou publiée par l’interface native Codex.
+8. Charger `ProjectOS/standards/CONVERSATION_MEMORY.md` pour toute nouvelle conversation ProjectOS.
+9. Identifier le projet, l’objectif réel et le résultat attendu.
+10. Résoudre le projet dans `PROJECT_REGISTRY.md`.
+11. Charger son `PROJECT_MANIFEST.md`, s’il existe.
+12. Charger les ADR applicables et uniquement la documentation nécessaire.
+13. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
+14. Avant de remettre un prompt opérationnel à Damien, appliquer le bloc de recommandation défini dans `standards/CREDIT_OPTIMIZATION.md`.
+15. Avant toute première modification, exécuter le Delivery Preflight : dépôt, référence de base, branche cible, SHA source, canal de livraison, compatibilité des fichiers, plan de récupération et preuve externe attendue.
+16. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
+17. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
+18. Dans la première réponse, présenter uniquement un état rapide des vérifications effectuées : source et branche, références obligatoires chargées, projet identifié ou niveau transverse, anomalies éventuelles et disponibilité pour poursuivre. Ne pas détailler le processus de chargement.
+19. Appliquer le régime de consentement défini dans `standards/CONVERSATION_MEMORY.md` :
     - avec Codex, activer automatiquement l’enregistrement structuré au titre du consentement permanent du 5 août 2026, attribuer un identifiant de session et terminer la première réponse par `Mémoire Codex : enregistrement activé.` ;
     - avec tout autre outil, terminer la première réponse par la question exacte `Enregistrer la conversation ?`, sans aucun texte après.
-18. Avec Codex, poursuivre sans demander de confirmation supplémentaire. Avec un autre outil, attendre la réponse `oui` ou `non` avant de créer tout artefact permanent de mémoire conversationnelle.
-19. Dès que la mémoire est activée, par consentement permanent Codex ou par réponse positive, charger sélectivement l’index, la chronologie et les synthèses pertinentes du projet.
-20. Si la réponse est `non` dans un régime à consentement ponctuel, poursuivre sans mémoire conversationnelle et sans bloquer le traitement.
-21. Exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
+20. Avec Codex, poursuivre sans demander de confirmation supplémentaire. Avec un autre outil, attendre la réponse `oui` ou `non` avant de créer tout artefact permanent de mémoire conversationnelle.
+21. Dès que la mémoire est activée, par consentement permanent Codex ou par réponse positive, charger sélectivement l’index, la chronologie et les synthèses pertinentes du projet.
+22. Si la réponse est `non` dans un régime à consentement ponctuel, poursuivre sans mémoire conversationnelle et sans bloquer le traitement.
+23. Exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
 
 ## 3. Ordre d’autorité
 
@@ -71,6 +75,7 @@ Toujours charger :
 - `00_INDEX.md` ;
 - `PROJECT_REGISTRY.md` ;
 - le noyau ProjectOS ;
+- `standards/CREDIT_OPTIMIZATION.md` pour toute demande ProjectOS ;
 - `standards/TOOLCHAIN_POLICY.md` pour un projet logiciel ;
 - `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` pour toute tâche produisant une modification ou un artefact ;
 - `standards/CODEX_NATIVE_PUBLISHING.md` pour une tâche Codex Cloud ;
