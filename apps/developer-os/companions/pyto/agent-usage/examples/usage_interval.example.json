@@ -3,10 +3,15 @@
   "interval_id": "INT-20260805-001",
   "from_snapshot_id": "SNP-20260805-001",
   "to_snapshot_id": "SNP-20260805-002",
+  "started_at": "2026-08-05T12:55:00+02:00",
+  "ended_at": "2026-08-05T13:35:00+02:00",
+  "quota_scope": "chatgpt-agent-weekly-quota",
+  "quota_cycle_id": "agent-weekly-2026-W32",
   "delta_percent": 6,
   "task_ids": ["TSK-20260805-001"],
   "attribution_mode": "single_task",
   "confidence": "attributed",
   "is_same_quota_cycle": true,
-  "invalid_reason": null
+  "invalid_reason": null,
+  "calculation_evidence": "SNP-20260805-001->SNP-20260805-002; tasks=1"
 }
