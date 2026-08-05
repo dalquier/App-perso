@@ -20,6 +20,16 @@ def _module():
     return file_system
 
 
+def _bookmark_exists(fs, bookmark_name: str) -> bool:
+    stored = getattr(fs, "__stored_bookmarks__", None)
+    if not callable(stored):
+        return True
+    try:
+        return bookmark_name in stored()
+    except (KeyError, TypeError):
+        return False
+
+
 def choose_folder(prefix: str) -> tuple[str, str]:
     """Open Files once and persist access across launches."""
     fs = _module()
@@ -36,6 +46,8 @@ def choose_folder(prefix: str) -> tuple[str, str]:
 
 def resolve_folder(bookmark_name: str) -> str:
     fs = _module()
+    if not _bookmark_exists(fs, bookmark_name):
+        raise PytoUnavailable("Autorisation de dossier absente ; ajoute à nouveau la source")
     bookmark = fs.FolderBookmark(name=bookmark_name)
     if not bookmark.path or not Path(bookmark.path).is_dir():
         raise PytoUnavailable("Accès au dossier expiré ou indisponible")
@@ -44,6 +56,8 @@ def resolve_folder(bookmark_name: str) -> str:
 
 def delete_bookmark(bookmark_name: str) -> None:
     fs = _module()
+    if not _bookmark_exists(fs, bookmark_name):
+        return
     try:
         fs.FolderBookmark(name=bookmark_name).delete_from_disk()
     except (KeyError, ValueError):
