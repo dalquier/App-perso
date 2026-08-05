@@ -22,6 +22,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/TOOLS_AND_STORAGE.md` : rôle des applications et stockages.
 - `standards/CODE_WORK_ROUTING.md` : routage obligatoire des développements substantiels vers Codex et GitHub.
 - `standards/CODEX_NATIVE_PUBLISHING.md` : fonctionnement des sandboxes Codex Cloud et publication native des branches et Pull Requests.
+- `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` : précontrôle obligatoire du canal de livraison, preuves externes et récupération des artefacts.
 - `standards/CODING_STANDARDS.md` : règles communes de conception et de code.
 - `standards/DOCUMENTATION.md` : exigences de documentation et traçabilité.
 - `standards/TESTING.md` : stratégie de tests et preuves d’exécution.
@@ -58,6 +59,7 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 ## Modèles
 
 - `templates/PROJECT_MANIFEST.md` : manifeste type.
+- `templates/DELIVERY_MANIFEST.md` : preuve type de construction, export, publication, livraison et récupération.
 - `templates/CONVERSATION_INDEX.md` : registre type des conversations enregistrées.
 - `templates/PROJECT_TIMELINE.md` : chronologie structurante type.
 - `templates/SESSION_SUMMARY.md` : synthèse autonome type d’une session.
