@@ -27,6 +27,7 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 | `projectos` | ProjectOS | App perso, App-perso | actif | `dalquier/App-perso`, dossier `ProjectOS/` | `ProjectOS/` |
 | `developeros` | DeveloperOS | Developer OS, gestionnaire de projets, Project Manager Pyto, PWA DeveloperOS | prêt à construire | dépôt `dalquier/App-perso`; code `apps/developer-os/` | `ProjectOS/projects/DeveloperOS/` |
 | `equilibre` | Équilibre | Equilibre, compagnon TCC, TCC Budy, TCC Buddy, TCC_Budy | reprise définie — BUILD-01 à lancer | dépôt `dalquier/App-perso`; code `apps/equilibre/` | `ProjectOS/projects/Equilibre/` |
+| `projectos-backup` | ProjectOS Backup | Projet 2, sauvegarde ProjectOS, backup de code | BUILD-01 construit — recette Pyto requise | dépôt `dalquier/App-perso`; code `apps/projectos-backup/` | `ProjectOS/projects/ProjectOSBackup/` |
 | `assistantia` | AssistantIA | Assistant IA | à migrer/compléter | à confirmer avant modification | à créer sous `ProjectOS/projects/AssistantIA/` |
 
 ## Résolution
