@@ -9,7 +9,7 @@
 - Replit Starter : environnement cloud d’exécution, de test, de stockage de travail, d’hébergement et de déploiement. Son agent IA n’est pas un outil de développement par défaut.
 - Pyto : compagnon permanent pour fonctions iPhone natives, automatisations locales, accès Fichiers/iCloud et utilitaires.
 - Scriptable : widgets et automatisations iOS simples lorsque JavaScript est le meilleur choix.
-- Google Drive : documents collaboratifs et sauvegardes, jamais source canonique du code.
+- Google Drive : documents collaboratifs, sauvegardes et archives conversationnelles vérifiées ; jamais source canonique du code.
 - Canva : production et modification de supports visuels.
 - AppDeploy : création rapide d’applications web publiques lorsque pertinent.
 - OpenAI API : uniquement dans les applications créées ; ne remplace pas l’application ChatGPT ni Codex pendant le développement.
@@ -20,12 +20,27 @@
 2. Tout nouveau projet doit disposer d’un dépôt ou dossier canonique déclaré dans `PROJECT_REGISTRY.md` et son manifeste avant une livraison substantielle.
 3. Les fichiers complets d’un Build sont créés ou modifiés directement dans le dépôt canonique sur une branche dédiée.
 4. Les secrets restent dans les gestionnaires de secrets des plateformes.
-5. iCloud contient les données locales et les échanges avec Pyto, sans devenir une seconde branche éditable du code.
-6. Drive reçoit des archives horodatées et les documents Google natifs.
+5. iCloud contient les données locales et les échanges avec Pyto. Pour les exports de conversation, il sert uniquement de boîte d’entrée ou de zone de transit.
+6. Drive reçoit des archives horodatées, les documents Google natifs et les archives vérifiées des conversations ProjectOS enregistrées.
 7. Les fichiers volumineux sont indexés ; seuls les fragments utiles sont chargés.
 8. Toute migration conserve une copie de retour arrière.
 9. Un ZIP, un export Pyto, un artefact Replit ou une copie locale est un moyen d’installation, de test ou de sauvegarde, jamais la livraison canonique.
 10. Tout changement durable effectué pendant un test Replit doit être reversé dans GitHub.
+
+## Archives de conversations
+
+L’archivage est sélectif : il concerne uniquement les conversations ChatGPT ou Codex dont l’enregistrement ProjectOS a été activé. Il ne doit jamais aspirer toutes les conversations du compte OpenAI.
+
+- Google Drive conserve, lorsqu’ils sont réellement disponibles, le verbatim exporté, les pièces jointes, les livrables non canoniques et un manifeste d’intégrité.
+- GitHub conserve seulement les décisions durables, l’index, la chronologie, la synthèse, le statut de l’archive et son lien Drive privé.
+- Un fichier canonique de projet reste dans GitHub même s’il a été joint à une conversation. L’archive peut le référencer mais ne devient pas sa source de vérité.
+- iCloud ne constitue pas une archive durable : après téléversement et vérification sur Drive, la copie de transit peut être supprimée selon une action explicite et récupérable.
+- Aucun lien public n’est créé. L’accès Drive reste privé ou limité aux personnes explicitement autorisées.
+- Aucun statut `vérifiée` n’est attribué avant contrôle de l’existence du dossier, de l’inventaire, de la taille et de l’empreinte SHA-256 du bundle lorsqu’il existe.
+- L’impossibilité d’exporter le verbatim ou certaines pièces jointes doit être consignée ; elle ne bloque pas la clôture de la mémoire structurée.
+- Il n’existe aucune synchronisation bidirectionnelle automatique entre GitHub, Drive et iCloud. Le lien est assuré par l’identifiant de session, le manifeste, les chemins et les empreintes.
+
+Appliquer `CONVERSATION_MEMORY.md` et `../guides/CONVERSATION_ARCHIVING.md`.
 
 ## Routage des développements
 
