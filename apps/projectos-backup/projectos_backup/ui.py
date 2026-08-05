@@ -97,6 +97,16 @@ class BackupApplication:
     def _add_source(self, sender=None) -> None:
         try:
             bookmark_name, path = choose_folder("source")
+            selected = Path(path).resolve()
+            for existing in self.store.sources():
+                try:
+                    existing_path = Path(resolve_folder(existing.bookmark_name)).resolve()
+                except PytoUnavailable:
+                    continue
+                if existing_path == selected:
+                    delete_bookmark(bookmark_name)
+                    self.status.text = f"Déjà ajouté : {selected.name}"
+                    return
             label = Path(path).name or "Dossier"
             self.store.add_source(label, bookmark_name)
             self.status.text = f"Ajouté : {label}"
