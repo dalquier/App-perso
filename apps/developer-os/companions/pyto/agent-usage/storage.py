@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 import os
 import shutil
@@ -20,7 +21,7 @@ class SkippedLine:
     collection: str
     line_no: int
     reason: str
-    raw: str
+    content_hash: str
 
 
 @dataclass(frozen=True)
@@ -54,6 +55,17 @@ class JsonlStore:
     def _backup_path(self, path: Path) -> Path:
         return path.with_suffix(path.suffix + ".bak")
 
+    def _sync_directory(self) -> None:
+        directory_flag = getattr(os, "O_DIRECTORY", 0)
+        try:
+            dir_fd = os.open(str(self.root), os.O_RDONLY | directory_flag)
+        except OSError:
+            return
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+
     def _atomic_write_records(self, collection: str, records: list[dict]) -> None:
         self.ensure()
         path = self._path(collection)
@@ -71,16 +83,10 @@ class JsonlStore:
                 handle.flush()
                 os.fsync(handle.fileno())
             os.replace(tmp, path)
-            dir_fd = os.open(self.root, os.O_DIRECTORY)
-            try:
-                os.fsync(dir_fd)
-            finally:
-                os.close(dir_fd)
+            self._sync_directory()
         except Exception:
-            try:
-                tmp.unlink(missing_ok=True)
-            finally:
-                raise
+            tmp.unlink(missing_ok=True)
+            raise
 
     def append(self, collection: str, record: dict) -> None:
         report = self.read_report(collection)
@@ -101,9 +107,13 @@ class JsonlStore:
                 if not raw.strip():
                     continue
                 try:
-                    records.append(json.loads(raw))
-                except json.JSONDecodeError as exc:
-                    skipped.append(SkippedLine(collection, line_no, str(exc), raw[:200]))
+                    parsed = json.loads(raw)
+                    if not isinstance(parsed, dict):
+                        raise ValueError("JSONL record must be an object")
+                    records.append(parsed)
+                except (json.JSONDecodeError, ValueError) as exc:
+                    content_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+                    skipped.append(SkippedLine(collection, line_no, str(exc), content_hash))
         return ReadReport(collection, records, skipped)
 
     def read_all(self, collection: str) -> list[dict]:
@@ -119,6 +129,9 @@ class JsonlStore:
         self.append("snapshots", validate_snapshot(record).to_dict())
 
     def add_interval(self, record: UsageInterval) -> None:
+        existing = {item.get("interval_id") for item in self.read_all("intervals")}
+        if record.interval_id in existing:
+            raise StorageError(f"duplicate interval_id: {record.interval_id}")
         self.append("intervals", validate_interval(record).to_dict())
 
     def tasks(self) -> list[TaskRecord]:
@@ -142,11 +155,13 @@ class JsonlStore:
             dupes: set[str] = set()
             for record in report.records:
                 value = record.get(key)
+                if not isinstance(value, str):
+                    continue
                 if value in seen:
                     dupes.add(value)
                 seen.add(value)
             duplicate_ids[collection] = sorted(dupes)
-        ok = not any(r.skipped for r in reports.values()) and not any(duplicate_ids.values())
+        ok = not any(report.skipped for report in reports.values()) and not any(duplicate_ids.values())
         return IntegrityReport(ok, reports, duplicate_ids)
 
     def export_valid(self, destination: Path) -> None:
