@@ -4,25 +4,61 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProjectsProvider } from "../data/ProjectsContext";
 import type { ProjectRepository } from "../data/repository";
 import { AppRouter, RouterSwitch } from "../routing";
+import type { Project } from "../domain/project";
+import { ProjectDetail } from "./ProjectDetail";
 import { ProjectForm } from "./ProjectForm";
+import { ProjectList } from "./ProjectList";
 
-const repo: ProjectRepository = {
-  list: async () => [],
-  get: async () => undefined,
-  save: vi.fn(async (project) => project),
-  replaceAll: async () => undefined,
-  clear: async () => undefined,
+const baseProject: Project = {
+  id: "11111111-1111-4111-8111-111111111111",
+  schemaVersion: 1,
+  name: "DeveloperOS",
+  aliases: [],
+  status: "active",
+  priority: "high",
+  nextAction: "Valider sur iPhone",
+  canonicalSourceType: "github_repo",
+  canonicalSource: "dalquier/App-perso",
+  lastKnownState: "BUILD-01 prêt",
+  isActive: true,
+  createdAt: "2026-08-04T00:00:00.000Z",
+  updatedAt: "2026-08-04T00:00:00.000Z",
 };
 
-function renderForm() {
-  history.pushState(null, "", "/projects/new");
+function makeRepository(initialProjects: Project[] = []): ProjectRepository {
+  let stored = initialProjects;
+  return {
+    list: async () => stored,
+    get: async (id) => stored.find((project) => project.id === id),
+    save: vi.fn(async (project) => {
+      stored = [
+        ...stored.filter((existing) => existing.id !== project.id),
+        project,
+      ];
+      return project;
+    }),
+    replaceAll: async (projects) => {
+      stored = projects;
+    },
+    clear: async () => {
+      stored = [];
+    },
+  };
+}
+
+const repo = makeRepository();
+
+function renderApp(repository: ProjectRepository, path = "/projects/new") {
+  history.pushState(null, "", path);
   return render(
     <AppRouter>
-      <ProjectsProvider repository={repo}>
+      <ProjectsProvider repository={repository}>
         <RouterSwitch
           routes={{
+            "/": <ProjectList />,
             "/projects/new": <ProjectForm />,
-            "/projects/:id": <p>Fiche</p>,
+            "/projects/:id": <ProjectDetail />,
+            "/projects/:id/edit": <ProjectForm />,
           }}
           fallback={<p>Fallback</p>}
         />
@@ -31,17 +67,89 @@ function renderForm() {
   );
 }
 
-beforeEach(() => vi.clearAllMocks());
+function renderForm() {
+  return renderApp(repo);
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
+});
 
 describe("ProjectForm", () => {
   it("uses native reliable selects and reports validation", async () => {
     renderForm();
     await screen.findByRole("heading", { name: "Créer un projet" });
-    expect(screen.getByLabelText("État")).toBeInstanceOf(HTMLSelectElement);
+    expect(screen.getByRole("combobox", { name: "État" })).toBeInstanceOf(
+      HTMLSelectElement,
+    );
+    expect(screen.getByRole("combobox", { name: "Priorité" })).toBeInstanceOf(
+      HTMLSelectElement,
+    );
     await userEvent.click(
       screen.getAllByRole("button", { name: "Enregistrer" })[0],
     );
     expect(await screen.findByText("Le nom est obligatoire.")).toBeVisible();
+  });
+
+  it("keeps edit history on the previous detail while creation opens the new detail", async () => {
+    const repository = makeRepository([baseProject]);
+    renderApp(repository, "/");
+
+    await screen.findByRole("heading", { name: "Mes projets" });
+    await userEvent.click(
+      screen.getAllByRole("link", { name: /DeveloperOS/ })[0],
+    );
+    expect(
+      await screen.findByRole("heading", { name: "DeveloperOS" }),
+    ).toBeVisible();
+
+    await userEvent.click(screen.getByRole("link", { name: "Modifier" }));
+    await screen.findByRole("heading", { name: "Modifier le projet" });
+    await userEvent.click(
+      screen.getAllByRole("button", { name: /Annuler/ })[0],
+    );
+    expect(
+      await screen.findByRole("heading", { name: "DeveloperOS" }),
+    ).toBeVisible();
+
+    await userEvent.click(screen.getByRole("link", { name: "Modifier" }));
+    await userEvent.selectOptions(
+      await screen.findByRole("combobox", { name: "Priorité" }),
+      "critical",
+    );
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Enregistrer" })[0],
+    );
+
+    expect(await screen.findByText("Critique")).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: /Retour/ }));
+    expect(
+      await screen.findByRole("heading", { name: "Mes projets" }),
+    ).toBeVisible();
+
+    await userEvent.click(
+      screen.getByRole("link", { name: "Nouvelle création rapide" }),
+    );
+    await userEvent.type(await screen.findByLabelText(/Nom/), "Nouveau");
+    await userEvent.type(
+      screen.getByLabelText("Source", { exact: true }),
+      "dalquier/App-perso",
+    );
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Enregistrer" })[0],
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Nouveau" }),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: /Retour/ }));
+    expect(
+      await screen.findByRole("heading", { name: "Mes projets" }),
+    ).toBeVisible();
   });
 
   it("saves a valid project", async () => {
@@ -54,7 +162,9 @@ describe("ProjectForm", () => {
     await userEvent.click(
       screen.getAllByRole("button", { name: "Enregistrer" })[0],
     );
-    expect(await screen.findByText("Fiche")).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Nouveau" }),
+    ).toBeVisible();
     expect(repo.save).toHaveBeenCalled();
   });
 });

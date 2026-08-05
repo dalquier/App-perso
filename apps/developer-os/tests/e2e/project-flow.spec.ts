@@ -9,8 +9,12 @@ test("mobile project lifecycle persists after reload and navigates back", async 
     .getByRole("link", { name: "Créer un projet", exact: true })
     .click();
   await page.getByLabel(/Nom/).fill("DeveloperOS");
-  await page.getByLabel("État", { exact: true }).selectOption("active");
-  await page.getByLabel("Priorité", { exact: true }).selectOption("high");
+  await page
+    .getByRole("combobox", { name: "État", exact: true })
+    .selectOption("active");
+  await page
+    .getByRole("combobox", { name: "Priorité", exact: true })
+    .selectOption("high");
   await page
     .getByLabel("Prochaine action", { exact: true })
     .fill("Valider sur iPhone");
@@ -31,7 +35,9 @@ test("mobile project lifecycle persists after reload and navigates back", async 
   await page.reload();
   await expect(page.getByText("Valider sur iPhone")).toBeVisible();
   await page.getByRole("link", { name: "Modifier" }).click();
-  await page.getByLabel("Priorité", { exact: true }).selectOption("critical");
+  await page
+    .getByRole("combobox", { name: "Priorité", exact: true })
+    .selectOption("critical");
   await page
     .locator("form")
     .getByRole("button", { name: "Enregistrer" })

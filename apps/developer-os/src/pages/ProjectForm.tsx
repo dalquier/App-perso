@@ -80,7 +80,8 @@ export function ProjectForm() {
         : createProject(draft);
       await save(p);
       setDirty(false);
-      nav(`/projects/${p.id}`, { replace: true });
+      if (existing) nav(-1);
+      else nav(`/projects/${p.id}`, { replace: true });
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
@@ -149,9 +150,10 @@ export function ProjectForm() {
             />
           </label>
           <div className="two-cols">
-            <label>
-              État
+            <div>
+              <label htmlFor="project-status">État</label>
               <select
+                id="project-status"
                 value={draft.status}
                 onChange={(e) =>
                   set("status", e.target.value as ProjectDraft["status"])
@@ -163,10 +165,11 @@ export function ProjectForm() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label>
-              Priorité
+            </div>
+            <div>
+              <label htmlFor="project-priority">Priorité</label>
               <select
+                id="project-priority"
                 value={draft.priority}
                 onChange={(e) =>
                   set("priority", e.target.value as ProjectDraft["priority"])
@@ -178,7 +181,7 @@ export function ProjectForm() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
           </div>
           <label className="check">
             <input
