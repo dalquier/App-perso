@@ -36,7 +36,7 @@ Statut : intégré. Le dossier applicatif canonique, le shell PWA, la persistanc
 
 ## Jalon D — BUILD-02, conversation écrite
 
-Statut : en correction après audit, puis en attente de validation. Le chat persistant, le streaming local, la reprise et les modes conversationnels de base sont dans la PR, avec corrections de migration, confidentialité, interruption, isolation des générations et stockage inconnu. La recette Replit et la recette iPhone physique restent à exécuter avant passage de jalon.
+Statut : intégré et validé. Le chat persistant, le streaming local, la reprise, les modes conversationnels, la migration versionnée, la confidentialité, l’interruption et l’isolation des générations ont été validés par 48 tests automatisés, les workflows GitHub et une recette physique iPhone. Référence d’intégration : PR #29, commit `b115989fadd0f3e9f6b503c1b933df4d2b179827`.
 
 ## Jalon E — BUILD-03, séances et mémoire contrôlée
 
