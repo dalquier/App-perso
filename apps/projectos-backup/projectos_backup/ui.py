@@ -148,9 +148,9 @@ class BackupApplication:
             for item in self.store.sources():
                 if item.enabled:
                     sources.append(Source(item.source_id, item.label, resolve_folder(item.bookmark_name)))
-            result = run_backup(sources, destination)
-            files = sum(item.file_count for item in result.archives)
-            message = f"Sauvegarde vérifiée : {files} fichiers"
+            result = run_backup(sources, destination, prepare_file=request_icloud_download)
+            message = (f"Miroir vérifié : {result.copied_files} copiés, "
+                       f"{result.deleted_files} supprimés, {result.unchanged_files} inchangés")
         except Exception as exc:
             message = f"Échec : {exc}"
         finally:
