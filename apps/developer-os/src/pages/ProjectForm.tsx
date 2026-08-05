@@ -80,7 +80,8 @@ export function ProjectForm() {
         : createProject(draft);
       await save(p);
       setDirty(false);
-      nav(`/projects/${p.id}`, { replace: true });
+      if (existing) nav(-1);
+      else nav(`/projects/${p.id}`, { replace: true });
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
