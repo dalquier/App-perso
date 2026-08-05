@@ -1,76 +1,44 @@
 # Prompts d’action ProjectOS
 
-## Commande d’activation canonique
-
-Utiliser cette formule au début d’une conversation standard lorsque ProjectOS n’est pas déjà activé par les instructions du projet ChatGPT :
+## Activation canonique
 
 ```text
 Active ProjectOS depuis `dalquier/App-perso`, charge la dernière version de `ProjectOS/BOOTSTRAP.md`, exécute les références qu’il désigne, puis traite ma demande.
 ```
 
-La formulation historique « selon le prompt maître » reste comprise comme un alias, mais elle doit désormais être résolue vers `BOOTSTRAP.md` et non vers une copie figée de `MASTER_PROJECT_PROMPT.md`.
+L’alias « selon le prompt maître » se résout vers `BOOTSTRAP.md`.
 
-```text
-Active ProjectOS depuis `dalquier/App-perso`, puis traite ma demande selon le prompt maître.
-```
+Au démarrage :
 
-Interprétation obligatoire de cet alias :
-
-1. consulter la branche `main` de `dalquier/App-perso` ;
-2. charger la dernière version de `ProjectOS/BOOTSTRAP.md` ;
-3. suivre sa séquence de chargement dynamique ;
-4. utiliser les références vivantes, manifests et ADR résolus ;
-5. traiter ensuite la demande de l’utilisateur ;
-6. terminer la première réponse par `Enregistrer la conversation ?`.
-
-Dans le projet ChatGPT `App perso`, ProjectOS est déjà actif : les commandes ci-dessous peuvent être utilisées sans répéter la phrase d’activation.
+- Codex active automatiquement l’archive et termine par `Mémoire Codex : enregistrement activé.` ;
+- ChatGPT et les autres outils terminent par `Enregistrer la conversation ?`.
 
 ## Reprendre un projet
 
 ```text
-Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis identifie le projet concerné, consulte son manifeste, ses ADR et l’état vivant du dépôt. Présente l’état actuel, les travaux en cours, les risques et la prochaine action recommandée avant toute modification.
-```
-
-## Reprendre un projet avec mémoire
-
-Après avoir répondu `oui` à `Enregistrer la conversation ?` :
-
-```text
-Charge l’index, la chronologie et uniquement les synthèses de sessions pertinentes du projet. Confronte-les à l’état vivant de GitHub, signale les contradictions et poursuis depuis la dernière action vérifiée.
+Recharge ProjectOS depuis dalquier/App-perso, branche main. Relis la dernière version de ProjectOS/BOOTSTRAP.md, recharge toutes les références qu’il désigne et remplace les anciennes règles par les règles vivantes. Conserve le contexte et le choix de mémoire de cette conversation.
 ```
 
 ## Modifier du code
 
 ```text
-Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis traite ce changement. Travaille sur une branche dédiée, ne modifie pas main directement, inspecte les références et le code existant, implémente le plus petit changement cohérent, exécute les tests pertinents, documente le résultat et ouvre une Pull Request.
+Traite ce changement selon ProjectOS. Travaille sur une branche dédiée, inspecte les références et le code, implémente le plus petit changement cohérent, teste, documente et ouvre une Pull Request.
 ```
 
-## Auditer un projet
+## Auditer
 
 ```text
-Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis réalise un audit sans modification : architecture, qualité, sécurité, UX iPhone, données, dépendances, tests, documentation, CI et déploiement. Classe les constats par criticité et propose un plan de correction ordonné.
-```
-
-## Migrer un projet existant
-
-```text
-Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis inventorie les sources vivantes, doublons et versions contradictoires. Désigne la source canonique, crée une sauvegarde, propose la structure cible, migre sur une branche dédiée, conserve une table de correspondance et un plan de retour arrière, puis ouvre une Pull Request.
-```
-
-## Créer un nouveau projet
-
-```text
-Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis crée le manifeste, l’architecture, les ADR initiales, le README, les tests essentiels, la CI et le plan de livraison. Utilise GitHub comme source de vérité, Replit Starter comme cloud par défaut et Pyto comme compagnon iPhone permanent lorsque pertinent.
+Réalise un audit ProjectOS sans modification : architecture, qualité, sécurité, UX iPhone, données, dépendances, tests, documentation, CI et déploiement. Classe les constats par criticité.
 ```
 
 ## Clôturer une session enregistrée
 
 ```text
-Clôture la session ProjectOS enregistrée. Mets à jour la synthèse, l’index et, si nécessaire, la chronologie. Transfère les décisions durables vers les références canoniques, distingue les faits vérifiés des hypothèses et indique l’état de l’archive brute.
+Clôture la session ProjectOS. Vérifie l’archive Drive et son manifeste, mets à jour la synthèse et l’index GitHub, actualise la chronologie si nécessaire, transfère les décisions durables et signale tout élément manquant.
 ```
 
-## Sauvegarder et vérifier
+## Retrouver une conversation
 
 ```text
-Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis vérifie la dernière sauvegarde GitHub et Google Drive, crée une archive horodatée si nécessaire, calcule son empreinte, contrôle la restauration possible et signale explicitement toute étape non vérifiée.
+Retrouve la conversation ProjectOS correspondant à <description>. Recherche l’index et les synthèses GitHub, vérifie le manifeste Drive de la session sélectionnée, puis restitue la transcription et les pièces jointes demandées.
 ```
