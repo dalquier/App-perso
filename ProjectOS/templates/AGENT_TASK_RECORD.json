@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "task_id": "TSK-20260805-001",
+  "tool": "codex",
+  "project_id": "developeros",
+  "title": "Exemple anonymisé",
+  "started_at": "2026-08-05T13:00:00+02:00",
+  "ended_at": "2026-08-05T13:15:00+02:00",
+  "status": "completed",
+  "source": "manual",
+  "quota_before_percent": 80,
+  "quota_after_percent": 74,
+  "observed_delta_percent": 6,
+  "credits_observed": null,
+  "credits_estimated": null,
+  "confidence": "attributed",
+  "evidence": "usage-dashboard-snapshot",
+  "notes": "Exemple sans donnée personnelle ni secret."
+}
