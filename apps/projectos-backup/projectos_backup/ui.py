@@ -6,7 +6,7 @@ import threading
 from pathlib import Path
 
 from .core import BackupError, Source, run_backup
-from .pyto_access import PytoUnavailable, choose_folder, delete_bookmark, resolve_folder
+from .pyto_access import PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
 from .state import ConfigStore, infer_source_label
 
 
@@ -133,7 +133,7 @@ class BackupApplication:
 
     def _backup(self, sender=None) -> None:
         self.backup_button.enabled = False
-        self.status.text = "Sauvegarde et vérification…"
+        self.status.text = "Préchargement iCloud et synchronisation…"
         threading.Thread(target=self._run_backup, daemon=True).start()
 
     def _run_backup(self) -> None:
