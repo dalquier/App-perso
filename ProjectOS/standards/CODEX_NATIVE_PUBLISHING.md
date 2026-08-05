@@ -2,218 +2,178 @@
 
 ## 1. Objet
 
-Ce standard définit le fonctionnement permanent des tâches Codex exécutées dans un environnement Codex Cloud relié à un dépôt GitHub.
+Ce standard définit le fonctionnement permanent des tâches Codex Cloud reliées à un dépôt GitHub. Il complète obligatoirement `ARTIFACT_DELIVERY_AND_RECOVERY.md`.
 
-Il évite les faux blocages provoqués par la confusion entre :
+Il distingue :
 
-- le sandbox terminal isolé dans lequel Codex produit les modifications ;
-- l’environnement GitHub sélectionné dans l’interface Codex ;
-- le mécanisme natif de publication de branche et de Pull Request disponible après création d’un diff.
+- le sandbox terminal dans lequel Codex produit les modifications ;
+- le dépôt et la branche de base sélectionnés dans l’interface Codex ;
+- le mécanisme natif de publication après production du diff ;
+- les canaux de récupération à utiliser si cette publication échoue.
 
 ## 2. Règle de confiance de l’environnement
 
 Lorsque l’interface Codex indique explicitement le dépôt canonique et la branche de base attendue, l’agent considère que la tâche est reliée à cet environnement GitHub.
 
-Exemple valide :
+Exemple :
 
 ```text
 Repository: dalquier/App-perso
 Base branch: main
 ```
 
-Le sandbox peut néanmoins présenter :
+Le sandbox peut présenter une branche locale `work`, aucun `origin`, aucun upstream, aucun jeton et une commande `gh auth status` non authentifiée. Ces éléments ne bloquent pas le mode `codex-native` lorsque l’environnement affiché est correct.
 
-- une branche locale nommée `work` ;
-- aucun remote `origin` ;
-- aucun upstream Git ;
-- aucune variable `GH_TOKEN` ou `GITHUB_TOKEN` ;
-- une commande `gh auth status` non authentifiée ;
-- aucune commande native `make_pr` exposée au terminal.
+Ils interdisent en revanche de prétendre qu’un `git push` terminal direct est possible.
 
-Ces éléments ne constituent pas un blocage lorsque la publication doit être réalisée après la tâche par le bouton GitHub de l’interface Codex.
+## 3. Delivery Preflight Codex
 
-## 3. Instructions obligatoires dans les prompts Codex
+Avant toute modification, Codex applique `ARTIFACT_DELIVERY_AND_RECOVERY.md` et consigne :
 
-Tout prompt destiné à un environnement Codex Cloud relié au dépôt doit inclure ou appliquer les règles suivantes :
+- dépôt et branche de base affichés par l’interface ;
+- SHA ou état de départ vérifiable ;
+- périmètre autorisé ;
+- nature textuelle ou binaire des fichiers prévus ;
+- mode de livraison principal ;
+- plan de récupération ;
+- preuve externe attendue après la tâche.
+
+Le mode principal est généralement :
+
+- `codex-native-text` pour un diff textuel ;
+- `codex-native-generated-assets` pour des sources textuelles et des binaires générés ;
+- `git-binary-capable` lorsqu’un binaire canonique doit être versionné.
+
+Le plan de récupération doit être défini avant le travail. Il ne doit pas reposer uniquement sur `/tmp`.
+
+## 4. Instructions obligatoires dans les prompts Codex
 
 ```text
 L’environnement Codex est relié au dépôt GitHub indiqué et à la branche de base indiquée.
 
 Travaille dans le sandbox fourni par Codex.
-Ne vérifie pas GH_TOKEN ou GITHUB_TOKEN.
 Ne lance pas gh auth login.
-Ne tente pas de git push depuis le terminal.
-Ne considère pas l’absence de remote origin, d’upstream ou de credentials Git dans le terminal comme bloquante.
-Ne demande pas au sandbox de prouver que les boutons de publication de l’interface existent.
+Ne tente pas de git push depuis le terminal si aucun accès direct n’est disponible.
+Ne considère pas l’absence de remote origin, d’upstream, de origin/main ou de credentials Git dans le terminal comme bloquante pour la publication native.
 Produis les modifications, exécute les tests et prépare un diff propre.
-La publication de la branche et de la Pull Request sera réalisée avec le mécanisme natif de Codex après la tâche.
+La publication sera réalisée avec le mécanisme natif de Codex si le diff est compatible.
+Avant toute modification, applique le Delivery Preflight de ProjectOS/standards/ARTIFACT_DELIVERY_AND_RECOVERY.md.
+Prévois un patch exportable hors de /tmp en cas d’échec de publication.
 Ne modifie jamais directement main.
 Ne fusionne jamais la Pull Request sans instruction explicite.
 ```
 
-## 4. Précontrôle adapté à Codex Cloud
+## 5. Précontrôle utile dans le sandbox
 
-Avant de modifier le code, Codex vérifie uniquement ce qu’il peut vérifier utilement dans le sandbox :
+Codex vérifie :
 
-1. le projet et les références ProjectOS sont présents ;
-2. la copie de travail correspond au dépôt et à la branche de base affichés par l’environnement ;
-3. l’arbre de travail initial est propre ou les changements préexistants sont identifiés ;
-4. le périmètre de fichiers autorisé est compris ;
-5. les dépendances nécessaires peuvent être installées ou sont disponibles ;
-6. les tests prévus sont exécutables ;
-7. les fichiers attendus sont inventoriés, les formats binaires sont identifiés et leur stratégie de livraison est choisie avant création.
+1. la présence des références ProjectOS et du projet ;
+2. la cohérence avec le dépôt et la branche de base affichés ;
+3. l’état initial du worktree ;
+4. le périmètre de fichiers ;
+5. la disponibilité des dépendances et tests ;
+6. la nature des fichiers prévus ;
+7. la possibilité de produire et conserver un diff ;
+8. la disponibilité d’un emplacement exportable ou d’un secours base64 si la publication native échoue.
 
-Codex ne doit pas arrêter une tâche uniquement parce que :
+Codex ne s’arrête pas uniquement parce que le terminal ne possède ni remote, ni token, ni `gh` authentifié. Il doit toutefois signaler honnêtement que la preuve de publication ne pourra être obtenue qu’après l’action native.
 
-- `git remote -v` est vide ;
-- la branche locale s’appelle `work` ;
-- `origin/main` n’existe pas dans le sandbox ;
-- `gh auth status` échoue ;
-- aucun jeton GitHub n’est exposé ;
-- `git push --dry-run` est impossible ;
-- l’agent ne peut pas inspecter les boutons de l’interface.
+## 6. Ressources binaires
 
-## 5. Compatibilité du diff avec la publication native
+Avant création de tout PNG, JPEG, PDF, ZIP, police, vidéo, base, archive, exécutable ou format non textuel, choisir :
 
-Le mécanisme natif Codex peut refuser certains fichiers binaires. La compatibilité ne doit jamais être supposée.
+1. **Génération déterministe** : source textuelle versionnée, script de génération, binaire ignoré par Git et vérifié dans l’artefact final.
+2. **Canal Git compatible avec les binaires** : Working Copy, Replit authentifié ou autre client autorisé.
+3. **Ressource textuelle native** : SVG, JSON ou texte seulement lorsque cela répond réellement au besoin.
 
-Avant création de tout PNG, JPEG, PDF, ZIP, police, vidéo, base, archive, exécutable ou autre format non textuel, choisir l’une des stratégies suivantes :
+Il est interdit d’encoder arbitrairement un gros binaire en base64 pour contourner une limitation de publication. Le base64 est réservé à la récupération exceptionnelle d’un artefact déjà produit.
 
-1. **Génération déterministe**
-   - versionner une source textuelle et un script de génération ;
-   - générer le binaire pendant l’installation, les tests, le build ou le packaging ;
-   - ignorer le fichier généré dans Git ;
-   - vérifier sa présence et ses propriétés dans l’artefact final.
-2. **Publication Git capable de binaires**
-   - conserver le binaire versionné ;
-   - choisir dès le départ Working Copy, un client Git authentifié ou un autre canal autorisé capable de le publier ;
-   - ne pas attendre la fin de la tâche pour découvrir l’incompatibilité.
-3. **Ressource textuelle native**
-   - utiliser SVG, JSON, texte ou autre format diffable uniquement lorsqu’il répond réellement au besoin de la plateforme cible.
-
-Il est interdit :
-
-- d’ajouter un binaire au diff natif Codex sans stratégie explicitement choisie ;
-- d’encoder arbitrairement un gros binaire en Base64 pour contourner la limitation ;
-- de supprimer une ressource requise uniquement pour rendre le diff publiable ;
-- de déclarer une tâche publiable sans avoir contrôlé la nature des fichiers.
-
-Modes de livraison reconnus :
-
-- `codex-native-text` : diff textuel seulement ;
-- `codex-native-generated-assets` : sources textuelles versionnées et binaires générés ;
-- `git-binary-capable` : binaires versionnés et publication par un client Git compatible.
-
-Le mode est choisi au début de la tâche et rappelé dans la réponse finale.
-
-## 6. Contrôle de publiabilité
-
-Le contrôle doit fonctionner même lorsque le sandbox ne possède ni `origin/main` ni référence de base exploitable.
+## 7. Contrôle du diff
 
 Ordre recommandé :
 
-1. si une référence de base locale fiable existe, exécuter `git diff --numstat <référence-de-base>...HEAD` ;
-2. sinon, contrôler les changements disponibles avec `git diff --numstat`, `git diff --cached --numstat` et, si nécessaire, les commits locaux identifiables ;
-3. compléter par l’inventaire des extensions et la commande `git check-attr diff -- <fichiers>` lorsque la nature d’un fichier reste ambiguë.
+1. `git diff --numstat <base>...HEAD` si une base fiable existe ;
+2. sinon `git diff --numstat` et `git diff --cached --numstat` ;
+3. inventaire des extensions ;
+4. `git check-attr diff -- <fichiers>` si la nature reste ambiguë.
 
-Une ligne dont les colonnes d’ajouts et suppressions valent `-` indique généralement un fichier binaire.
+Une ligne `- -` dans `--numstat` indique généralement un binaire.
 
-L’absence de référence de base ne doit pas bloquer la tâche : Codex utilise le meilleur contrôle disponible et documente sa limite.
+La réponse finale distingue :
 
-Codex doit alors :
+- fichiers textuels ;
+- fichiers binaires sources ;
+- fichiers générés ;
+- canal compatible ;
+- limites du contrôle.
 
-- confirmer qu’aucun binaire incompatible ne reste dans un diff `codex-native-*` ;
-- ou signaler qu’un canal `git-binary-capable` est requis ;
-- ou remplacer le binaire versionné par une génération déterministe validée.
+## 8. Séquence normale
 
-La réponse finale indique obligatoirement :
+1. Sélectionner le dépôt canonique et la branche de base dans Codex.
+2. Charger ProjectOS.
+3. Exécuter le Delivery Preflight.
+4. Choisir le mode de livraison et le plan de récupération.
+5. Produire le diff et les validations.
+6. Contrôler la publiabilité.
+7. Fournir le titre, le corps et le nom logique de branche proposés.
+8. Publier via l’interface native Codex.
+9. Vérifier dans GitHub la branche, le SHA et la Pull Request.
+10. Conserver la PR en Draft sauf instruction contraire.
+11. Ne jamais fusionner automatiquement.
 
-- les fichiers binaires prévus ou détectés ;
-- leur caractère source ou généré ;
-- la stratégie retenue ;
-- la commande de génération lorsqu’elle existe ;
-- les commandes de contrôle réellement exécutées ;
-- le résultat et les limites du contrôle ;
-- le canal de publication réellement compatible.
+## 9. Nommage des branches
 
-## 7. Séquence normale de livraison
+Le prompt peut indiquer un nom logique. L’interface Codex peut créer un nom technique préfixé par `codex/`. Ce nom est acceptable si la PR cible le bon dépôt et la bonne base, et si son lien avec la tâche est vérifiable.
 
-1. Damien sélectionne dans Codex le dépôt canonique et `main` comme branche de base.
-2. Codex charge ProjectOS et les références du projet.
-3. Codex choisit le mode de livraison et traite les ressources binaires avant implémentation.
-4. Codex travaille dans le sandbox fourni.
-5. Codex crée les fichiers, exécute les contrôles et produit un diff propre.
-6. Codex contrôle la publiabilité du diff avec les références réellement disponibles.
-7. Codex termine avec le résumé, les tests, les limites, les ressources binaires, le canal de publication, le titre et le corps proposés pour la Pull Request, ainsi que le nom logique de branche.
-8. Damien ouvre le menu GitHub de la tâche et choisit une demande d’extraction ou une ébauche.
-9. La branche et la Pull Request sont vérifiées dans GitHub.
-10. La Pull Request n’est jamais fusionnée automatiquement.
+## 10. Cas réellement bloquants
 
-## 8. Nommage des branches
+Arrêter avant modification si :
 
-Le prompt indique le nom logique attendu, par exemple :
-
-```text
-developeros/build-01-project-core
-```
-
-L’interface Codex peut créer une branche technique différente, souvent préfixée par `codex/`. Cela n’invalide pas la livraison si :
-
-- la Pull Request cible bien le dépôt et `main` ;
-- le contenu et le périmètre sont corrects ;
-- la branche est identifiable et liée à la tâche ;
-- la Pull Request est vérifiable dans GitHub.
-
-Le nom exact de branche ne doit donc pas provoquer l’arrêt du Build avant production du diff.
-
-## 9. Cas réellement bloquants
-
-La tâche s’arrête avant production uniquement si l’un des cas suivants est vérifié :
-
-- le dépôt ou la branche de base affichés par l’environnement ne correspondent pas au projet ;
-- les références ProjectOS nécessaires sont absentes ou incohérentes au point d’empêcher l’exécution ;
-- le sandbox ne contient pas les fichiers attendus et aucune copie exploitable n’est disponible ;
-- une dépendance indispensable ne peut pas être obtenue ;
-- l’agent ne peut pas produire ou conserver un diff ;
+- le dépôt ou la branche de base affichés sont incorrects ;
+- les références indispensables sont absentes ou contradictoires ;
+- aucun diff ne peut être produit ou conservé ;
+- une dépendance indispensable est inaccessible ;
 - une contrainte de sécurité interdit le travail ;
-- un binaire canonique doit être versionné mais aucun canal de publication compatible n’est disponible.
+- un binaire canonique doit être versionné sans canal compatible ;
+- ni publication native, ni export de fichier, ni récupération base64 ne sont raisonnablement disponibles.
 
-L’absence de credentials Git ou de référence de base exploitable dans le terminal n’est pas un cas bloquant dans le mode de publication native.
-
-## 10. Échec de publication après la tâche
-
-Distinguer :
-
-- panne du bouton, de la connexion ou de l’intégration ;
-- refus du diff en raison d’un type de fichier, notamment binaire.
+## 11. Échec de publication après la tâche
 
 En cas d’échec :
 
-1. ne pas relancer tout le Build ;
-2. conserver la tâche et son diff ;
-3. identifier précisément la cause ;
-4. si le diff est textuel, utiliser `Copier git apply` ou `Copier le patch` ;
-5. si le diff contient un binaire canonique, utiliser un canal `git-binary-capable` ;
-6. si le binaire est générable, corriger la stratégie puis republier sans reconstruire le produit ;
-7. ouvrir ou mettre à jour la Pull Request ;
-8. documenter l’écart comme incident de publication, pas comme échec de construction.
+1. ne pas reconstruire le Build ;
+2. conserver le commit et le diff ;
+3. identifier l’échec : intégration, connexion, bouton, type de fichier ou permission ;
+4. générer immédiatement un patch, un ZIP et un manifeste dans un emplacement exportable tel que `/mnt/data/projectos-delivery/` ;
+5. calculer les SHA-256 ;
+6. vérifier que les fichiers sont réellement téléchargeables ;
+7. si l’interface n’expose aucun fichier, compresser et transférer le patch selon `base64-recovery` ;
+8. reconstruire et vérifier l’empreinte dans un environnement extérieur ;
+9. appliquer le patch dans un client Git authentifié ;
+10. relancer les validations essentielles ;
+11. mettre à jour la branche et la PR prévues.
 
-## 11. Sécurité
+Il est interdit de terminer avec :
 
-- Aucun Personal Access Token ne doit être collé dans un prompt.
-- Aucun jeton ne doit être commité dans le dépôt.
-- Aucun secret ne doit être ajouté dans `.env` ou un handoff.
-- La connexion GitHub native de Codex doit être privilégiée lorsque le diff est compatible.
-- `main` reste protégée par la règle : branche dédiée, revue, tests, Pull Request, puis fusion explicite.
+- un fichier uniquement sous `/tmp` ;
+- un champ de lien vide ;
+- une affirmation de publication sans SHA distant ;
+- une demande de recommencer l’implémentation alors que le diff existe encore.
 
-## 12. Critère de réussite
+## 12. Sécurité
 
-Une tâche est construite lorsque le diff et les preuves de tests existent.
+- Aucun Personal Access Token dans un prompt ou une conversation.
+- Aucun secret commité.
+- Aucun jeton dans `.env`, un patch, un manifeste ou un handoff.
+- Privilégier la connexion native Codex lorsque le diff est compatible.
+- Protéger `main` par branche, tests, revue et fusion explicite.
 
-Elle est publiable lorsque le diff est compatible avec le canal choisi.
+## 13. États et critères de réussite
 
-Elle est publiée lorsque la branche et la Pull Request sont visibles dans GitHub.
+- **Construit** : diff et validations disponibles.
+- **Exporté** : artefact récupéré hors du sandbox.
+- **Publié** : branche et Pull Request visibles dans GitHub, SHA vérifié.
+- **Livré** : résultat relu et jugé conforme.
+- **Intégré** : fusion explicitement décidée et vérifiée.
 
-Elle est livrée lorsque la Pull Request a été relue et jugée conforme.
-
-Elle n’est intégrée que lorsque la fusion a été explicitement décidée.
+Une tâche Codex ne doit jamais utiliser ces états comme synonymes.
