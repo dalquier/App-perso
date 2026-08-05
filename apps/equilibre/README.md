@@ -44,3 +44,7 @@ Voir la [procédure iPhone](docs/IPHONE_TEST.md) et l'[inventaire historique](do
 ## Génération reproductible des icônes
 
 L'icône source versionnée est `public/icons/icon.svg`. Les scripts `predev` et `prebuild` exécutent automatiquement `npm run generate:icons` afin de créer localement les PNG 180, 192 et 512 pixels attendus par iOS et le manifeste. Ces PNG sont des artefacts générés ignorés par Git ; `npm run dev` et `npm run build` fonctionnent donc directement après un import Replit.
+
+## BUILD-02 — Conversations persistantes
+
+BUILD-02 ajoute un historique local multi-conversations, des modes conversationnels, une réponse progressive simulée, l’interruption de génération, les erreurs fournisseur récupérables et une migration depuis le schéma BUILD-01. Voir `docs/BUILD_02_ARCHITECTURE.md` pour l’architecture, le modèle de données, les migrations, la recette Replit/iPhone et le retour arrière.
