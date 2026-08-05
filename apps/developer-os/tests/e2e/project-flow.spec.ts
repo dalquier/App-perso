@@ -95,3 +95,44 @@ test("long settings view scrolls and JSON import errors are handled", async ({
   await page.getByText("DeveloperOS 0.1.0").scrollIntoViewIfNeeded();
   await expect(page.getByText("DeveloperOS 0.1.0")).toBeVisible();
 });
+
+test("archive appears in archives, restores inactive and persists after reload", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: "Nouvelle création rapide" }).click();
+  await page.getByLabel(/Nom/).fill("Archivable");
+  await page.getByRole("combobox", { name: "État", exact: true }).selectOption("active");
+  await page.getByLabel("Source", { exact: true }).fill("dalquier/App-perso");
+  await page.getByText("Définir comme projet actif").click();
+  await page.locator("form").getByRole("button", { name: "Enregistrer" }).last().click();
+  await expect(page.getByText("● Projet actif")).toBeVisible();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("restaurable");
+    await dialog.dismiss();
+  });
+  await page.getByRole("button", { name: "Archiver le projet" }).click();
+  await expect(page.getByRole("heading", { name: "Archivable" })).toBeVisible();
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("restaurable");
+    await dialog.accept();
+  });
+  await page.getByRole("button", { name: "Archiver le projet" }).click();
+  await expect(page.getByRole("heading", { name: "Mes projets" })).toBeVisible();
+  await expect(page.getByText("Archivable")).toBeHidden();
+  await expect(page.getByText("Aucun projet actif")).toBeVisible();
+
+  await page.getByRole("link", { name: "Paramètres" }).click();
+  await page.getByRole("link", { name: "Projets archivés" }).click();
+  await page.getByRole("link", { name: /Archivable/ }).click();
+  await expect(page.getByRole("button", { name: "Restaurer le projet" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Définir comme projet actif" })).toBeHidden();
+  await page.getByRole("button", { name: "Restaurer le projet" }).click();
+  await expect(page.getByText("En pause")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Définir comme projet actif" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("En pause")).toBeVisible();
+  await expect(page.getByText("● Projet actif")).toBeHidden();
+});

@@ -17,6 +17,29 @@ export function ProjectDetail() {
   const activate = async () => {
     await save({ ...p, isActive: true, updatedAt: new Date().toISOString() });
   };
+  const archive = async () => {
+    if (
+      !confirm(
+        "Archiver le projet ? Il restera restaurable depuis les réglages, dans Projets archivés.",
+      )
+    )
+      return;
+    await save({
+      ...p,
+      status: "archived",
+      isActive: false,
+      updatedAt: new Date().toISOString(),
+    });
+    nav("/", { replace: true });
+  };
+  const restore = async () => {
+    await save({
+      ...p,
+      status: "paused",
+      isActive: false,
+      updatedAt: new Date().toISOString(),
+    });
+  };
   return (
     <section>
       <button className="back" onClick={() => nav(-1)}>
@@ -34,14 +57,21 @@ export function ProjectDetail() {
           Modifier
         </Link>
       </div>
-      {p.isActive ? (
+      {p.status === "archived" ? (
+        <button className="wide secondary" onClick={() => void restore()}>
+          Restaurer le projet
+        </button>
+      ) : p.isActive ? (
         <div className="active-banner">● Projet actif</div>
       ) : (
-        p.status !== "archived" && (
-          <button className="wide secondary" onClick={() => void activate()}>
-            Définir comme projet actif
-          </button>
-        )
+        <button className="wide secondary" onClick={() => void activate()}>
+          Définir comme projet actif
+        </button>
+      )}
+      {p.status !== "archived" && (
+        <button className="wide danger" onClick={() => void archive()}>
+          Archiver le projet
+        </button>
       )}
       <div className="detail-grid">
         <article>
