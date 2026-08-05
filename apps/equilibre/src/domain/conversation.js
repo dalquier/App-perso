@@ -33,3 +33,29 @@ export function titleFromMessage(content) {
   const clean = content.trim().replace(/\s+/g, " ");
   return clean ? clean.slice(0, 42) : "Nouvelle conversation";
 }
+
+export function updateConversationById(currentState, conversationId, updater, { makeActive = false } = {}) {
+  let found = false;
+  const conversations = currentState.conversations.map((conversation) => {
+    if (conversation.id !== conversationId) return conversation;
+    found = true;
+    return updater(conversation);
+  });
+  if (!found) return currentState;
+  return {
+    ...currentState,
+    conversations: conversations.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)),
+    activeConversationId: makeActive ? conversationId : currentState.activeConversationId,
+  };
+}
+
+export function interruptConversationGeneration(currentState, conversationId, reason = "user_interruption") {
+  return updateConversationById(currentState, conversationId, (conversation) => ({
+    ...conversation,
+    messages: conversation.messages.map((message) =>
+      [MESSAGE_STATUS.generating, MESSAGE_STATUS.partial].includes(message.status)
+        ? { ...message, status: MESSAGE_STATUS.interrupted, errorRef: reason }
+        : message,
+    ),
+  }));
+}
