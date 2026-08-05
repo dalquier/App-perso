@@ -21,6 +21,14 @@
 13. Livrer par Pull Request avec un résumé vérifiable.
 14. Après prise en compte du compte rendu, supprimer le fichier temporaire et vérifier qu’il ne sera pas fusionné dans la branche canonique.
 
+## Communication pendant l’exécution
+
+- Lorsqu’une tâche ProjectOS nécessite une attente perceptible, des outils ou plusieurs opérations, chaque message intermédiaire visible par Damien contient uniquement `Temps restant estimé : <durée>.`
+- Actualiser l’estimation lorsque la durée prévisible évolue sensiblement.
+- Ne jamais détailler dans ces messages intermédiaires les étapes, outils, fichiers, résultats partiels ou raisonnements en cours.
+- Ne pas employer de formule telle que `Réflexion en cours` dans les messages contrôlés par l’agent.
+- Les indicateurs natifs de l’application qui ne sont pas configurables par l’agent ne peuvent pas être remplacés par cette règle.
+
 ## Règles de continuité
 
 - GitHub demeure exploitable même si Drive est déconnecté.

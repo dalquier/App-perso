@@ -18,22 +18,32 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 ## Standards transverses
 
 - `standards/TOOLCHAIN_POLICY.md` : politique obligatoire de développement frugal et rôle de chaque outil.
+- `standards/CREDIT_OPTIMIZATION.md` : optimisation obligatoire des crédits, quotas et appels payants, avec recommandation d’outil avant chaque prompt opérationnel.
+- `standards/LONG_CONTENT_DELIVERY.md` : choix entre réponse conversationnelle, fichier téléchargeable et livraison GitHub pour les contenus longs, prompts et code.
+- `standards/AGENT_USAGE_TRACKING.md` : suivi des tâches Codex/Work, relevés de quota, règles d’attribution et confidentialité.
 - `standards/QUALITY_UX_SECURITY.md` : qualité, UX iPhone et sécurité.
 - `standards/TOOLS_AND_STORAGE.md` : rôle des applications et stockages.
 - `standards/CODE_WORK_ROUTING.md` : routage obligatoire des développements substantiels vers Codex et GitHub.
+- `standards/CODEX_NATIVE_PUBLISHING.md` : fonctionnement des sandboxes Codex Cloud et publication native des branches et Pull Requests.
+- `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` : précontrôle obligatoire du canal de livraison, preuves externes et récupération des artefacts.
 - `standards/CODING_STANDARDS.md` : règles communes de conception et de code.
 - `standards/DOCUMENTATION.md` : exigences de documentation et traçabilité.
 - `standards/TESTING.md` : stratégie de tests et preuves d’exécution.
 - `standards/AGENT_HANDOFFS.md` : transmissions temporaires et livraisons récupérables des agents.
 - `standards/CONVERSATION_NAMING.md` : convention obligatoire de nommage des discussions ChatGPT et Codex.
+- `standards/CONVERSATION_MEMORY.md` : consentement, indexation et synthèse de la mémoire conversationnelle.
+- `standards/CONVERSATION_ARCHIVE_PIPELINE.md` : capture incrémentale directe de la transcription visible et des fichiers dans Google Drive.
 
 ## Décisions transverses
 
 - `ADR/ADR-001-FRUGAL-DEVELOPMENT-TOOLCHAIN.md` : ChatGPT et Codex développent ; Replit Starter exécute, teste, stocke et déploie.
+- `ADR/ADR-002-PERMANENT-CODEX-CONVERSATION-MEMORY.md` : consentement permanent à l’enregistrement structuré de toutes les conversations ProjectOS exécutées avec Codex.
+- `ADR/ADR-003-DIRECT-CONVERSATION-ARCHIVING.md` : archive directe Drive ; ChatGPT au choix, Codex systématique.
 
 ## Guides
 
 - `guides/SHORTCUT_AGENT_HANDOFF.md` : flux iOS Raccourcis pour collecter et classer les livraisons d’agents.
+- `guides/CONVERSATION_ARCHIVING.md` : usage iPhone pour enregistrer et retrouver une conversation.
 
 ## Prompts
 
@@ -48,12 +58,19 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `projects/<projet>/ADR/` : décisions d’architecture.
 - `projects/<projet>/docs/` : documentation versionnée utile au pilotage.
 - `projects/<projet>/roadmap.md` : trajectoire et jalons lorsque nécessaire.
+- `projects/<projet>/memory/` : index, chronologie et synthèses des conversations enregistrées avec consentement.
 
 Le registre central détermine quels projets disposent déjà d’un dossier ProjectOS et quelles références restent à confirmer ou à migrer.
 
 ## Modèles
 
 - `templates/PROJECT_MANIFEST.md` : manifeste type.
+- `templates/DELIVERY_MANIFEST.md` : preuve type de construction, export, publication, livraison et récupération.
+- `templates/AGENT_TASK_RECORD.json` : exemple anonymisé de tâche Codex ou Work suivie.
+- `templates/CONVERSATION_INDEX.md` : registre type des conversations enregistrées.
+- `templates/PROJECT_TIMELINE.md` : chronologie structurante type.
+- `templates/SESSION_SUMMARY.md` : synthèse autonome type d’une session.
+- `templates/CONVERSATION_ARCHIVE_MANIFEST.json.example` : inventaire et état d’intégrité d’une archive Drive.
 - Les modèles ADR, roadmap et documents complémentaires peuvent être ajoutés sans modifier `BOOTSTRAP.md`, à condition d’être indexés ici.
 
 ## Archives
@@ -70,15 +87,15 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 5. règles permanentes de ProjectOS ;
 6. documentation versionnée ;
 7. documentation collaborative explicitement référencée sur Google Drive ;
-8. copie locale iCloud ;
-9. historique conversationnel.
+8. mémoire conversationnelle enregistrée ;
+9. copie locale iCloud et historique conversationnel brut.
 
 ## Stockages
 
-- GitHub : code, règles, manifests, ADR et documentation versionnée.
+- GitHub : code, règles, manifests, ADR, documentation versionnée, index et synthèses conversationnelles.
 - Working Copy : copie Git locale sur iPhone.
-- iCloud Drive : fichiers locaux, échanges Pyto et données non versionnées.
-- Google Drive : documents collaboratifs, corpus et sauvegardes horodatées.
+- iCloud Drive : fichiers locaux et échanges Pyto ; aucun transit iCloud n’est requis pour l’archive conversationnelle.
+- Google Drive : documents collaboratifs, corpus, sauvegardes horodatées et archives conversationnelles intégrales privées.
 - Replit Starter : environnement d’exécution, de test, de stockage de travail et de déploiement ; jamais source canonique.
 
-Une sauvegarde Drive ou Replit n’est jamais une source de vérité.
+Une sauvegarde Drive ou Replit et une archive brute de conversation ne sont jamais une source de vérité.

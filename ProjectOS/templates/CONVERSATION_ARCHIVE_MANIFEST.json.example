@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "session_id": "SES-AAAAMMJJ-NNN",
+  "project": "<projet>",
+  "tool": "ChatGPT|Codex|autre",
+  "consent": {
+    "mode": "permanent-codex|ponctuel",
+    "activated_at": "<ISO-8601>"
+  },
+  "drive_folder_id": "<id>",
+  "status": "initializing|active|complete|partial|error|revoked",
+  "last_verified_sequence": 0,
+  "counts": {
+    "messages": 0,
+    "attachments": 0,
+    "deliverables": 0,
+    "missing_items": 0
+  },
+  "files": [],
+  "missing_items": [],
+  "created_at": "<ISO-8601>",
+  "updated_at": "<ISO-8601>",
+  "notes": []
+}

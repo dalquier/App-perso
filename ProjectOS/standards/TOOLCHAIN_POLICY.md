@@ -26,7 +26,10 @@ Cette règle s’applique à tous les projets logiciels pilotés par ProjectOS, 
 - modifier les projets multi-fichiers ;
 - effectuer refactorings, migrations et débogages transversaux ;
 - écrire et exécuter les tests associés ;
-- travailler sur une branche GitHub dédiée et préparer une Pull Request vérifiable.
+- travailler dans l’environnement relié au dépôt canonique ;
+- produire un diff propre, un compte rendu et le texte proposé de Pull Request.
+
+Dans Codex Cloud, le sandbox terminal et l’interface de publication sont deux couches distinctes. Le sandbox n’a pas besoin d’exposer un remote, un upstream ou des credentials Git. La branche et la Pull Request sont publiées après la tâche par le menu GitHub natif de Codex, conformément à `CODEX_NATIVE_PUBLISHING.md`.
 
 ### GitHub
 
@@ -63,6 +66,7 @@ Une utilisation de l’agent IA Replit n’est admise que si une capacité propr
 ### Working Copy
 
 - fournit le client Git principal sur iPhone ;
+- peut appliquer un patch de secours lorsque la publication native Codex échoue ;
 - ne remplace pas GitHub comme source canonique.
 
 ### Google Drive et iCloud Drive
@@ -79,18 +83,23 @@ Une utilisation de l’agent IA Replit n’est admise que si une capacité propr
 ## 4. Flux de livraison standard
 
 1. ChatGPT clarifie, conçoit et spécifie.
-2. Codex développe sur une branche GitHub dédiée lorsque le travail est substantiel.
-3. Les tests automatisés sont exécutés au plus près du code.
-4. Une Pull Request constitue la livraison canonique.
-5. Replit récupère la branche ou le dépôt et exécute l’application.
-6. Les tests réels, mobiles, fonctionnels ou de déploiement sont réalisés dans Replit lorsque pertinent.
-7. Les anomalies repartent vers ChatGPT pour diagnostic ou Codex pour correction, jamais vers l’agent Replit par défaut.
+2. Damien sélectionne dans Codex le dépôt canonique et `main` comme branche de base.
+3. Codex développe dans le sandbox fourni et produit un diff propre.
+4. Codex exécute les tests et prépare le handoff ainsi que le texte de Pull Request.
+5. Damien publie la branche et la Pull Request par le menu GitHub natif de Codex.
+6. ChatGPT vérifie la livraison dans GitHub.
+7. Replit récupère la branche ou le dépôt et exécute l’application.
+8. Les tests réels, mobiles, fonctionnels ou de déploiement sont réalisés dans Replit lorsque pertinent.
+9. Les anomalies repartent vers ChatGPT pour diagnostic ou Codex pour correction, jamais vers l’agent Replit par défaut.
 
-## 5. Règles de maîtrise des coûts
+## 5. Règles de maîtrise des coûts et de sécurité
 
 - Ne jamais lancer l’agent Replit pour explorer une idée encore mal définie.
 - Ne jamais demander à Replit de reconstruire un projet déjà présent dans GitHub.
 - Préférer une livraison complète et testée par Codex à une série de petites générations Replit.
+- Ne jamais placer un jeton GitHub ou un secret dans un prompt Codex.
+- Ne pas lancer une authentification interactive GitHub dans un sandbox Codex Cloud.
+- En cas d’échec de publication après construction, conserver le diff et utiliser le patch plutôt que reconstruire.
 - Réserver les crédits Replit à une dépendance réellement spécifique à la plateforme.
 - Surveiller les coûts d’API des applications séparément des coûts de développement.
 
@@ -102,8 +111,26 @@ Une livraison respecte cette politique lorsque :
 - Replit peut être supprimé puis recréé depuis le dépôt sans perte du projet ;
 - aucun changement durable n’existe uniquement dans l’espace de travail Replit ;
 - les tests et limites sont documentés ;
-- l’agent IA Replit n’a pas été utilisé, ou son exception est explicitement justifiée.
+- l’agent IA Replit n’a pas été utilisé, ou son exception est explicitement justifiée ;
+- `main` n’a pas été modifiée directement ;
+- la Pull Request n’a pas été fusionnée sans validation.
 
 ## 7. Exception
 
 Toute exception doit préciser : le besoin propre à Replit, les alternatives écartées, le coût ou quota estimé, le périmètre exact et la manière dont le résultat sera reversé dans GitHub.
+
+## 8. Optimisation systématique des crédits
+
+Le standard `ProjectOS/standards/CREDIT_OPTIMIZATION.md` est obligatoire pour toute recommandation d’outil et pour tout prompt opérationnel remis à Damien.
+
+Avant chaque prompt destiné à un outil, l’agent doit préciser au minimum :
+
+- l’outil recommandé ;
+- la raison principale du choix ;
+- le coût relatif estimé ;
+- l’alternative moins coûteuse évaluée ;
+- la condition observable justifiant une bascule vers un autre outil.
+
+L’agent doit privilégier l’outil le moins coûteux capable d’atteindre le résultat vérifiable requis, sans sacrifier la qualité, la sécurité, les tests, la traçabilité ou la livraison.
+
+Un prompt ne doit pas être transmis à Codex, Replit ou un autre outil coûteux tant que son périmètre n’est pas suffisamment défini pour éviter les itérations exploratoires inutiles.

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description" data-background="#315f54" data-border="#244840" data-foreground="#f4f1ea">
+  <title id="title">Équilibre</title>
+  <desc id="description">La lettre É couleur crème sur un carré vert aux angles adoucis.</desc>
+  <rect width="512" height="512" rx="64" fill="#244840"/>
+  <rect x="42" y="42" width="428" height="428" rx="34" fill="#315f54"/>
+  <path fill="#f4f1ea" d="M154 128h204v46H198v58h132v46H198v60h160v46H154V128Z"/>
+</svg>

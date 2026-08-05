@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "snapshot_id": "SNP-20260805-001",
+  "captured_at": "2026-08-05T12:55:00+02:00",
+  "remaining_percent": 80,
+  "reset_at": "2026-08-12T12:55:00+02:00",
+  "measurement_scope": "chatgpt-agent-weekly-quota",
+  "quota_scope": "chatgpt-agent-weekly-quota",
+  "quota_cycle_id": "agent-weekly-2026-W32",
+  "purchased_credits_remaining": null,
+  "source": "manual",
+  "confidence": "observed",
+  "validated_at": "2026-08-05T12:56:00+02:00",
+  "human_validated": true,
+  "quota_event": "unknown",
+  "raw_text_hash": "sha256-example-only"
+}
