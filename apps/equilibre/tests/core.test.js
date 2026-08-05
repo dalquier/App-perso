@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { answerSession, createSession } from "../src/domain/session.js";
-import { addMessage, changeConversationMode, createConversation, createMessage, MESSAGE_STATUS, renameConversation, updateMessage } from "../src/domain/conversation.js";
+import { addMessage, changeConversationMode, createConversation, createMessage, MESSAGE_STATUS, interruptConversationGeneration, renameConversation, updateConversationById, updateMessage } from "../src/domain/conversation.js";
 import { createLocalConversationProvider, DEFAULT_LOCAL_STREAM_DELAY_MS } from "../src/providers/conversationProvider.js";
 import { isIOSDevice, isStandaloneDisplay, localStorageContextNotice } from "../src/platform/displayMode.js";
 import { scrollChatToBottom } from "../src/platform/viewport.js";
@@ -82,4 +82,58 @@ describe("séance guidée et garde-fou", () => {
   it("reste actif avant réponse ordinaire", () => expect(detectSensitiveContent("Je suis stressé par une tâche fictive")).toBe(false));
   it("oriente vers une aide humaine", () => expect(SAFETY_MESSAGE).toContain("3114"));
   it("bloque avant fournisseur sans l'appeler", async () => { const fakeProvider = { generate: vi.fn() }; const content = "je pense au suicide"; expect(detectSensitiveContent(content)).toBe(true); if (!detectSensitiveContent(content)) await fakeProvider.generate({}); expect(fakeProvider.generate).not.toHaveBeenCalled(); });
+});
+
+describe("changement de conversation pendant génération", () => {
+  const fixture = () => {
+    let a = createConversation({ title: "A", now: new Date("2026-01-01T10:00:00Z") });
+    const user = createMessage({ role: "user", content: "Ma question importante", now: new Date("2026-01-01T10:00:01Z") });
+    const assistant = createMessage({ role: "assistant", content: "Début", status: MESSAGE_STATUS.partial, now: new Date("2026-01-01T10:00:02Z") });
+    a = addMessage(addMessage(a, user), assistant);
+    const b = createConversation({ title: "B", now: new Date("2026-01-01T11:00:00Z") });
+    return { state: { ...defaultState(), conversations: [a, b], activeConversationId: a.id }, a, b, user, assistant };
+  };
+
+  it("conserve la question utilisateur de A après interruption", () => {
+    const { state, a, user } = fixture();
+    const next = interruptConversationGeneration(state, a.id, "conversation_switched");
+    expect(next.conversations.find((c) => c.id === a.id).messages.find((m) => m.id === user.id)).toMatchObject({ content: "Ma question importante", status: MESSAGE_STATUS.sent });
+  });
+  it("termine le message assistant de A avec la raison du changement", () => {
+    const { state, a, assistant } = fixture();
+    const next = interruptConversationGeneration(state, a.id, "conversation_switched");
+    expect(next.conversations.find((c) => c.id === a.id).messages.find((m) => m.id === assistant.id)).toMatchObject({ content: "Début", status: MESSAGE_STATUS.interrupted, errorRef: "conversation_switched" });
+  });
+  it("n'affecte pas un autre identifiant de conversation", () => {
+    const { state, a } = fixture();
+    const next = interruptConversationGeneration(state, "conversation-absente", "conversation_switched");
+    expect(next).toBe(state);
+    expect(next.conversations.find((c) => c.id === a.id).messages.at(-1).status).toBe(MESSAGE_STATUS.partial);
+  });
+  it("préserve toutes les conversations en ne changeant que la cible", () => {
+    const { state, a, b } = fixture();
+    const next = updateConversationById(state, a.id, (conversation) => renameConversation(conversation, "A corrigée"));
+    expect(next.conversations).toHaveLength(2);
+    expect(next.conversations.find((c) => c.id === a.id).title).toBe("A corrigée");
+    expect(next.conversations.find((c) => c.id === b.id)).toBe(b);
+  });
+  it("retourne l'état inchangé si la conversation cible est introuvable", () => {
+    const { state } = fixture();
+    expect(updateConversationById(state, "absente", (conversation) => conversation)).toBe(state);
+  });
+  it("permet une génération B indépendante après l'interruption de A", () => {
+    const { state, a, b } = fixture();
+    const interrupted = interruptConversationGeneration(state, a.id, "conversation_switched");
+    const bAssistant = createMessage({ role: "assistant", content: "", status: MESSAGE_STATUS.generating });
+    const next = updateConversationById(interrupted, b.id, (conversation) => addMessage(conversation, bAssistant), { makeActive: true });
+    expect(next.activeConversationId).toBe(b.id);
+    expect(next.conversations.find((c) => c.id === a.id).messages.at(-1).status).toBe(MESSAGE_STATUS.interrupted);
+    expect(next.conversations.find((c) => c.id === b.id).messages.at(-1).status).toBe(MESSAGE_STATUS.generating);
+  });
+  it("n'interrompt pas un message déjà complet", () => {
+    let conversation = createConversation();
+    conversation = addMessage(conversation, createMessage({ role: "assistant", content: "Terminé", status: MESSAGE_STATUS.complete }));
+    const state = { ...defaultState(), conversations: [conversation], activeConversationId: conversation.id };
+    expect(interruptConversationGeneration(state, conversation.id, "conversation_switched").conversations[0].messages[0]).toMatchObject({ content: "Terminé", status: MESSAGE_STATUS.complete, errorRef: null });
+  });
 });
