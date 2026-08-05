@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
-import hashlib
+import re
 import time
+import unicodedata
 
 
 SCHEMA_VERSION = 1
@@ -20,6 +22,24 @@ def default_state_directory() -> Path:
     if configured:
         return Path(configured).expanduser()
     return Path.home() / "Documents" / "ProjectOSBackup"
+
+
+def _label_key(value: str) -> str:
+    ascii_value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^a-z0-9]+", "", ascii_value.casefold())
+
+
+def infer_source_label(path: str, suggestions: list[str]) -> str:
+    """Return a useful label when iOS exposes an app container as Documents."""
+    visible_name = Path(path).name or "Dossier"
+    if visible_name.casefold() != "documents":
+        return visible_name
+    path_key = _label_key(path)
+    for suggestion in sorted(suggestions, key=lambda item: len(_label_key(item)), reverse=True):
+        key = _label_key(suggestion)
+        if key and key in path_key:
+            return suggestion
+    return visible_name
 
 
 @dataclass
@@ -75,6 +95,16 @@ class ConfigStore:
         payload["sources"].append(asdict(source))
         self.save(payload)
         return source
+
+    def rename_source(self, source_id: str, label: str) -> SourceConfig:
+        payload = self.load()
+        normalized = label.strip() or "Dossier"
+        for raw in payload["sources"]:
+            if raw["source_id"] == source_id:
+                raw["label"] = normalized
+                self.save(payload)
+                return SourceConfig(**raw)
+        raise KeyError(source_id)
 
     def remove_source(self, source_id: str) -> SourceConfig:
         payload = self.load()
