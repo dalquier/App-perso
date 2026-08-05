@@ -19,6 +19,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 
 - `standards/TOOLCHAIN_POLICY.md` : politique obligatoire de développement frugal et rôle de chaque outil.
 - `standards/CREDIT_OPTIMIZATION.md` : optimisation obligatoire des crédits, quotas et appels payants, avec recommandation d’outil avant chaque prompt opérationnel.
+- `standards/AGENT_USAGE_TRACKING.md` : suivi des tâches Codex/Work, relevés de quota, règles d’attribution et confidentialité.
 - `standards/QUALITY_UX_SECURITY.md` : qualité, UX iPhone et sécurité.
 - `standards/TOOLS_AND_STORAGE.md` : rôle des applications et stockages.
 - `standards/CODE_WORK_ROUTING.md` : routage obligatoire des développements substantiels vers Codex et GitHub.
@@ -61,6 +62,7 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 
 - `templates/PROJECT_MANIFEST.md` : manifeste type.
 - `templates/DELIVERY_MANIFEST.md` : preuve type de construction, export, publication, livraison et récupération.
+- `templates/AGENT_TASK_RECORD.json` : exemple anonymisé de tâche Codex ou Work suivie.
 - `templates/CONVERSATION_INDEX.md` : registre type des conversations enregistrées.
 - `templates/PROJECT_TIMELINE.md` : chronologie structurante type.
 - `templates/SESSION_SUMMARY.md` : synthèse autonome type d’une session.
