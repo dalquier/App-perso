@@ -5,7 +5,7 @@
 - ID stable : `equilibre`
 - Nom produit : Équilibre
 - Alias historiques : TCC Budy, TCC Buddy, TCC_Budy, compagnon TCC
-- Statut : BUILD-01 intégré ; BUILD-02 en correction et en attente de validation
+- Statut : BUILD-01 et BUILD-02 intégrés ; BUILD-03 à préparer
 - Propriétaire : Damien
 
 ## Vision
@@ -60,7 +60,7 @@ Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; 
 
 ## Prochain jalon
 
-`BUILD-02 — conversations persistantes locales` : corriger les régressions bloquantes après audit, conserver BUILD-01 intégré, puis exécuter la recette Replit et la recette iPhone physique avant validation.
+`BUILD-03 — séances et mémoire contrôlée` : cadrer puis livrer les séances structurées enrichies, leurs résumés et plans d’action, ainsi qu’une mémoire locale proposée, confirmable, corrigeable et supprimable.
 
 ## Définition de terminé de la reprise
 
@@ -74,9 +74,8 @@ Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; 
 
 ## Risques ouverts
 
-- recette Replit et recette iPhone physique encore non exécutées pour BUILD-02 ;
 - dépôt `dalquier/App-perso` public : interdiction stricte de versionner données réelles, secrets, historiques ou exports ;
 - exigences cliniques et réglementaires à préciser avant diffusion à des tiers ;
-- stockage et chiffrement à durcir après BUILD-02 ;
+- stockage et chiffrement à durcir à partir de BUILD-03 ;
 - scénarios sensibles à valider par des tests dédiés ;
 - migration sélective du prototype Pyto à réaliser sans duplication inutile.
