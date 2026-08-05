@@ -26,8 +26,8 @@ Permettre à Damien de restaurer les derniers fichiers utiles de tous ses projet
 - GitHub `dalquier/App-perso` ;
 - dossiers iCloud sélectionnés explicitement dans l'application ;
 - configuration dynamique : ajout, suspension et retrait de dossiers ;
-- snapshot `Current`, staging, contrôles ZIP et SHA-256 ;
-- restauration dossier par dossier ou par bundle global.
+- miroir incrémental `Current`, transaction de rollback et SHA-256 ;
+- restauration directe, dossier par dossier.
 
 ### Exclus
 
@@ -42,10 +42,10 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 ## Architecture cible
 
 1. Pyto gère la liste dynamique des dossiers et leurs bookmarks de sécurité iOS.
-2. Le moteur construit toutes les archives dans `Staging`.
-3. Chaque ZIP et chaque fichier sont inventoriés avec SHA-256.
-4. Après validation globale, `Current` remplace l'ancien état.
-5. Un bundle unique est transmis par Raccourcis vers Google Drive.
+2. Le moteur scanne toutes les sources et demande à iOS de charger les éléments iCloud.
+3. Seuls les fichiers nouveaux ou modifiés sont préparés dans `Transaction`.
+4. Après validation globale, les changements et suppressions sont appliqués avec rollback.
+5. Raccourcis reproduit ce miroir vers Google Drive.
 6. Un mécanisme cloud distinct capture la dernière branche `main` de `dalquier/App-perso`.
 
 ## Contraintes
@@ -56,11 +56,11 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 - aucune dépendance à l'agent IA Replit ;
 - l'échec d'une source ne doit jamais remplacer une sauvegarde valide ;
 - une destination ne peut pas se trouver dans une source ;
-- les fichiers iCloud non téléchargés imposent un échec sûr et visible.
+- le chargement iCloud est demandé explicitement ; toute lecture impossible impose un échec sûr et visible.
 
 ## Jalons
 
-- BUILD-01 : moteur Pyto, interface de sources dynamiques, staging, intégrité et bundle — construit.
+- BUILD-01 : moteur Pyto et interface de sources dynamiques — construit.\n- BUILD-01.1 : miroir incrémental, rollback et préchargement iCloud — en revue.
 - BUILD-02 : Raccourci iOS vers Google Drive, remplacement vérifié et automatisation personnelle.
 - BUILD-03 : capture cloud de `dalquier/App-perso`, restauration guidée et recette de crise.
 
