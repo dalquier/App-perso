@@ -7,7 +7,9 @@ import {
   createMessage,
   addMessage,
   MESSAGE_STATUS,
+  interruptConversationGeneration,
   renameConversation,
+  updateConversationById,
   titleFromMessage,
   updateMessage,
 } from "./domain/conversation.js";
@@ -42,32 +44,6 @@ export function normalizeRuntimeState(nextState) {
       ),
     })),
   };
-}
-
-export function updateConversationById(currentState, conversationId, updater, { makeActive = false } = {}) {
-  let found = false;
-  const conversations = currentState.conversations.map((conversation) => {
-    if (conversation.id !== conversationId) return conversation;
-    found = true;
-    return updater(conversation);
-  });
-  if (!found) return currentState;
-  return {
-    ...currentState,
-    conversations: conversations.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)),
-    activeConversationId: makeActive ? conversationId : currentState.activeConversationId,
-  };
-}
-
-export function interruptConversationGeneration(currentState, conversationId, reason = "user_interruption") {
-  return updateConversationById(currentState, conversationId, (conversation) => ({
-    ...conversation,
-    messages: conversation.messages.map((message) =>
-      [MESSAGE_STATUS.generating, MESSAGE_STATUS.partial].includes(message.status)
-        ? { ...message, status: MESSAGE_STATUS.interrupted, errorRef: reason }
-        : message,
-    ),
-  }));
 }
 
 const activeConversation = () => state.conversations.find((c) => c.id === state.activeConversationId) || null;
@@ -179,17 +155,28 @@ async function generateReply(conversationId, assistantId) {
   }
 }
 
+function interruptOutgoingGeneration(nextConversationId = null) {
+  const outgoingConversationId = state.activeConversationId;
+  if (!outgoingConversationId || outgoingConversationId === nextConversationId || !generations.has(outgoingConversationId)) return;
+  generations.get(outgoingConversationId)?.abort();
+  generations.delete(outgoingConversationId);
+  state = interruptConversationGeneration(state, outgoingConversationId, "conversation_switched");
+  persist();
+}
+
 app.addEventListener("click", (event) => {
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) setView(viewButton.dataset.view);
 
   if (event.target.closest("[data-new-conversation]")) {
+    interruptOutgoingGeneration();
     saveConversation(createConversation(), { makeActive: true });
     setView("chat");
   }
 
   const open = event.target.closest("[data-open-conversation]");
   if (open) {
+    interruptOutgoingGeneration(open.dataset.openConversation);
     state.activeConversationId = open.dataset.openConversation;
     persist();
     setView("chat");
