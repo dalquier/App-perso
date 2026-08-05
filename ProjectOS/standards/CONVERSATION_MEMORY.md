@@ -6,32 +6,51 @@ Ce standard organise la continuité entre les conversations ChatGPT, Codex et au
 
 La mémoire conversationnelle sert à retrouver le contexte, les décisions, les travaux et les prochaines actions d’un projet. Elle reste secondaire par rapport au dépôt vivant, au manifeste, aux ADR, à la roadmap, à la documentation canonique et aux preuves GitHub.
 
-## 2. Consentement obligatoire au démarrage
+## 2. Consentement et activation au démarrage
 
-La mémoire conversationnelle n’est jamais activée automatiquement.
+La mémoire conversationnelle n’est jamais activée silencieusement : elle repose soit sur un consentement permanent explicite et versionné, soit sur un consentement ponctuel.
 
-Pendant l’amorçage, les messages intermédiaires visibles doivent indiquer uniquement le temps restant estimé, sans détail de progression. La première réponse doit rester courte : état rapide des vérifications effectuées, anomalies éventuelles, puis question de consentement.
+### 2.1 Consentement permanent spécifique à Codex
 
-À la fin de cette première réponse ProjectOS, l’agent doit poser exactement cette question, sur la dernière ligne :
+Damien a donné le 5 août 2026 un consentement permanent pour enregistrer toutes les conversations ProjectOS exécutées avec Codex.
+
+En conséquence, au démarrage de chaque conversation ProjectOS avec Codex, l’agent :
+
+1. active automatiquement l’enregistrement structuré ;
+2. attribue un identifiant stable au format `SES-AAAAMMJJ-NNN` ;
+3. charge sélectivement l’index, la chronologie et les synthèses pertinentes ;
+4. termine sa première réponse par la ligne exacte :
+
+```text
+Mémoire Codex : enregistrement activé.
+```
+
+Aucune nouvelle question de consentement n’est requise avec Codex tant que cette décision n’est pas révoquée explicitement.
+
+Ce consentement couvre l’index, la chronologie, les synthèses de session et le transfert des décisions durables vers les références canoniques. Il ne déclenche pas automatiquement l’archivage du verbatim intégral : l’archive brute reste facultative, secondaire et dépend des capacités réelles d’export.
+
+Le consentement permanent est révocable à tout moment. Une révocation doit être appliquée immédiatement, versionnée dans ProjectOS et ne supprime pas rétroactivement les synthèses existantes sauf demande explicite de Damien.
+
+### 2.2 Consentement ponctuel pour les autres outils
+
+Pour ChatGPT et tout autre outil ne bénéficiant pas d’un consentement permanent versionné, la première réponse ProjectOS doit se terminer par la question exacte :
 
 ```text
 Enregistrer la conversation ?
 ```
 
-Aucun texte, lien, note ou question ne doit suivre cette ligne.
+Aucun texte ne doit suivre cette ligne.
 
 Réponses attendues :
 
 - `oui` : activer la mémoire de cette conversation ;
 - `non` : ne créer ni index, ni synthèse, ni archive pour cette conversation.
 
-Une réponse équivalente et non ambiguë peut être comprise, mais l’utilisateur doit pouvoir répondre simplement par `oui` ou `non`.
+Une réponse équivalente et non ambiguë peut être comprise. Tant que Damien n’a pas répondu, l’état est `consentement-en-attente` et aucun artefact permanent de mémoire ne doit être créé.
 
-Tant que Damien n’a pas répondu, l’état est `consentement-en-attente` et aucun artefact permanent de mémoire ne doit être créé.
+## 3. Effet d’une activation
 
-## 3. Effet d’un oui
-
-Après un `oui`, l’agent :
+Après une activation, automatique avec Codex ou ponctuelle après un `oui`, l’agent :
 
 1. attribue un identifiant stable au format `SES-AAAAMMJJ-NNN` ;
 2. confirme brièvement l’activation ;
@@ -45,9 +64,9 @@ Après un `oui`, l’agent :
 
 L’activation ne vaut pas autorisation d’archiver des secrets, données personnelles sensibles, données médicales brutes ou contenus confidentiels inutiles.
 
-## 4. Effet d’un non
+## 4. Effet d’un non ou d’une révocation
 
-Après un `non` :
+Après un `non` dans un régime à consentement ponctuel :
 
 - poursuivre normalement la conversation ;
 - ne pas créer de synthèse de session ;
@@ -78,11 +97,11 @@ ProjectOS/projects/<Projet>/memory/
 └── SESSION_SUMMARIES/
 ```
 
-L’absence du dossier n’empêche pas l’amorçage. Après consentement, il peut être initialisé sur une branche dédiée lorsque la tâche autorise une modification GitHub.
+L’absence du dossier n’empêche pas l’amorçage. Après activation, il peut être initialisé sur une branche dédiée lorsque la tâche autorise une modification GitHub.
 
 ## 7. Chargement sélectif
 
-Après consentement, ne jamais charger tout l’historique par défaut.
+Après activation, ne jamais charger tout l’historique par défaut.
 
 Sélectionner uniquement les synthèses liées :
 
@@ -106,7 +125,7 @@ Une session mérite une synthèse lorsqu’elle produit au moins un élément st
 - clarification importante ;
 - prochaine action structurante.
 
-Les échanges triviaux ou purement pratiques peuvent rester sans synthèse même après consentement, à condition que l’index indique `aucune synthèse nécessaire` si une session avait été ouverte.
+Les échanges triviaux ou purement pratiques peuvent rester sans synthèse même après activation, à condition que l’index indique `aucune synthèse nécessaire` si une session avait été ouverte.
 
 ## 9. Contenu minimal d’une synthèse
 
