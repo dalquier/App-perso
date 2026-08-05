@@ -149,9 +149,10 @@ export function ProjectForm() {
             />
           </label>
           <div className="two-cols">
-            <label>
-              État
+            <div>
+              <label htmlFor="project-status">État</label>
               <select
+                id="project-status"
                 value={draft.status}
                 onChange={(e) =>
                   set("status", e.target.value as ProjectDraft["status"])
@@ -163,10 +164,11 @@ export function ProjectForm() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label>
-              Priorité
+            </div>
+            <div>
+              <label htmlFor="project-priority">Priorité</label>
               <select
+                id="project-priority"
                 value={draft.priority}
                 onChange={(e) =>
                   set("priority", e.target.value as ProjectDraft["priority"])
@@ -178,7 +180,7 @@ export function ProjectForm() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
           </div>
           <label className="check">
             <input

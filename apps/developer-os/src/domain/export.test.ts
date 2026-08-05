@@ -53,13 +53,27 @@ describe("export contract", () => {
       ),
     ).toThrow(/updatedAt/);
     expect(() =>
-      parseExport(makeExport([project({ id: "1" }), project({ id: "2" })])),
+      parseExport(
+        makeExport([
+          project({ id: "11111111-1111-4111-8111-111111111111" }),
+          project({ id: "22222222-2222-4222-8222-222222222222" }),
+        ]),
+      ),
     ).toThrow(/plusieurs projets actifs/);
     expect(() =>
       parseExport(
         makeExport([project({ status: "archived", isActive: true })]),
       ),
     ).toThrow(/archivé/);
+  });
+
+  it("rejects imported ids that are not safe single route segments", () => {
+    expect(() => parseExport(makeExport([project({ id: "foo/bar" })]))).toThrow(
+      /routes/,
+    );
+    expect(() =>
+      parseExport(makeExport([project({ id: "not-a-uuid" })])),
+    ).toThrow(/routes/);
   });
 
   it("creates a backup export that can be reimported", () => {
