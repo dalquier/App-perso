@@ -78,6 +78,9 @@ Les tests couvrent création, ordre des messages, reprise, renommage, suppressio
 
 ## Limites
 
+- Sur iOS, Safari et la PWA installée utilisent des espaces de stockage local distincts. BUILD-02 détecte le contexte et l'explique dans l'interface ; aucune synchronisation automatique n'est possible sans stockage partagé ou transfert explicite.
+- Le simulateur local espace volontairement ses fragments et affiche un curseur de génération afin que la progression reste perceptible sur Safari iPhone.
+
 - Pas d’API OpenAI réelle en BUILD-02.
 - Pas de synchronisation cloud, compte utilisateur, embeddings, voix ni mémoire personnelle avancée.
 - Le streaming est simulé localement avec des fragments de texte.

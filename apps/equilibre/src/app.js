@@ -12,12 +12,14 @@ import {
   updateMessage,
 } from "./domain/conversation.js";
 import { createLocalConversationProvider } from "./providers/conversationProvider.js";
+import { localStorageContextNotice } from "./platform/displayMode.js";
 import { detectSensitiveContent, SAFETY_MESSAGE } from "./safety/sensitiveGuard.js";
 import { createStore, defaultState } from "./storage/localStore.js";
 
-const provider = createLocalConversationProvider({ delay: 28 });
+const provider = createLocalConversationProvider();
 const store = createStore();
 const app = document.querySelector("#app");
+const storageContextNotice = localStorageContextNotice();
 let state = normalizeRuntimeState(store.load());
 let view = "home";
 const generations = new Map();
@@ -102,12 +104,15 @@ const shell = (content) => `<div class="app-shell"><header class="topbar"><butto
 
 function homeView() {
   const conversation = activeConversation();
-  return `<section class="hero"><p class="eyebrow">Votre espace local</p><h1>Une conversation écrite<br><em>que vous pouvez reprendre.</em></h1><p class="lead">Plusieurs échanges persistants, sans compte et sans service distant obligatoire.</p></section>${state.storageError ? `<p class="error-banner">${escapeHtml(state.storageError)}</p>` : ""}<section class="choices"><button class="choice-card primary" data-new-conversation><span>✦</span><span><strong>Nouvelle conversation</strong><small>Démarrer rapidement</small></span><span>→</span></button>${conversation ? `<button class="choice-card" data-open-conversation="${conversation.id}"><span>↻</span><span><strong>Reprendre</strong><small>${escapeHtml(conversation.title)}</small></span><span>→</span></button>` : ""}<button class="choice-card" data-view="conversations"><span>☰</span><span><strong>Historique</strong><small>${state.conversations.length} conversation(s)</small></span><span>→</span></button><button class="choice-card" data-start-session><span>◇</span><span><strong>Séance guidée BUILD-01</strong><small>4 étapes · conservée</small></span><span>→</span></button></section><aside class="local-note"><span>⌾</span><p><strong>Mode local dégradé disponible</strong><br>Les réponses progressives viennent du simulateur embarqué.</p></aside><p class="disclaimer">Équilibre ne pose aucun diagnostic et ne remplace pas un professionnel.</p>`;
+  const contextNotice = storageContextNotice
+    ? `<aside class="storage-context-note" role="status"><strong>${escapeHtml(storageContextNotice.title)}</strong><p>${escapeHtml(storageContextNotice.body)}</p></aside>`
+    : "";
+  return `<section class="hero"><p class="eyebrow">Votre espace local</p><h1>Une conversation écrite<br><em>que vous pouvez reprendre.</em></h1><p class="lead">Plusieurs échanges persistants, sans compte et sans service distant obligatoire.</p></section>${state.storageError ? `<p class="error-banner">${escapeHtml(state.storageError)}</p>` : ""}${contextNotice}<section class="choices"><button class="choice-card primary" data-new-conversation><span>✦</span><span><strong>Nouvelle conversation</strong><small>Démarrer rapidement</small></span><span>→</span></button>${conversation ? `<button class="choice-card" data-open-conversation="${conversation.id}"><span>↻</span><span><strong>Reprendre</strong><small>${escapeHtml(conversation.title)}</small></span><span>→</span></button>` : ""}<button class="choice-card" data-view="conversations"><span>☰</span><span><strong>Historique</strong><small>${state.conversations.length} conversation(s)</small></span><span>→</span></button><button class="choice-card" data-start-session><span>◇</span><span><strong>Séance guidée BUILD-01</strong><small>4 étapes · conservée</small></span><span>→</span></button></section><aside class="local-note"><span>⌾</span><p><strong>Mode local dégradé disponible</strong><br>Les réponses progressives viennent du simulateur embarqué.</p></aside><p class="disclaimer">Équilibre ne pose aucun diagnostic et ne remplace pas un professionnel.</p>`;
 }
 
 function conversationsView() {
   const rows = state.conversations.map((c) => `<article class="conversation-row ${c.id === state.activeConversationId ? "active" : ""}"><button data-open-conversation="${c.id}"><strong>${escapeHtml(c.title)}</strong><small>${CONVERSATION_MODES[c.mode]?.label} · ${c.messages.length} message(s)</small><small>Modifiée ${new Date(c.updatedAt).toLocaleString("fr-FR")}</small></button><button class="mini" data-rename-conversation="${c.id}">Renommer</button><button class="mini danger" data-delete-conversation="${c.id}">Supprimer</button></article>`).join("");
-  return `<section class="page-heading"><button class="back" data-view="home">←</button><div><p class="eyebrow">Reprise</p><h1>Conversations</h1></div><button class="small-primary" data-new-conversation>＋</button></section><div class="conversation-list">${rows || `<div class="empty-state"><span>✦</span><h2>Aucune conversation</h2><p>Créez un premier échange. Il restera disponible sur cet appareil.</p></div>`}</div>`;
+  return `<section class="page-heading"><button class="back" data-view="home">←</button><div><p class="eyebrow">Reprise</p><h1>Conversations</h1></div><button class="small-primary" data-new-conversation aria-label="Nouvelle conversation">＋</button></section><div class="conversation-list">${rows || `<div class="empty-state"><span>✦</span><h2>Aucune conversation</h2><p>Créez un premier échange. Il restera disponible dans cet espace local.</p></div>`}</div>`;
 }
 
 function chatView() {

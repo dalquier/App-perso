@@ -5,7 +5,8 @@ const MODE_REPLIES = {
   action: ["Cherchons un pas très petit : qu’est-ce qui serait faisable en moins de cinq minutes ?", "Quelle action réaliste préserverait votre énergie maintenant ?"],
 };
 export class ProviderError extends Error { constructor(message, code = "provider_error") { super(message); this.name = "ProviderError"; this.code = code; } }
-export function createLocalConversationProvider({ delay = 8 } = {}) {
+export const DEFAULT_LOCAL_STREAM_DELAY_MS = 120;
+export function createLocalConversationProvider({ delay = DEFAULT_LOCAL_STREAM_DELAY_MS } = {}) {
   return {
     id: "local-simulator",
     degraded: true,

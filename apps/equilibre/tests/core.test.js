@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { answerSession, createSession } from "../src/domain/session.js";
 import { addMessage, changeConversationMode, createConversation, createMessage, MESSAGE_STATUS, renameConversation, updateMessage } from "../src/domain/conversation.js";
-import { createLocalConversationProvider } from "../src/providers/conversationProvider.js";
+import { createLocalConversationProvider, DEFAULT_LOCAL_STREAM_DELAY_MS } from "../src/providers/conversationProvider.js";
+import { isIOSDevice, isStandaloneDisplay, localStorageContextNotice } from "../src/platform/displayMode.js";
 import { detectSensitiveContent, SAFETY_MESSAGE } from "../src/safety/sensitiveGuard.js";
 import { BUILD01_BACKUP_KEY, createStore, defaultState, migrateBuild01, migrateState, STORAGE_KEY, STORAGE_VERSION } from "../src/storage/localStore.js";
 
@@ -37,12 +38,23 @@ describe("stockage local versionné", () => {
 });
 
 describe("fournisseur local", () => {
+  it("garde un rythme perceptible par défaut", () => expect(DEFAULT_LOCAL_STREAM_DELAY_MS).toBeGreaterThanOrEqual(80));
   it("produit progressivement", async () => { const provider = createLocalConversationProvider({ delay: 0 }); let c = addMessage(createConversation({ mode: "clarify" }), createMessage({ role: "user", content: "Situation fictive" })); const chunks = []; for await (const chunk of provider.generate({ conversation: c })) chunks.push(chunk); expect(chunks.length).toBeGreaterThan(1); expect(chunks.at(-1).done).toBe(true); });
   it("s'interrompt sans corruption", async () => { const provider = createLocalConversationProvider({ delay: 0 }); const controller = new AbortController(); const c = addMessage(createConversation(), createMessage({ role: "user", content: "Fixture" })); const chunks = []; for await (const chunk of provider.generate({ conversation: c, signal: controller.signal })) { chunks.push(chunk); controller.abort(); } expect(chunks).toHaveLength(1); });
   it("rend une erreur fournisseur explicite", async () => { const provider = createLocalConversationProvider({ delay: 0 }); const c = addMessage(createConversation(), createMessage({ role: "user", content: "erreur fournisseur fictive" })); await expect(async () => { for await (const _ of provider.generate({ conversation: c })) {} }).rejects.toHaveProperty("code", "local_simulated_error"); expect(provider.errorMessage({ code: "x" }).status).toBe("error"); expect(provider.errorMessage({ code: "x" }).content).not.toBe(""); });
   it("déclare le mode dégradé local", () => expect(createLocalConversationProvider().degraded).toBe(true));
   it("isole deux générations et un changement de conversation", async () => { const provider = createLocalConversationProvider({ delay: 0 }); const a = addMessage(createConversation({ title: "A" }), createMessage({ role: "user", content: "alpha" })); const b = addMessage(createConversation({ title: "B" }), createMessage({ role: "user", content: "beta" })); const outputs = { [a.id]: "", [b.id]: "" }; await Promise.all([a, b].map(async (conversation) => { for await (const chunk of provider.generate({ conversation })) outputs[conversation.id] = chunk.content; })); expect(outputs[a.id]).toContain("Merci"); expect(outputs[b.id]).toContain("Merci"); expect(Object.keys(outputs)).toEqual([a.id, b.id]); });
   it("interruption et suppression arrêtent la génération", async () => { const provider = createLocalConversationProvider({ delay: 0 }); const controller = new AbortController(); const c = addMessage(createConversation(), createMessage({ role: "user", content: "supprimée" })); let seen = 0; for await (const _ of provider.generate({ conversation: c, signal: controller.signal })) { seen += 1; controller.abort(); } expect(seen).toBe(1); });
+});
+
+describe("contexte local Safari et PWA", () => {
+  const safariIOS = { navigator: { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)", standalone: false }, matchMedia: () => ({ matches: false }) };
+  const pwaIOS = { navigator: { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)", standalone: true }, matchMedia: () => ({ matches: true }) };
+  it("détecte Safari sur iPhone", () => { expect(isIOSDevice(safariIOS)).toBe(true); expect(isStandaloneDisplay(safariIOS)).toBe(false); });
+  it("détecte la PWA installée", () => expect(isStandaloneDisplay(pwaIOS)).toBe(true));
+  it("explique la séparation des espaces locaux dans Safari", () => expect(localStorageContextNotice(safariIOS)?.body).toContain("deux espaces locaux distincts"));
+  it("explique l'absence de transfert automatique dans la PWA", () => expect(localStorageContextNotice(pwaIOS)?.body).toContain("ne sont pas transférées automatiquement"));
+  it("n'affiche pas la note iPhone sur les autres plateformes", () => expect(localStorageContextNotice({ navigator: { userAgent: "Desktop" } })).toBeNull());
 });
 
 describe("séance guidée et garde-fou", () => {
