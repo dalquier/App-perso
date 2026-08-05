@@ -1,10 +1,11 @@
 # DeveloperOS — Conversation Orchestrator — SPEC-00
 
-- Statut : spécification fonctionnelle et technique V1
+- Statut : spécification fonctionnelle et technique V1 relue
 - Date : 2026-08-05
+- Dernière relecture : 2026-08-05
 - Projet : DeveloperOS
 - Décision d’architecture : `ADR/ADR-003-CONVERSATION-ORCHESTRATOR-DUAL-EXECUTION.md`
-- Code cible futur : `apps/developer-os/modules/conversation-orchestrator/`
+- Code cible futur : `apps/developer-os/modules/conversation-orchestrator/`, à confirmer contre l’arborescence réelle avant `CO-BUILD-00`
 
 ## 1. Objectif
 
@@ -14,20 +15,23 @@ Conversation Orchestrator permet à un script maître de :
 2. préparer ou lancer les missions correspondantes ;
 3. exécuter en parallèle les missions indépendantes ;
 4. collecter les réponses, automatiquement par API ou manuellement depuis ChatGPT Plus ;
-5. normaliser les résultats ;
-6. fournir l’ensemble au prompt ou script maître pour synthèse, arbitrage et prochaines actions.
+5. transmettre les résultats des missions amont aux missions qui en dépendent ;
+6. normaliser les résultats sans altérer les réponses brutes ;
+7. fournir l’ensemble au prompt ou script maître pour synthèse, arbitrage et prochaines actions.
 
-Le produit doit fonctionner principalement sur iPhone et s’intégrer à l’interface principale de DeveloperOS.
+Le produit fonctionne principalement sur iPhone et s’intègre à l’interface principale de DeveloperOS.
 
 ## 2. Principes directeurs
 
-- Un seul contrat de données pour tous les canaux d’exécution.
+- Un seul contrat de données pour les deux canaux d’exécution.
 - Une mission possède un identifiant technique stable et un titre visible déterministe.
-- Les prompts fils sont nommés avec le nom exact du prompt maître suivi d’un numéro.
-- Le mode ChatGPT Plus reste manuel et assisté ; aucune extraction automatique de ChatGPT.
-- Le mode API est automatisé, côté serveur et séparé de la facturation ChatGPT.
-- Les missions indépendantes peuvent être parallélisées ; les dépendances sont respectées.
-- Une relance ne doit pas dupliquer ni écraser silencieusement une réponse existante.
+- Les prompts fils sont nommés avec le nom exact du prompt maître suivi d’un numéro généré.
+- Le canal ChatGPT Plus reste manuel et assisté ; aucune extraction automatique de ChatGPT.
+- Le canal API est automatisé, côté serveur et facturé séparément de ChatGPT.
+- Un run devient hybride par combinaison de canaux ; `hybrid` n’est pas un troisième canal.
+- Les missions indépendantes peuvent être parallélisées ; les dépendances sont respectées et leur contenu est injecté dans les prompts aval.
+- L’ordre, les numéros et les titres sont figés après validation du run.
+- Une relance ne duplique ni n’écrase silencieusement une réponse existante.
 - Les secrets et données réelles ne sont jamais versionnés dans le dépôt public.
 - L’application conserve les originaux et produit des vues normalisées sans altérer la preuve brute.
 
@@ -35,59 +39,66 @@ Le produit doit fonctionner principalement sur iPhone et s’intégrer à l’in
 
 | Terme | Définition |
 |---|---|
-| Prompt maître | Instruction qui construit le plan de missions ou consolide leurs réponses. |
+| Script maître | Composant externe ou interne qui crée le fichier d’entrée et consomme le dossier final. |
+| Prompt maître final | Instruction de consolidation exécutée après collecte des missions requises. |
 | Nom maître | Nom visible servant de racine au nom de tous les prompts fils. |
 | Mission / job | Unité de travail indépendante ou dépendante, associée à un prompt fils. |
-| Prompt fils | Prompt initial d’une mission. |
-| Exécution / run | Ensemble versionné d’un prompt maître, de missions, d’états et de résultats. |
+| Prompt fils | Prompt initial d’une mission, enrichi si nécessaire du contexte de ses dépendances. |
+| Run | Ensemble versionné d’un fichier d’entrée, d’un plan canonique, de missions, d’états et de résultats. |
 | Canal | `openai_api` ou `chatgpt_plus_manual`. |
-| Résultat brut | Réponse exacte telle que reçue ou collée. |
+| Run hybride | Run utilisant les deux canaux entre ses missions et sa synthèse maître. |
+| Réponse brute | Réponse exacte telle que reçue ou collée. |
 | Résultat normalisé | Objet structuré commun remis au script maître. |
 | Dépendance | Résultat d’une mission requis avant d’en lancer une autre. |
+| Tentative | Exécution immuable d’une mission ; une relance crée une tentative supplémentaire. |
 
 ## 4. Périmètre V1
 
 ### Inclus
 
-- Import d’un fichier JSON de missions.
-- Validation de schéma et affichage lisible des erreurs.
-- Génération déterministe des titres des prompts fils.
+- Import d’un fichier `run-request.json`.
+- Validation JSON Schema et affichage lisible des erreurs.
+- Production d’un `run-plan.json` canonique.
+- Génération déterministe des séquences et titres des prompts fils.
 - Choix global ou individuel du canal d’exécution.
+- Détection automatique d’un run hybride.
 - File d’attente et exécution parallèle bornée pour l’API.
 - Parcours copier-coller optimisé pour ChatGPT Plus.
-- Collage et association automatique ou assistée des réponses.
+- Collage et association automatique ou assistée des réponses déjà fournies par Damien.
 - Dépendances simples entre missions sous forme de graphe acyclique.
+- Injection déterministe des résultats des dépendances dans les prompts aval.
 - Relance ciblée d’une mission.
 - Consolidation des résultats et génération du dossier maître.
 - Export JSON, JSONL et Markdown.
-- Historique local des exécutions.
-- États, erreurs, horodatages et consommation API observée lorsqu’elle est disponible.
+- Historique local des exécutions manuelles.
+- États, erreurs, horodatages et usage API observé lorsqu’il est disponible.
 
 ### Hors périmètre V1
 
-- Création automatique de conversations visibles dans la barre latérale ChatGPT.
+- Création automatique de conversations visibles dans l’historique ChatGPT.
 - Lecture automatique des réponses depuis l’application ou le site ChatGPT.
 - Automatisation DOM, navigateur piloté, scraping ou interception de session.
 - Collaboration multi-utilisateur.
 - Synchronisation complète avec l’historique ChatGPT.
 - Achat automatique de crédits ou modification de la facturation.
-- Choix autonome d’un modèle sans règles configurées.
+- Choix autonome d’un modèle sans profil configuré.
 - Boucle agentique illimitée entre maître et prompts fils.
+- Réduction hiérarchique automatique des très grands corpus.
+- Batch API dans le parcours interactif V1.
 
 ## 5. Canaux d’exécution
 
 ### 5.1 `chatgpt_plus_manual`
 
-Le canal ChatGPT Plus est un flux humain assisté :
+Flux humain assisté :
 
 1. l’application affiche le titre du prompt fils ;
-2. Damien copie le titre ;
-3. Damien copie le prompt ;
-4. l’application ouvre ChatGPT à la demande ;
-5. Damien crée une conversation, colle et envoie ;
-6. Damien revient dans DeveloperOS ;
-7. il colle la réponse ;
-8. l’application vérifie les métadonnées et marque la mission terminée.
+2. Damien copie le titre et le prompt ;
+3. l’application ouvre ChatGPT à la demande ;
+4. Damien crée une conversation, colle et envoie ;
+5. Damien revient dans DeveloperOS ;
+6. il colle la réponse ;
+7. l’application vérifie l’identité et enregistre une tentative immuable.
 
 Fonctions UX obligatoires :
 
@@ -100,39 +111,36 @@ Fonctions UX obligatoires :
 - détection d’une réponse collée dans la mauvaise mission ;
 - confirmation si la balise d’identification manque ;
 - conservation de la réponse brute ;
-- navigation rapide vers la prochaine mission incomplète.
+- navigation vers la prochaine mission incomplète.
 
-Ce canal ne consomme pas l’API. L’application ne prétend pas connaître précisément les quotas ChatGPT et ne garantit pas l’accès à un modèle donné.
+Ce canal ne consomme pas l’API. L’application ne prétend pas mesurer précisément les limites ChatGPT ni garantir l’accès à un modèle donné.
 
 ### 5.2 `openai_api`
 
 Le canal API est exécuté par un backend :
 
 - clé API côté serveur uniquement ;
-- création d’une conversation ou d’un contexte indépendant par mission ;
+- contexte indépendant par mission ;
 - envoi via l’API Responses ;
+- conversation persistante seulement lorsque le profil l’exige ;
 - traitement synchrone, streaming ou arrière-plan selon le profil ;
 - récupération du résultat et des usages disponibles ;
 - reprise après interruption ;
 - limitation du nombre d’appels simultanés ;
 - annulation et relance contrôlées ;
-- conservation des identifiants opaques nécessaires au diagnostic.
+- conservation privée des identifiants opaques nécessaires au diagnostic.
 
-La liste de modèles ne doit pas être codée dans les fichiers d’exécution. Le fichier référence un `model_profile` interne, résolu côté serveur vers un modèle actuellement autorisé.
+La liste de modèles n’est pas codée dans les fichiers d’exécution. Le fichier référence un `model_profile` interne, résolu côté serveur vers un modèle autorisé au moment de l’exécution.
 
-### 5.3 Mode global `hybrid`
+### 5.3 Run hybride
 
-Une exécution peut définir :
+Le run est marqué `hybrid` lorsque des canaux différents sont utilisés entre ses missions ou sa synthèse maître. Le canal reste défini individuellement pour chaque unité d’exécution.
 
-- un canal par défaut ;
-- un canal différent par mission ;
-- un canal distinct pour la synthèse maître.
+Une mission peut changer de canal tant qu’elle n’a pas été lancée. Après lancement, un changement crée une nouvelle tentative et conserve l’ancienne trace.
 
-Une mission peut être basculée avant lancement. Après lancement, le changement de canal crée une nouvelle tentative et conserve l’ancienne trace.
+## 6. Nommage et ordre canonique
 
-## 6. Règles de nommage
-
-### 6.1 Motif obligatoire
+### 6.1 Motif fixe V1
 
 ```text
 {master_prompt_name} — {sequence}
@@ -143,31 +151,31 @@ Exemples :
 ```text
 DeveloperOS — Architecture globale — 01
 DeveloperOS — Architecture globale — 02
-DeveloperOS — Architecture globale — 03
+DeveloperOS — Architecture globale — 100
 ```
 
 ### 6.2 Règles
 
-- `master_prompt_name` est obligatoire, non vide et normalisé uniquement pour les espaces de bord.
-- Le nom exact est conservé ; aucune reformulation automatique.
-- `sequence` commence à `1`.
-- Deux chiffres minimum : `01` à `99`.
-- Trois chiffres à partir de `100`.
-- Le numéro est attribué selon l’ordre canonique du tableau `jobs`.
-- Un numéro ne change jamais pendant le run.
-- Une mission supprimée après création du run laisse son numéro réservé.
-- Une relance conserve le même titre et ajoute un numéro de tentative technique.
-- L’identifiant technique `job_id` ne dépend pas du titre visible.
+- `master_prompt_name` est obligatoire et non vide.
+- Seuls les espaces de bord sont retirés ; le nom exact est sinon conservé.
+- La séquence est générée à partir de la position 1-based dans le tableau `jobs`.
+- Le fichier d’entrée V1 ne contient pas de champ `sequence` éditable.
+- Deux chiffres minimum : `01` à `99` ; trois chiffres à partir de `100`.
+- Avant validation, réordonner le tableau réordonne les numéros.
+- Au passage à `validated`, l’ordre, les séquences et les titres sont figés dans `run-plan.json`.
+- Toute modification ultérieure crée une nouvelle révision du run et ne réécrit pas l’historique.
+- Une relance conserve le même titre visible et incrémente uniquement `attempt`.
+- `job_id` ne dépend jamais du titre visible.
 
-### 6.3 Nom de synthèse maître
+### 6.3 Synthèse maître
 
-Le titre recommandé de la synthèse est :
+Titre recommandé :
 
 ```text
 {master_prompt_name} — Synthèse maître
 ```
 
-Ce titre est configurable mais n’utilise pas un numéro de prompt fils.
+Ce titre est configurable, mais n’utilise pas un numéro de prompt fils.
 
 ## 7. Contrat d’entrée `run-request.json`
 
@@ -183,13 +191,10 @@ Ce titre est configurable mais n’utilise pas un numéro de prompt fils.
     "max_api_concurrency": 4,
     "failure_policy": "continue_independent"
   },
-  "naming": {
-    "pattern": "{master_prompt_name} — {sequence}",
-    "minimum_digits": 2
-  },
   "defaults": {
     "model_profile": "reasoning-balanced",
-    "max_output_tokens": 6000
+    "max_output_tokens": 6000,
+    "dependency_input_mode": "normalized"
   },
   "master": {
     "execution_channel": "chatgpt_plus_manual",
@@ -200,7 +205,6 @@ Ce titre est configurable mais n’utilise pas un numéro de prompt fils.
   "jobs": [
     {
       "job_id": "JOB-001",
-      "sequence": 1,
       "role": "Responsable UX",
       "execution_channel": "chatgpt_plus_manual",
       "instructions": "Tu es responsable UX iPhone.",
@@ -210,12 +214,12 @@ Ce titre est configurable mais n’utilise pas un numéro de prompt fils.
     },
     {
       "job_id": "JOB-002",
-      "sequence": 2,
       "role": "Architecte logiciel",
       "execution_channel": "openai_api",
       "instructions": "Tu es architecte logiciel.",
       "prompt": "Définis l’architecture technique.",
-      "depends_on": [],
+      "depends_on": ["JOB-001"],
+      "dependency_input_mode": "normalized",
       "output_format": "markdown"
     }
   ]
@@ -230,22 +234,77 @@ Ce titre est configurable mais n’utilise pas un numéro de prompt fils.
 - `run.default_execution_channel` ;
 - `master.final_prompt` ;
 - `jobs` avec au moins une mission ;
-- pour chaque mission : `job_id`, `sequence`, `prompt`, `depends_on`.
+- pour chaque mission : `job_id`, `prompt`, `depends_on`.
 
 ### 7.3 Contraintes
 
-- `run_id` et `job_id` uniques dans le fichier.
-- `sequence` unique et strictement positive.
+- `run_id` est unique dans le stockage actif.
+- `job_id` est unique dans le run.
+- L’ordre du tableau `jobs` est significatif.
+- `sequence`, `conversation_title` et `attempt` sont des champs dérivés, interdits dans l’entrée V1.
 - Aucun cycle dans `depends_on`.
-- Une dépendance référence une mission existante.
+- Une dépendance référence une mission existante autre qu’elle-même.
 - `max_api_concurrency` est borné par configuration serveur.
-- Les tailles de prompt sont contrôlées avant envoi.
+- Les tailles de fichier, prompt et contexte injecté sont contrôlées avant envoi.
 - Le fichier ne contient aucun secret.
-- Les champs inconnus sont refusés en mode strict ou conservés dans `extensions` en mode extensible.
+- Les champs inconnus sont refusés en mode strict ; les extensions futures utilisent un objet `extensions` explicite.
 
-## 8. Enveloppe d’identification des prompts
+## 8. Plan canonique `run-plan.json`
 
-Chaque prompt préparé inclut un en-tête stable :
+Après validation, l’orchestrateur produit un plan immuable contenant pour chaque mission :
+
+- `job_id` ;
+- `sequence` générée ;
+- `conversation_title` généré ;
+- canal résolu ;
+- profil de modèle résolu par nom logique, sans nom de modèle secret ou obsolète dans l’entrée ;
+- dépendances validées ;
+- politique d’injection des dépendances ;
+- empreinte du prompt source ;
+- état initial.
+
+Le `run-plan.json` est la référence d’exécution. Le `run-request.json` original reste conservé comme preuve d’entrée.
+
+## 9. Dépendances et prompt effectif
+
+### 9.1 Règle de disponibilité
+
+Une mission dépendante devient prête seulement lorsque toutes les missions de `depends_on` sont `completed`.
+
+Politique V1 unique : `all_success`. Les politiques `all_terminal` et `any_success` sont reportées.
+
+### 9.2 Injection du contexte
+
+Valeurs V1 de `dependency_input_mode` :
+
+- `normalized` : injecter `response_normalized` ;
+- `raw` : injecter `response_raw`.
+
+Valeur par défaut : `normalized`.
+
+Le prompt effectif est construit dans cet ordre :
+
+1. enveloppe d’identification ;
+2. instructions de la mission ;
+3. bloc de dépendances classé par séquence ;
+4. prompt propre de la mission ;
+5. contraintes de sortie.
+
+Format du bloc :
+
+```text
+[DEPENDENCY_CONTEXT]
+JOB_ID: JOB-001
+TITLE: DeveloperOS — Architecture globale — 01
+ATTEMPT: 1
+CONTENT:
+<résultat injecté>
+[/DEPENDENCY_CONTEXT]
+```
+
+Attendre une dépendance sans injecter son résultat est une erreur de contrat.
+
+## 10. Enveloppe d’identification
 
 ```text
 [CONVERSATION_ORCHESTRATOR]
@@ -256,17 +315,17 @@ CONVERSATION_TITLE: DeveloperOS — Architecture globale — 01
 [/CONVERSATION_ORCHESTRATOR]
 ```
 
-Le prompt demande que la réponse commence idéalement par :
+La réponse commence idéalement par :
 
 ```text
 [RUN-20260805-001][JOB-001][ATTEMPT-1]
 ```
 
-La balise facilite l’association, mais son absence ne rend pas la réponse invalide. Une confirmation manuelle est alors demandée.
+L’absence de balise ne rend pas une réponse manuelle invalide, mais impose une confirmation humaine. Pour l’API, l’association repose sur les identifiants serveur et non sur la balise textuelle.
 
-## 9. États
+## 11. États
 
-### 9.1 États d’un run
+### 11.1 États d’un run
 
 - `draft` ;
 - `validated` ;
@@ -279,7 +338,7 @@ La balise facilite l’association, mais son absence ne rend pas la réponse inv
 - `cancelled` ;
 - `archived`.
 
-### 9.2 États d’une mission
+### 11.2 États d’une mission
 
 - `pending` ;
 - `blocked_by_dependency` ;
@@ -295,55 +354,56 @@ La balise facilite l’association, mais son absence ne rend pas la réponse inv
 - `cancelled` ;
 - `superseded`.
 
+### 11.3 Dérivation de l’état du run
+
+Ordre de priorité :
+
+1. `archived` ou `cancelled` lorsqu’explicitement demandé ;
+2. `failed` si la politique impose l’arrêt et qu’un échec terminal existe ;
+3. `completed` si toutes les missions requises et la synthèse requise sont terminées ;
+4. `running` si une mission API est en cours ou si un lancement reste possible immédiatement ;
+5. `waiting_manual_input` si l’unique progression possible dépend d’une action humaine ;
+6. `partially_completed` si certaines missions sont terminées mais qu’aucune progression automatique n’est possible ;
+7. `ready`, `validated` ou `draft` selon l’étape de préparation.
+
 Les transitions invalides sont refusées et journalisées.
 
-## 10. Parallélisation
+## 12. Parallélisation
 
-### 10.1 Principe
-
-Oui, les missions sont parallélisables. L’orchestrateur calcule les missions prêtes à partir du graphe de dépendances.
+### 12.1 Mission prête
 
 Une mission est prête lorsque :
 
-- son fichier est valide ;
+- le plan est validé ;
 - elle n’est ni terminée ni annulée ;
 - toutes ses dépendances requises sont terminées ;
 - son canal est configuré ;
-- aucune validation humaine obligatoire ne manque.
+- aucune validation humaine obligatoire ne manque ;
+- son prompt effectif peut être construit dans les limites autorisées.
 
-### 10.2 API
+### 12.2 API
 
-- Lancement automatique jusqu’à `max_api_concurrency`.
-- File FIFO par défaut, avec priorité optionnelle.
-- Concurrence réduite automatiquement après erreurs de limite.
+- Lancement jusqu’à `max_api_concurrency`.
+- File FIFO par défaut, priorité explicite possible dans un Build ultérieur.
+- Concurrence réduite après erreurs de limite.
 - Relances avec attente progressive et nombre maximal de tentatives.
 - Aucun double lancement pour la même clé d’idempotence.
 
-Clé d’idempotence logique :
+Clé logique :
 
 ```text
 {run_id}:{job_id}:{attempt}
 ```
 
-### 10.3 ChatGPT Plus
+### 12.3 ChatGPT Plus
 
-La parallélisation est assistée : l’application prépare plusieurs prompts et permet à Damien d’ouvrir plusieurs conversations ChatGPT. Elle suit leur état, mais l’envoi et la récupération restent manuels.
+La parallélisation est assistée : l’application prépare plusieurs prompts et permet à Damien d’ouvrir plusieurs conversations ChatGPT. L’envoi et la récupération restent manuels.
 
-### 10.4 Hybride
+### 12.4 Hybride
 
-Les missions API peuvent tourner pendant que Damien traite les missions ChatGPT Plus. Le run reste `running` ou `waiting_manual_input` selon les travaux encore requis.
+Les missions API peuvent tourner pendant que Damien traite les missions ChatGPT Plus. L’état du run suit les règles de dérivation de la section 11.3.
 
-### 10.5 Dépendances
-
-- `depends_on: []` : mission immédiatement parallélisable.
-- dépendance simple : attendre la mission cible.
-- dépendances multiples : attendre toutes les missions.
-- `dependency_policy: all_success` par défaut.
-- politique future possible : `all_terminal`, `any_success`.
-
-## 11. Collecte et normalisation des réponses
-
-Chaque résultat est converti dans le format commun suivant :
+## 13. Résultat normalisé
 
 ```json
 {
@@ -363,7 +423,8 @@ Chaque résultat est converti dans le format commun suivant :
   "completed_at": "2026-08-05T16:12:00+02:00",
   "integrity": {
     "identity_marker_found": true,
-    "manually_confirmed": false
+    "manually_confirmed": false,
+    "source_hash": "sha256:..."
   }
 }
 ```
@@ -371,18 +432,18 @@ Chaque résultat est converti dans le format commun suivant :
 Règles :
 
 - `response_raw` est immuable.
-- Une normalisation ne supprime pas l’original.
+- `response_normalized` retire uniquement l’enveloppe technique et normalise les fins de ligne en V1 ; il ne résume ni ne réécrit le contenu.
+- Une transformation sémantique future produit un artefact distinct.
 - Une réponse remplacée crée une nouvelle tentative.
 - Les usages non observables restent `null`, jamais estimés comme observés.
-- Les références API opaques restent privées et ne sont exportées que sur demande.
+- Les références API opaques restent privées et ne sont exportées que dans un export diagnostic explicite.
 
-## 12. Dossier remis au script maître
-
-L’orchestrateur produit :
+## 14. Dossier remis au script maître
 
 ```text
 run-results/
 ├── run-request.json
+├── run-plan.json
 ├── run-state.json
 ├── responses.jsonl
 ├── master-input.md
@@ -390,69 +451,66 @@ run-results/
 └── run-manifest.json
 ```
 
-### `master-input.md`
+Ordre de `master-input.md` :
 
-Ordre obligatoire :
-
-1. identité du run ;
+1. identité et révision du run ;
 2. prompt maître final ;
 3. tableau des missions et statuts ;
-4. réponses classées par `sequence` ;
+4. réponses classées par séquence ;
 5. réponses manquantes ou échouées ;
-6. contradictions ou avertissements techniques détectés ;
+6. avertissements d’intégrité et limites ;
 7. instruction de synthèse.
 
-Le script maître peut refuser de démarrer si une mission requise manque.
+Le prompt maître refuse de démarrer automatiquement si une mission de `required_jobs` manque. Un lancement manuel dégradé exige une confirmation explicite et inscrit la liste des absences.
 
-## 13. Stratégies d’échec
+## 15. Stratégies d’échec V1
 
-Valeurs V1 :
-
-- `fail_fast` : arrêter les lancements futurs au premier échec terminal ;
-- `continue_independent` : poursuivre les missions sans dépendance au travail échoué ;
-- `continue_all_possible` : poursuivre tout ce qui peut techniquement s’exécuter ;
-- `manual_decision` : suspendre et demander un arbitrage.
+- `fail_fast` : arrêter les nouveaux lancements au premier échec terminal ;
+- `continue_independent` : poursuivre uniquement les missions qui ne dépendent pas transitivement du travail échoué ;
+- `manual_decision` : suspendre les nouveaux lancements et demander un arbitrage.
 
 Par défaut : `continue_independent`.
 
-Une mission dépendante d’un échec reste bloquée et n’est jamais lancée avec un contexte incomplet sans décision explicite.
+Une mission dépendante d’un échec reste bloquée. Elle n’est jamais lancée avec un contexte incomplet sans création explicite d’une nouvelle révision du plan.
 
-## 14. Relance et reprise
+## 16. Relance et reprise
 
 - Relance d’une mission seule.
-- Relance de toutes les missions échouées.
+- Relance de toutes les missions `failed_retryable`.
 - Reprise d’un run après fermeture de la PWA.
 - Récupération d’une réponse API terminée pendant l’absence de l’iPhone.
 - Conservation de toutes les tentatives.
-- Option `reprendre depuis la dernière mission incomplète`.
+- Reprise depuis la prochaine mission réellement actionnable.
 - Interdiction d’écraser silencieusement une réponse importée.
+- Un événement webhook dupliqué est traité de manière idempotente.
 
-## 15. UX iPhone
+## 17. UX iPhone
 
-### 15.1 Écrans
+### 17.1 Écrans
 
-1. Liste des exécutions.
-2. Import / création d’un run.
-3. Validation du fichier.
+1. Liste des runs.
+2. Import ou création d’un run.
+3. Validation et prévisualisation du plan canonique.
 4. Tableau de bord du run.
 5. Détail d’une mission.
 6. Import de réponse.
 7. Consolidation maître.
-8. Paramètres des canaux et limites.
+8. Paramètres des canaux, limites et confidentialité.
 
-### 15.2 Tableau de bord
+### 17.2 Tableau de bord
 
 Afficher :
 
 - nom maître ;
+- révision du run ;
 - progression globale ;
 - missions prêtes, en cours, manuelles, terminées et bloquées ;
 - canal de chaque mission ;
 - prochaine action unique ;
 - bouton d’arrêt ou reprise ;
-- coût API observé si disponible, distinct de toute estimation.
+- usage et coût API observés lorsqu’ils sont disponibles, distincts de toute estimation.
 
-### 15.3 Exigences
+### 17.3 Exigences
 
 - Safe areas iOS.
 - Champs accessibles avec clavier ouvert.
@@ -465,13 +523,13 @@ Afficher :
 - Mode sombre.
 - Accessibilité VoiceOver de base.
 
-## 16. Architecture technique cible
+## 18. Architecture technique cible
 
 ### Client PWA
 
 - React + TypeScript selon l’architecture DeveloperOS existante.
 - Module isolé derrière des interfaces.
-- IndexedDB pour les runs manuels et cache local.
+- IndexedDB pour les runs manuels et le cache local.
 - Import/export via l’API Files du navigateur.
 - Presse-papiers avec repli manuel si permission refusée.
 
@@ -479,17 +537,21 @@ Afficher :
 
 - Node.js + TypeScript.
 - SDK OpenAI officiel.
-- Authentification minimale avant exposition publique.
+- Authentification obligatoire avant exposition publique.
 - Stockage privé des runs API.
 - Secret injecté par variable d’environnement.
 - API interne versionnée.
 - Webhook signé ou polling contrôlé pour les travaux d’arrière-plan.
+- Politique explicite de conservation, suppression et option `store` avant mise en production.
 
 ### Interfaces recommandées
 
 ```text
+RunRequestValidator
+RunPlanBuilder
 RunRepository
 JobScheduler
+DependencyContextBuilder
 ExecutionProvider
 ManualExecutionProvider
 OpenAIExecutionProvider
@@ -499,70 +561,81 @@ MasterBundleBuilder
 
 Le provider manuel ne simule pas un appel automatique : il produit les artefacts de copie et attend une réponse collée.
 
-## 17. Sécurité et confidentialité
+## 19. Sécurité et confidentialité
 
 - `OPENAI_API_KEY` uniquement côté serveur.
 - Aucun secret dans le bundle frontend.
 - Aucun `.env` commis.
 - Validation JSON Schema avant persistance.
-- Limite de taille par fichier, prompt et réponse.
+- Limite de taille par fichier, prompt, dépendance et réponse.
 - Échappement des contenus affichés.
 - Protection CSRF et contrôle d’origine selon l’hébergement.
-- Journalisation des métadonnées par défaut, contenu seulement en mode diagnostic explicite.
+- Authentification et autorisation minimales obligatoires pour le backend.
+- Journalisation des métadonnées par défaut ; contenu seulement en mode diagnostic explicite.
 - Exports réels exclus du dépôt.
 - Suppression locale et serveur confirmée.
-- Politique de rétention configurable.
+- Politique de rétention configurable et documentée.
 - Données personnelles minimisées.
+- Aucun scraping ou pilotage automatisé de l’interface ChatGPT.
 
-## 18. Coûts et quotas
+## 20. Coûts et quotas
 
 - ChatGPT Plus et API sont deux ressources distinctes.
 - L’application n’additionne jamais leurs usages dans un même solde.
-- Mode manuel : afficher `quota ChatGPT non mesurable automatiquement`.
-- Mode API : afficher usage observé et estimation monétaire uniquement si une table de prix datée et vérifiée est disponible.
+- Canal manuel : afficher `limites ChatGPT non mesurables automatiquement`.
+- Canal API : afficher l’usage observé et une estimation monétaire uniquement avec une table de prix datée et vérifiée.
 - Une estimation est toujours marquée `estimée`.
 - Plafond API par run configurable.
 - Confirmation avant dépassement d’un seuil.
-- Batch API réservé aux volumes non interactifs et ajouté seulement dans un Build ultérieur.
+- Batch API réservé à un Build ultérieur non interactif.
 
-## 19. Critères d’acceptation SPEC-00
+## 21. Critères d’acceptation SPEC-00
 
 La spécification est validée lorsque :
 
 - les deux canaux sont décrits sans ambiguïté ;
-- le nommage des prompts fils est déterministe ;
-- le contrat JSON contient maître, missions, canaux et dépendances ;
-- le graphe de parallélisation et les états sont définis ;
+- le run hybride est dérivé et non confondu avec un canal ;
+- le nommage est déterministe et la séquence n’est pas contradictoire avec l’ordre ;
+- le contrat contient maître, missions, canaux et dépendances ;
+- le plan canonique est distinct de l’entrée ;
+- le contexte des dépendances est injecté dans les prompts aval ;
+- la machine d’états et la parallélisation sont déterministes ;
 - le parcours copier-coller est complet ;
-- les résultats des deux canaux convergent vers un même format ;
+- les résultats convergent vers un même format ;
 - les règles de sécurité interdisent l’exposition de la clé ;
 - les limites ChatGPT et API sont distinguées ;
 - les Builds suivants sont décomposables sans décision d’architecture majeure restante.
 
-## 20. Critères d’acceptation du produit V1
+## 22. Critères d’acceptation du produit V1
 
 - Importer un `run-request.json` valide.
 - Rejeter un cycle de dépendances avec une erreur compréhensible.
 - Générer exactement les titres `Nom maître — 01`, `— 02`, etc.
+- Interdire un champ `sequence` fourni par l’entrée V1.
+- Produire un `run-plan.json` stable après validation.
 - Préparer plusieurs prompts ChatGPT Plus et importer leurs réponses.
 - Lancer au moins deux missions API indépendantes en parallèle.
 - Ne pas lancer une mission dont une dépendance manque.
+- Injecter le bon résultat amont dans le prompt aval.
 - Reprendre un run interrompu sans duplication.
 - Relancer une mission sans perdre l’ancienne tentative.
 - Générer `responses.jsonl` et `master-input.md` complets.
 - Ne jamais exposer la clé dans le client, les exports ou les logs.
 - Fonctionner correctement sur iPhone avec clavier, défilement et retour.
 
-## 21. Tests futurs obligatoires
+## 23. Tests futurs obligatoires
 
-### Contrats
+### Contrats et plan
 
 - JSON valide et invalide.
-- Identifiants et séquences dupliqués.
-- Dépendance absente.
+- Identifiants dupliqués.
+- Champ `sequence` interdit dans l’entrée.
+- Ordre de tableau et séquences générées.
+- Dépendance absente ou sur soi-même.
 - Cycle direct et indirect.
 - Champs inconnus.
 - Limites de taille.
+- immutabilité du plan validé.
 
 ### Nommage
 
@@ -570,15 +643,18 @@ La spécification est validée lorsque :
 - 10 à 99 ;
 - 100 et plus ;
 - accents, apostrophes et tirets ;
-- relance sans changement de titre.
+- relance sans changement de titre ;
+- nouvelle révision après réordonnancement.
 
-### Orchestration
+### Dépendances et orchestration
 
 - deux missions parallèles ;
 - concurrence maximale ;
 - dépendance débloquée après résultat ;
-- échec retryable ;
-- échec terminal ;
+- injection `normalized` et `raw` ;
+- ordre stable de plusieurs dépendances ;
+- contexte trop volumineux ;
+- échec retryable et terminal ;
 - annulation ;
 - idempotence ;
 - reprise après redémarrage.
@@ -587,8 +663,7 @@ La spécification est validée lorsque :
 
 - copie du titre et du prompt ;
 - permission presse-papiers refusée ;
-- réponse avec balise ;
-- réponse sans balise ;
+- réponse avec et sans balise ;
 - réponse d’une autre mission ;
 - réponse très longue ;
 - remplacement confirmé.
@@ -602,97 +677,95 @@ La spécification est validée lorsque :
 - réponse incomplète ;
 - webhook dupliqué ;
 - polling de récupération ;
-- usage observé absent.
+- usage observé absent ;
+- absence de secret dans le client et les logs.
 
 ### UX iPhone
 
 - petit viewport ;
 - clavier ouvert ;
 - rotation ;
-- hors connexion pour le mode manuel ;
+- hors connexion pour le canal manuel ;
 - perte réseau pendant une exécution API ;
 - retour et reprise.
 
-## 22. Découpage des Builds
+## 24. Découpage des Builds
 
 ### CO-BUILD-00 — Contrats et fondations
 
-- JSON Schema demande/résultat.
+- JSON Schema de demande, plan et résultat.
 - Types TypeScript.
-- validation ;
-- nommage ;
-- graphe de dépendances ;
-- machine d’états ;
-- fixtures et tests unitaires.
+- Validation stricte.
+- Génération du nommage et du plan.
+- Graphe de dépendances.
+- Construction du contexte injecté.
+- Machine d’états.
+- Fixtures et tests unitaires.
 
-### CO-BUILD-01 — Mode ChatGPT Plus manuel
+### CO-BUILD-01 — Canal ChatGPT Plus manuel
 
-- import du run ;
-- tableau de bord ;
-- copie titre/prompt ;
-- ouverture ChatGPT ;
-- collage et vérification ;
-- export des résultats ;
-- persistance locale.
+- Import du run.
+- Tableau de bord.
+- Copie titre et prompt effectif.
+- Ouverture ChatGPT.
+- Collage et vérification.
+- Export des résultats.
+- Persistance locale.
 
-### CO-BUILD-02 — Backend et mode OpenAI API
+### CO-BUILD-02 — Backend et canal OpenAI API
 
-- service backend ;
-- provider OpenAI ;
-- concurrence ;
-- reprise ;
-- erreurs ;
-- usage ;
-- sécurité du secret.
+- Service backend.
+- Authentification.
+- Provider OpenAI.
+- Concurrence et reprise.
+- Erreurs et usages.
+- Sécurité du secret.
+- Rétention et suppression.
 
-### CO-BUILD-03 — Mode hybride et synthèse maître
+### CO-BUILD-03 — Hybride et synthèse maître
 
-- exécution mixte ;
-- consolidation ;
-- `master-input.md` ;
-- lancement maître manuel ou API ;
-- résultats partiels.
+- Exécution mixte.
+- Consolidation.
+- `master-input.md`.
+- Lancement maître manuel ou API.
+- Résultats partiels confirmés.
 
 ### CO-QA-01 — Recette complète
 
-- tests automatisés ;
-- déploiement Replit sans agent IA ;
-- validation iPhone ;
-- audit secrets ;
-- reprise réseau et verrouillage ;
-- preuve de reconstruction depuis GitHub.
+- Tests automatisés.
+- Audit de secrets.
+- Déploiement Replit Starter sans agent IA.
+- Validation iPhone.
+- Reprise réseau et verrouillage.
+- Preuve de reconstruction depuis GitHub.
 
-## 23. Parallélisation des travaux de développement
-
-### Séquence obligatoire
+## 25. Parallélisation des travaux de développement
 
 `CO-BUILD-00` doit être intégré avant les développements parallèles, car il fige les contrats partagés.
 
-### Travaux parallélisables après CO-BUILD-00
+Après intégration, trois lots peuvent partir du même SHA :
 
 | Lot | Branche logique | Périmètre exclusif |
 |---|---|---|
 | Manuel | `developeros/co-build-01-manual` | UI et provider manuel. |
 | API | `developeros/co-build-02-api` | Backend et provider OpenAI. |
-| QA contrats | `developeros/co-qa-contracts` | Tests de schémas, graphes et fixtures sans modifier les providers. |
+| QA contrats | `developeros/co-qa-contracts` | Tests supplémentaires sans modifier les providers ni les contrats. |
 
-### Règles
+Règles :
 
-- Chaque lot part du même commit intégrant `CO-BUILD-00`.
-- Les listes de fichiers autorisés sont définies dans chaque prompt Codex.
-- Aucun fichier partagé n’est modifié dans deux tâches simultanées.
-- Les changements de contrat passent par une Pull Request dédiée avant reprise des lots.
-- Une tâche d’intégration unique assemble les lots.
-- Les tâches ne sont pas fusionnées automatiquement.
+- listes de fichiers autorisés dans chaque prompt Codex ;
+- aucun fichier partagé modifié simultanément ;
+- tout changement de contrat passe par une PR dédiée et suspend les lots dépendants ;
+- une tâche d’intégration unique assemble les lots ;
+- aucune fusion automatique.
 
-## 24. Routage ProjectOS des outils
+## 26. Routage ProjectOS des outils
 
 ### SPEC-00
 
-- Outil : ChatGPT.
-- Rôle : cadrage, architecture, rédaction, décision et mise à jour documentaire.
-- GitHub : branche dédiée et Pull Request.
-- Codex : non utilisé, car aucun code applicatif n’est produit.
+- ChatGPT : cadrage, architecture, rédaction, relecture et correction documentaire.
+- GitHub : branche dédiée, commits, contrôles et Pull Request.
+- Codex : non utilisé pour la rédaction documentaire ; son indisponibilité de revue automatique ne bloque pas la revue humaine par ChatGPT.
 - Replit : non utilisé.
 
 ### Builds
@@ -701,44 +774,46 @@ La spécification est validée lorsque :
 - Codex : implémentation multi-fichiers, tests et diff sur branches dédiées.
 - GitHub : source canonique et livraison.
 - Replit Starter sans agent IA : exécution, preview, tests fonctionnels et déploiement.
-- Pyto/Raccourcis : uniquement si une capacité locale iPhone non réalisable proprement dans la PWA est démontrée.
+- Pyto ou Raccourcis : uniquement si une capacité locale iPhone non réalisable proprement dans la PWA est démontrée.
 - Working Copy : récupération ou publication de secours si le canal principal échoue.
 
-## 25. Risques
+## 27. Risques
 
 | Risque | Réponse |
 |---|---|
-| Confusion entre Plus et API | Deux canaux et deux compteurs séparés. |
+| Confusion Plus/API | Deux canaux et deux compteurs séparés. |
+| Confusion ordre/séquence | Séquence dérivée et plan figé. |
+| Dépendance seulement attendue mais non transmise | Construction obligatoire du contexte injecté. |
 | Réponse collée au mauvais job | Balise, détection et confirmation. |
 | Double lancement API | Idempotence et machine d’états. |
 | Coût API non maîtrisé | Concurrence et plafond par run. |
-| Conflits de branches parallèles | Contrat gelé et périmètres de fichiers exclusifs. |
+| Conflits de branches parallèles | Contrat intégré et périmètres exclusifs. |
 | Perte de réponse | Original immuable et persistance atomique. |
 | Secret exposé | Backend uniquement et tests de fuite. |
-| Dépendance bloquée | Visualisation claire et politique d’échec. |
-| Prompt maître trop volumineux | Réduction hiérarchique prévue pour un Build ultérieur. |
+| Prompt maître trop volumineux | Détection de seuil ; réduction hiérarchique reportée. |
 
-## 26. Retour arrière
+## 28. Retour arrière
 
 - Le module reste séparé du noyau Project Core.
-- Le mode manuel fonctionne sans backend.
+- Le canal manuel fonctionne sans backend.
 - Le provider API peut être désactivé sans perdre les runs manuels.
-- Les schémas sont versionnés.
+- Les schémas et plans sont versionnés.
 - Toute migration crée une sauvegarde avant transformation.
 - Une PR peut être annulée sans toucher aux données réelles non versionnées.
 
-## 27. Décisions ouvertes pour les Builds
+## 29. Décisions ouvertes pour les Builds
 
+- Emplacement exact dans l’arborescence actuelle de DeveloperOS.
 - Hébergement exact du backend privé.
-- Authentification du backend pour l’utilisateur unique.
+- Authentification pour l’utilisateur unique.
 - Stockage serveur minimal : fichier, SQLite ou service managé.
 - Profils de modèles initiaux et plafonds de coût.
-- Stratégie de rétention des contenus API.
+- Politique OpenAI `store`, rétention et suppression.
 - Format exact des deep links vers ChatGPT selon les possibilités iOS vérifiées au moment du Build.
 
-Ces décisions n’empêchent pas le lancement de `CO-BUILD-00`.
+Ces décisions n’empêchent pas `CO-BUILD-00`, sauf l’emplacement exact des fichiers qui doit être confirmé dans son Delivery Preflight.
 
-## 28. Définition de prêt pour CO-BUILD-00
+## 30. Définition de prêt pour CO-BUILD-00
 
 `CO-BUILD-00` peut être confié à Codex lorsque :
 
