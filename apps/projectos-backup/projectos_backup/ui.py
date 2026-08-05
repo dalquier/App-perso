@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .core import BackupError, Source, run_backup
 from .pyto_access import PytoUnavailable, choose_folder, delete_bookmark, resolve_folder
-from .state import ConfigStore
+from .state import ConfigStore, infer_source_label
 
 
 def _ui():
@@ -51,6 +51,22 @@ class BackupApplication:
         alert.add_action("OK")
         return alert.show()
 
+    def _sources_with_repaired_labels(self):
+        config = self.store.load()
+        suggestions = config.get("suggestedLabels", [])
+        sources = self.store.sources()
+        repaired = []
+        for source in sources:
+            if source.label.casefold() == "documents":
+                try:
+                    label = infer_source_label(resolve_folder(source.bookmark_name), suggestions)
+                except PytoUnavailable:
+                    label = source.label
+                if label != source.label:
+                    source = self.store.rename_source(source.source_id, label)
+            repaired.append(source)
+        return repaired
+
     def refresh(self) -> None:
         config = self.store.load()
         cells = []
@@ -58,7 +74,7 @@ class BackupApplication:
         destination.detail_text_label.text = "Configurée" if config.get("destinationBookmark") else "À choisir"
         destination.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
         cells.append(destination)
-        for source in self.store.sources():
+        for source in self._sources_with_repaired_labels():
             cell = self.ui.TableViewCell(text=source.label)
             cell.detail_text_label.text = "Active" if source.enabled else "Suspendue"
             cell.accessory_type = self.ui.AccessoryType.CHECKMARK if source.enabled else self.ui.AccessoryType.NONE
@@ -105,9 +121,10 @@ class BackupApplication:
                     continue
                 if existing_path == selected:
                     delete_bookmark(bookmark_name)
-                    self.status.text = f"Déjà ajouté : {selected.name}"
+                    self.status.text = f"Déjà ajouté : {existing.label}"
                     return
-            label = Path(path).name or "Dossier"
+            suggestions = self.store.load().get("suggestedLabels", [])
+            label = infer_source_label(path, suggestions)
             self.store.add_source(label, bookmark_name)
             self.status.text = f"Ajouté : {label}"
             self.refresh()
