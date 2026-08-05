@@ -1,13 +1,17 @@
-# <Session ID> — <Nom de discussion>
+# <Session ID> — <Nom>
 
 - Date :
 - Projet :
-- Outil / agent :
+- Outil :
 - Consentement : permanent Codex / ponctuel oui
-- Statut : active / terminée / interrompue / à vérifier
+- Statut :
 - Branche :
 - Pull Request :
-- Archive brute : non demandée / à exporter / archivée / indisponible
+- Dossier Drive privé :
+- État de l’archive : initializing / active / complete / partial / error / revoked
+- Messages archivés :
+- Pièces jointes archivées :
+- Livrables archivés :
 
 ## Objectif
 
@@ -25,7 +29,7 @@
 
 ## Résultats
 
-## Limites, risques et contradictions
+## Limites, manques et contradictions
 
 ## Références canoniques mises à jour
 
