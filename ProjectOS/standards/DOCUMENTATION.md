@@ -15,7 +15,7 @@ Toute livraison doit préciser :
 
 Pour toute tâche logicielle substantielle, ChatGPT, Codex ou l’agent exécutant doit également créer un compte rendu temporaire conforme à `AGENT_HANDOFFS.md`. Ce fichier sert à la vérification croisée et à la reprise par un autre agent. Son chemin exact doit être communiqué dans la réponse finale, puis le fichier doit être supprimé après prise en compte. Les informations durables doivent être reportées dans la documentation canonique avant cette suppression.
 
-La mémoire conversationnelle est régie par `CONVERSATION_MEMORY.md` et n’est créée qu’après consentement explicite. Elle complète la documentation canonique sans la remplacer.
+La mémoire conversationnelle est régie par `CONVERSATION_MEMORY.md` et n’est créée qu’après activation conforme : consentement permanent explicite et versionné pour Codex, ou consentement ponctuel pour les autres outils. Elle complète la documentation canonique sans la remplacer.
 
 Pour une conversation enregistrée :
 
