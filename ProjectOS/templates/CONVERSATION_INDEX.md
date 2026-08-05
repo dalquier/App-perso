@@ -1,15 +1,10 @@
 # <Projet> — Index des conversations
 
-> Ce registre ne contient que les conversations dont l’enregistrement a été activé conformément à `standards/CONVERSATION_MEMORY.md` : consentement permanent Codex ou consentement ponctuel.
+> GitHub contient seulement cet index et les synthèses. Le verbatim et les fichiers sont privés dans Google Drive.
 
-| Session | Date | Outil | Nom de discussion | Axe | Statut | Branche / PR | Synthèse | Archive brute |
-|---|---|---|---|---|---|---|---|---|
+| Session | Date | Outil | Projet | Nom | Statut | Branche / PR | Synthèse | Dossier Drive | Archive | Messages | Pièces jointes |
+|---|---|---|---|---|---|---|---|---|---|---:|---:|
 
-## Statuts
+Statuts de session : `active`, `terminée`, `interrompue`, `à vérifier`, `obsolète`.
 
-- `active`
-- `terminée`
-- `interrompue`
-- `à vérifier`
-- `obsolète`
-- `aucune synthèse nécessaire`
+États d’archive : `initializing`, `active`, `complete`, `partial`, `error`, `revoked`.
