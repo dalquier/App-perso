@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 from projectos_backup.core import Source, run_backup
-from projectos_backup.pyto_access import resolve_folder
+from projectos_backup.pyto_access import request_icloud_download, resolve_folder
 from projectos_backup.state import ConfigStore
 
 
@@ -22,7 +22,7 @@ def main() -> int:
         if item.enabled
     ]
     try:
-        result = run_backup(sources, resolve_folder(destination_name))
+        result = run_backup(sources, resolve_folder(destination_name), prepare_file=request_icloud_download)
     except Exception as exc:
         print(json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False))
         return 1

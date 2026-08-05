@@ -3,117 +3,73 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-import zipfile
-
 from helpers import ROOT  # noqa: F401
 from projectos_backup import core
-from projectos_backup.core import BackupError, Source, SourceAccessError, UnsafeLayoutError, run_backup, sanitize_name, sha256_file, verify_source_archive
+from projectos_backup.core import BackupError, Source, SourceAccessError, UnsafeLayoutError, run_backup
 
-
-class BackupCoreTests(unittest.TestCase):
-    def test_sanitize_name(self):
-        self.assertEqual(sanitize_name("Équilibre / projet"), "Equilibre-projet")
-        self.assertEqual(sanitize_name("..."), "source")
-
-    def test_complete_snapshot_is_verified_and_replaces_previous(self):
+class MirrorTests(unittest.TestCase):
+    def test_incremental_copy_delete_and_prefetch(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            source = root / "source"
-            destination = root / "backup"
-            source.mkdir()
-            (source / "main.py").write_text("print('v1')\n", encoding="utf-8")
-            first = run_backup([Source("one", "Mon projet", str(source))], destination)
-            self.assertEqual(first.status, "complete")
-            current = destination / "Current"
-            archive = current / "Mon-projet.zip"
-            self.assertTrue(archive.is_file())
-            with zipfile.ZipFile(archive) as zipped:
-                self.assertIsNone(zipped.testzip())
-                self.assertIn("files/main.py", zipped.namelist())
-            manifest = json.loads((current / "MANIFEST.json").read_text(encoding="utf-8"))
-            self.assertEqual(manifest["fileCount"], 1)
-            self.assertEqual(manifest["bundle"]["name"], "ProjectOS-Backup-Current.zip")
-            self.assertEqual(len(first.bundle_sha256), 64)
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir()
+            (source/'a.txt').write_text('a'); (source/'b.txt').write_text('b')
+            requested=[]
+            first=run_backup([Source('one','Source',str(source))],dest,lambda p: requested.append(p) or True)
+            self.assertEqual((first.copied_files,first.unchanged_files,first.requested_downloads),(2,0,2))
+            self.assertEqual(len(requested),2)
+            second=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual((second.copied_files,second.unchanged_files),(0,2))
+            (source/'a.txt').write_text('changed'); (source/'b.txt').unlink(); (source/'c.txt').write_text('c')
+            third=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual((third.copied_files,third.deleted_files,third.unchanged_files),(2,1,0))
+            self.assertEqual((dest/'Current'/'Source'/'a.txt').read_text(),'changed')
+            self.assertFalse((dest/'Current'/'Source'/'b.txt').exists())
 
-            (source / "main.py").write_text("print('v2')\n", encoding="utf-8")
-            second = run_backup([Source("one", "Mon projet", str(source))], destination)
-            self.assertNotEqual(first.run_id, second.run_id)
-            self.assertFalse(any(destination.glob(".previous-*")))
-            self.assertTrue((destination / "ProjectOS-Backup-Current.zip").is_file())
-            self.assertEqual(second.bundle_sha256, sha256_file(destination / "ProjectOS-Backup-Current.zip"))
-            self.assertEqual(list((destination / "Staging").iterdir()), [])
-
-    def test_failure_does_not_replace_current(self):
+    def test_read_failure_preserves_current(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            source = root / "source"
-            destination = root / "backup"
-            source.mkdir()
-            (source / "file.txt").write_text("safe", encoding="utf-8")
-            run_backup([Source("one", "Source", str(source))], destination)
-            before = sha256_file(destination / "ProjectOS-Backup-Current.zip")
-            with self.assertRaises(BackupError):
-                run_backup([Source("missing", "Missing", str(root / "absent"))], destination)
-            self.assertEqual(before, sha256_file(destination / "ProjectOS-Backup-Current.zip"))
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); f=source/'a'; f.write_text('old')
+            run_backup([Source('one','Source',str(source))],dest); before=(dest/'Current'/'MANIFEST.json').read_text(); f.write_text('new')
+            with patch.object(core,'_copy_and_hash',side_effect=SourceAccessError('offline')):
+                with self.assertRaises(SourceAccessError): run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'old')
+            self.assertEqual((dest/'Current'/'MANIFEST.json').read_text(),before)
 
-    def test_destination_inside_source_is_rejected(self):
+    def test_legacy_zip_removed_after_success(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            source = root / "source"
-            source.mkdir()
-            with self.assertRaises(UnsafeLayoutError):
-                run_backup([Source("one", "Source", str(source))], source / "backup")
-            self.assertFalse((source / "backup").exists())
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('a')
+            (dest/'Current').mkdir(parents=True); (dest/'Current'/'Old.zip').write_text('zip'); (dest/'Current'/'keep').mkdir(); (dest/'Current'/'keep'/'note').write_text('safe'); (dest/'ProjectOS-Backup-Current.zip').write_text('bundle')
+            run_backup([Source('one','Source',str(source))],dest)
+            self.assertFalse((dest/'Current'/'Old.zip').exists()); self.assertFalse((dest/'ProjectOS-Backup-Current.zip').exists())
+            self.assertEqual((dest/'Current'/'keep'/'note').read_text(),'safe')
+            self.assertEqual(json.loads((dest/'Current'/'MANIFEST.json').read_text())['schemaVersion'],2)
 
-    def test_manifest_hashes_match_archived_bytes(self):
+    def test_collision_and_layout(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            source = root / "source"
-            source.mkdir()
-            (source / "data.bin").write_bytes(b"abc" * 1000)
-            result = run_backup([Source("one", "Source", str(source))], root / "backup")
-            verify_source_archive(Path(result.current_path) / "Source.zip")
+            root=Path(tmp); a=root/'a'; b=root/'b'; a.mkdir(); b.mkdir(); (a/'x').write_text('1'); (b/'x').write_text('2')
+            run_backup([Source('a','Même',str(a)),Source('b','Même',str(b))],root/'dest')
+            self.assertTrue((root/'dest'/'Current'/'Meme'/'x').exists()); self.assertTrue((root/'dest'/'Current'/'Meme-2'/'x').exists())
+            with self.assertRaises(UnsafeLayoutError): run_backup([Source('a','A',str(a))],a/'backup')
 
-    def test_publish_rolls_back_if_bundle_install_fails(self):
+    def test_walk_error(self):
+        def broken(*args,**kwargs): kwargs['onerror'](OSError(5,'offline','/virtual')); return iter(())
+        with patch.object(core.os,'walk',side_effect=broken):
+                with self.assertRaises(SourceAccessError): list(core.iter_source_files(Path('/virtual')))
+
+    def test_corrupt_mirror_is_repaired(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            destination = root / "backup"
-            current = destination / "Current"
-            candidate = destination / "Staging" / "run" / "Current"
-            bundle = destination / "Staging" / "run" / "ProjectOS-Backup-Current.zip"
-            current.mkdir(parents=True)
-            candidate.mkdir(parents=True)
-            (current / "old").write_text("old", encoding="utf-8")
-            (candidate / "new").write_text("new", encoding="utf-8")
-            (destination / "ProjectOS-Backup-Current.zip").write_text("old bundle", encoding="utf-8")
-            bundle.write_text("new bundle", encoding="utf-8")
-            original_replace = core.os.replace
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('good')
+            run_backup([Source('one','Source',str(source))],dest)
+            (dest/'Current'/'Source'/'a').write_text('evil')
+            result=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual(result.copied_files,1)
+            self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'good')
 
-            def fail_on_bundle(source, target):
-                if Path(source) == bundle and Path(target) == destination / "ProjectOS-Backup-Current.zip":
-                    raise OSError("simulated")
-                return original_replace(source, target)
+    def test_interrupted_publish_is_recovered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); dest=root/'backup'; current=dest/'Current'; tx=dest/'Transaction'/'old'; rollback=tx/'rollback'/'Current'
+            current.mkdir(parents=True); rollback.mkdir(parents=True)
+            (current/'changed').write_text('partial'); (current/'created').write_text('new'); (rollback/'changed').write_text('stable')
+            (tx/'JOURNAL.json').write_text(json.dumps({'state':'applying','created':['Current/created']}))
+            core._recover_transactions(dest)
+            self.assertEqual((current/'changed').read_text(),'stable'); self.assertFalse((current/'created').exists())
 
-            with patch.object(core.os, "replace", side_effect=fail_on_bundle):
-                with self.assertRaises(BackupError):
-                    core._publish_candidate(destination, candidate, bundle, "run")
-            self.assertEqual((current / "old").read_text(encoding="utf-8"), "old")
-            self.assertEqual(
-                (destination / "ProjectOS-Backup-Current.zip").read_text(encoding="utf-8"),
-                "old bundle",
-            )
-
-    def test_walk_error_is_not_silently_ignored(self):
-        root = Path("/virtual")
-
-        def broken_walk(*args, **kwargs):
-            kwargs["onerror"](OSError(5, "unavailable", str(root)))
-            return iter(())
-
-        with patch.object(core.os, "walk", side_effect=broken_walk):
-            with self.assertRaises(SourceAccessError):
-                list(core.iter_source_files(root))
-
-
-if __name__ == "__main__":
-    unittest.main()
+if __name__=='__main__': unittest.main()

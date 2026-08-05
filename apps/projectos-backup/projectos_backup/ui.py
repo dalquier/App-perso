@@ -6,7 +6,7 @@ import threading
 from pathlib import Path
 
 from .core import BackupError, Source, run_backup
-from .pyto_access import PytoUnavailable, choose_folder, delete_bookmark, resolve_folder
+from .pyto_access import PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
 from .state import ConfigStore, infer_source_label
 
 
@@ -133,7 +133,7 @@ class BackupApplication:
 
     def _backup(self, sender=None) -> None:
         self.backup_button.enabled = False
-        self.status.text = "Sauvegarde et vérification…"
+        self.status.text = "Préchargement iCloud et synchronisation…"
         threading.Thread(target=self._run_backup, daemon=True).start()
 
     def _run_backup(self) -> None:
@@ -148,9 +148,9 @@ class BackupApplication:
             for item in self.store.sources():
                 if item.enabled:
                     sources.append(Source(item.source_id, item.label, resolve_folder(item.bookmark_name)))
-            result = run_backup(sources, destination)
-            files = sum(item.file_count for item in result.archives)
-            message = f"Sauvegarde vérifiée : {files} fichiers"
+            result = run_backup(sources, destination, prepare_file=request_icloud_download)
+            message = (f"Miroir vérifié : {result.copied_files} copiés, "
+                       f"{result.deleted_files} supprimés, {result.unchanged_files} inchangés")
         except Exception as exc:
             message = f"Échec : {exc}"
         finally:
