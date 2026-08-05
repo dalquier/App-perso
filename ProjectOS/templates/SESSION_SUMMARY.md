@@ -7,7 +7,12 @@
 - Statut : active / terminée / interrompue / à vérifier
 - Branche :
 - Pull Request :
-- Archive brute : non demandée / à exporter / archivée / indisponible
+- Archive Drive : non requise / à préparer / partielle / vérifiée / indisponible / supprimée
+- Dossier Drive privé :
+- Fichiers archivés :
+- Taille totale :
+- SHA-256 du bundle :
+- Éléments indisponibles :
 
 ## Objectif
 
