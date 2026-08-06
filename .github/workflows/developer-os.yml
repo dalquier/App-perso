@@ -1,0 +1,74 @@
+name: DeveloperOS CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/developer-os/**"
+      - ".github/workflows/developer-os.yml"
+  push:
+    branches:
+      - "codex/renommer-la-tache-en-developeros-build-01-project-core-5sskd7"
+      - "developeros/build-01-project-core"
+      - "codex/construire-build-01-project-core"
+    paths:
+      - "apps/developer-os/**"
+      - ".github/workflows/developer-os.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  developer-os:
+    name: DeveloperOS app checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/developer-os
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20.20.2
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.20.2"
+          cache: npm
+          cache-dependency-path: apps/developer-os/package-lock.json
+      - name: Setup npm 11.4.2
+        run: npm install -g npm@11.4.2
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install Playwright Chromium and Linux dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Lint
+        run: npm run lint
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Component tests
+        run: npm run test:components
+      - name: Repository tests
+        run: npm run test:repository
+      - name: PWA tests
+        run: npm run test:pwa
+      - name: Production build
+        run: npm run build
+      - name: Mobile E2E tests
+        run: npm run test:e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: developer-os-playwright-report
+          path: apps/developer-os/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Upload E2E traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: developer-os-test-results
+          path: apps/developer-os/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
