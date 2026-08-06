@@ -32,7 +32,7 @@ Les PNG iPhone/PWA sont générés depuis la source SVG textuelle versionnée `p
 - `src/domain/` : modèle Project versionné, limites de champs, validation de dates, sources canoniques et import/export JSON.
 - `src/data/` : interface repository et implémentation IndexedDB (`idb`), avec transaction pour l'unicité du projet actif et gestion minimale `onblocked` / `onversionchange`.
 - `src/routing.tsx` : routeur local léger basé sur l'historique navigateur, sans backend ni dépendance de routage serveur.
-- `src/pages/`, `src/components/` : React, contrôles HTML natifs accessibles, import/export, liste, fiche, création et modification.
+- `src/pages/`, `src/components/` : React, contrôles HTML natifs accessibles, liste, fiche, création, modification, archives, restauration et réglages.
 - `scripts/generate-icons.mjs` : génération reproductible des icônes PNG 180/192/512 depuis le SVG versionné, avant dev/build/tests PWA.
 - `vite-plugin-pwa` : manifeste installable, icônes PNG générées et SVG source complémentaire, service worker Workbox, navigation fallback et nettoyage des caches obsolètes.
 
@@ -42,7 +42,7 @@ Une CSP meta BUILD-01 limite scripts, styles, connexions, objets, base URI et fr
 
 Le schéma et les exports ont la version `1`. Un projet contient exclusivement les clés canoniques `id`, `schemaVersion`, `name`, `aliases`, `status`, `priority`, `nextAction`, `canonicalSourceType`, `canonicalSource`, `lastKnownState`, `isActive`, `createdAt`, `updatedAt`.
 
-Contraintes appliquées : nom obligatoire et limité, alias bornés, textes longs bornés, `updatedAt >= createdAt`, un seul projet actif, projet archivé non actif, source canonique textuelle validée par type, import JSON limité à 512 Ko, clés dangereuses `__proto__`, `prototype`, `constructor` rejetées, champs inconnus ordinaires ignorés avec avertissement de prévalidation. BUILD-01 ne propose aucune suppression définitive de projet individuel : utiliser l'état Archivé ; la réinitialisation globale reste protégée par confirmation.
+Contraintes appliquées : nom obligatoire et limité, alias bornés, textes longs bornés, `updatedAt >= createdAt`, un seul projet actif, projet archivé non actif, source canonique textuelle validée par type, import JSON limité à 512 Ko, clés dangereuses `__proto__`, `prototype`, `constructor` rejetées, champs inconnus ordinaires ignorés avec avertissement de prévalidation. BUILD-01 ne propose aucune suppression définitive de projet individuel : l'archivage est réversible depuis **Réglages → Projets archivés** ; la réinitialisation globale reste protégée par confirmation.
 
 ## Import destructif et sauvegarde préalable
 
@@ -52,20 +52,28 @@ L'import par remplacement suit cette séquence : lecture et validation complète
 
 Les vues sont défilables et utilisent le viewport dynamique, les safe areas iOS, des cibles tactiles de 44 px minimum, des champs à 16 px et une barre d'actions visible. Les états et priorités utilisent de vrais `select` natifs. La sortie d'un formulaire modifié demande confirmation.
 
-## Tests réellement exécutés
+## Validation réalisée
 
-Les résultats réels sont dans `docs/BUILD-01-VERIFICATION.md`. Les tests couvrent modèle/export, sources dangereuses, import durci, sauvegarde avant remplacement, formulaire React et vrais `select`, repository IndexedDB, unicité du projet actif, remplacement atomique, CSP/PWA statique et scénarios Playwright mobiles production/offline prêts pour CI.
+Les preuves détaillées figurent dans `docs/BUILD-01-VERIFICATION.md`.
 
-## Procédure iPhone non encore validée physiquement
+La validation finale de la PR #28 a confirmé :
 
-1. Servir `dist/` en HTTPS, ouvrir dans Safari, puis **Partager → Sur l'écran d'accueil**.
-2. Vérifier l'icône iOS PNG 180×180 et le manifeste 192×192 / 512×512.
-3. Créer un projet et faire défiler le formulaire avec le clavier ouvert sur les champs du bas.
-4. Tester les sélecteurs natifs, Annuler et la confirmation d'abandon.
-5. Fermer/rouvrir : vérifier données et projet actif unique.
-6. Exporter, vérifier le backup préalable, puis réimporter une sauvegarde.
-7. Après un premier chargement, passer en mode avion et vérifier liste, fiche, reload offline et persistance IndexedDB.
-8. Vérifier geste retour, safe areas, mode sombre, orientations, VoiceOver, clavier physique iOS et Dynamic Island.
+- CI GitHub DeveloperOS entièrement verte, y compris lint, TypeScript, tests unitaires, composants, repository, PWA, build et E2E mobiles Playwright ;
+- preview HTTPS reproductible dans Replit depuis la branche GitHub canonique ;
+- installation réelle de la PWA depuis Safari sur iPhone ;
+- lancement et modification hors connexion après premier chargement ;
+- persistance IndexedDB après fermeture et relance ;
+- archivage d'un projet actif, accès aux archives et restauration en pause sans réactivation ;
+- export JSON puis import avec sauvegarde préalable, annulation sans mutation et remplacement confirmé.
+
+## Recette iPhone complémentaire recommandée
+
+Les contrôles suivants restent utiles en non-régression mais ne bloquent pas BUILD-01 :
+
+- audit approfondi VoiceOver et texte agrandi à 200 % ;
+- paysage et clavier physique iOS ;
+- scénarios IndexedDB multi-onglets, quota et pression de stockage Safari ;
+- vérification sur d'autres versions matérielles et logicielles d'iPhone.
 
 ## Replit Starter (sous-dossier uniquement)
 
@@ -73,7 +81,7 @@ Importer `dalquier/App-perso`, sans agent IA ni secret. Répertoire de travail :
 
 ## Limites restantes
 
-La validation GitHub Actions réelle du nouveau commit, Replit, Safari/iPhone, installation écran d'accueil, VoiceOver, clavier physique iOS, Dynamic Island et multi-onglets IndexedDB/Safari reste à observer après publication de la PR #23. Aucun appel réseau ne vérifie les sources canoniques.
+IndexedDB peut être purgé par Safari/iOS ; un export régulier reste recommandé. Aucun appel réseau ne vérifie les sources canoniques. BUILD-01 n'inclut volontairement ni backend, ni authentification, ni synchronisation distante, ni OpenAI. L'avertissement GitHub Actions relatif à la future migration du runtime Node des actions est non bloquant et devra être traité lors d'une maintenance de la CI.
 
 ## Retour arrière
 
