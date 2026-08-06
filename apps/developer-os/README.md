@@ -29,6 +29,14 @@ Les PNG iPhone/PWA sont générés depuis la source SVG textuelle versionnée `p
 
 ## Architecture
 
+### Module Conversations Codex
+
+Les routes `/codex`, `/codex/new`, `/codex/:id` et `/codex/:id/edit` gèrent un historique dédié, entièrement local. IndexedDB `developeros` passe non destructivement au schéma 2 : le store `projects` est conservé et `codexConversations` ajoute les index `updatedAt` et `status`. L’export JSON versionné et l’import par **fusion** ne suppriment aucune conversation implicitement.
+
+« Lancer dans Codex » enregistre d’abord l’entrée, copie le prompt, puis ouvre `https://chatgpt.com/codex/`. Il ne colle ni n’envoie rien automatiquement : sur iPhone, l’utilisateur colle et valide dans Codex, revient ensuite associer l’URL HTTPS exacte sur `chatgpt.com`, puis peut la rouvrir explicitement. Si Clipboard échoue, le prompt enregistré reste visible dans une zone sélectionnable avec une nouvelle action de copie.
+
+Les prompts, URLs et associations de projets restent exclusivement dans le navigateur et dans les exports privés de l’utilisateur. Recette iPhone : créer un brouillon hors connexion, recharger, lancer depuis un geste direct, vérifier la confirmation de copie et l’ouverture Safari, coller manuellement, associer le lien au retour, rouvrir par le bouton explicite, puis tester recherche, états, archivage, export et import fusionné. Safari peut purger IndexedDB : conserver des exports réguliers.
+
 - `src/domain/` : modèle Project versionné, limites de champs, validation de dates, sources canoniques et import/export JSON.
 - `src/data/` : interface repository et implémentation IndexedDB (`idb`), avec transaction pour l'unicité du projet actif et gestion minimale `onblocked` / `onversionchange`.
 - `src/routing.tsx` : routeur local léger basé sur l'historique navigateur, sans backend ni dépendance de routage serveur.

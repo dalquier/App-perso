@@ -46,10 +46,9 @@ export function useNavigate() {
 
 export function useParams() {
   const { path } = useRouter();
-  const match =
-    path === "/projects/new"
-      ? null
-      : /^\/projects\/([^/]+)(?:\/edit)?$/.exec(path);
+  const match = path === "/projects/new" || path === "/codex/new"
+    ? null
+    : /^\/(?:projects|codex)\/([^/]+)(?:\/edit)?$/.exec(path);
   return useMemo(() => ({ id: match?.[1] }), [match]);
 }
 
@@ -102,10 +101,13 @@ export function RouterSwitch({
   const { path } = useRouter();
   if (routes[path]) return routes[path];
   if (path === "/projects/new") return routes["/projects/new"];
+  if (path === "/codex/new") return routes["/codex/new"];
   if (path === "/settings/archived-projects")
     return routes["/settings/archived-projects"];
   if (/^\/projects\/[^/]+\/edit$/.test(path))
     return routes["/projects/:id/edit"];
   if (/^\/projects\/[^/]+$/.test(path)) return routes["/projects/:id"];
+  if (/^\/codex\/[^/]+\/edit$/.test(path)) return routes["/codex/:id/edit"];
+  if (/^\/codex\/[^/]+$/.test(path)) return routes["/codex/:id"];
   return fallback;
 }
