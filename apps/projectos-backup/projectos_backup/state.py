@@ -60,7 +60,6 @@ class ConfigStore:
         return {
             "schemaVersion": SCHEMA_VERSION,
             "destinationBookmark": None,
-            "driveDestinationBookmark": None,
             "sources": [],
             "suggestedLabels": [
                 "Pyto", "Pyto data", "Scriptable", "Scriptable Data", "Équilibre",
@@ -129,14 +128,6 @@ class ConfigStore:
         payload = self.load()
         previous = payload.get("destinationBookmark")
         payload["destinationBookmark"] = bookmark_name
-        self.save(payload)
-        return previous
-
-    def set_drive_destination(self, bookmark_name: str) -> str | None:
-        """Persist the separately authorized Google Drive destination."""
-        payload = self.load()
-        previous = payload.get("driveDestinationBookmark")
-        payload["driveDestinationBookmark"] = bookmark_name
         self.save(payload)
         return previous
 
