@@ -39,6 +39,22 @@ Après avoir répondu `oui` à `Enregistrer la conversation ?` :
 Charge l’index, la chronologie et uniquement les synthèses de sessions pertinentes du projet. Confronte-les à l’état vivant de GitHub, signale les contradictions et poursuis depuis la dernière action vérifiée.
 ```
 
+## Évaluer une parallélisation
+
+Après résolution du régime de mémoire, appliquer `standards/PARALLEL_EXECUTION.md`. Lorsque plusieurs flux visibles satisfont tous ses critères, répondre uniquement :
+
+```text
+Cette demande comporte des actions indépendantes. Les paralléliser ?
+```
+
+Réponses reconnues :
+
+- `oui`, `go`, `vas-y`, `parallélise` ou équivalent positif : produire le découpage, les branches, les livrables et la réconciliation, puis lancer les flux autorisés ;
+- `non`, `séquentiel`, `continue normalement` : poursuivre séquentiellement sans reposer la question pour le même périmètre ;
+- `détaille`, `montre-moi le découpage`, `quelles actions ?` : présenter les flux, dépendances, outils, coûts et risques, puis terminer par la question canonique exacte.
+
+Les lectures et vérifications internes sans effet de bord peuvent être parallélisées automatiquement sans afficher cette question.
+
 ## Modifier du code
 
 ```text
