@@ -24,7 +24,7 @@ Copier `apps/projectos-backup/` dans le dossier Pyto de l’iPhone puis lancer `
 
 Google Drive apparaît dans l’app Fichiers mais ne permet pas à Pyto de sélectionner durablement un dossier fournisseur. La destination Drive n’est donc jamais configurée dans l’interface Pyto.
 
-Le transfert sera orchestré par Raccourcis. Avant de construire le miroir distant complet, un test court vérifie que l’action Fichiers peut copier le dossier `Current` vers Google Drive sans dépendre d’un bookmark Pyto. Voir `ProjectOS/projects/ProjectOSBackup/guides/SHORTCUT_DRIVE_TEST.md`.
+Le transfert passe par un relais Google Apps Script : Pyto envoie uniquement les fichiers nouveaux ou modifiés, applique ensuite les suppressions, puis publie `MANIFEST.json` en dernier. Le secret d’accès reste hors de GitHub. Installation : `ProjectOS/projects/ProjectOSBackup/guides/GOOGLE_APPS_SCRIPT_SETUP.md`.
 
 ## Sortie
 
@@ -34,7 +34,7 @@ Au premier succès, les anciens ZIP de BUILD-01 sont supprimés après staging r
 
 ## Automatisation
 
-`headless.py` imprime `current_path`, `manifest_path`, `copied_files`, `deleted_files`, `unchanged_files` et `requested_downloads`. Le futur Raccourci Drive devra reproduire le même miroir, sans ZIP.
+`headless.py` imprime `current_path`, `manifest_path`, `copied_files`, `deleted_files`, `unchanged_files` et `requested_downloads`. `sync_drive.py` reproduit ce miroir sur Drive, sans ZIP, et imprime `uploaded_files`, `deleted_files`, `unchanged_files` et `verified_files`.
 
 ## Tests
 
