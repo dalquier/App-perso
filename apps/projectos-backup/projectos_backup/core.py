@@ -19,6 +19,8 @@ APP_VERSION = "0.2.0"
 DEFAULT_IGNORED_DIRECTORIES = frozenset({".git", "__pycache__", ".pytest_cache", ".mypy_cache"})
 DEFAULT_IGNORED_FILES = frozenset({".DS_Store"})
 PrepareFile = Callable[[Path], bool]
+ProgressCallback = Callable[[dict], None]
+CancellationCheck = Callable[[], bool]
 
 
 class BackupError(RuntimeError):
@@ -153,12 +155,18 @@ def _source_folders(resolved, previous: dict) -> dict[str, str]:
     return result
 
 
-def _copy_and_hash(source: Path, target: Path) -> tuple[int, str]:
+def _copy_and_hash(
+    source: Path,
+    target: Path,
+    should_cancel: CancellationCheck | None = None,
+) -> tuple[int, str]:
     target.parent.mkdir(parents=True, exist_ok=True)
     digest, size = hashlib.sha256(), 0
     try:
         with source.open("rb") as incoming, target.open("wb") as outgoing:
             while True:
+                if should_cancel is not None and should_cancel():
+                    raise BackupError("Temps d’arrière-plan expiré ; reprise au prochain lancement")
                 chunk = incoming.read(1024 * 1024)
                 if not chunk:
                     break
@@ -218,7 +226,13 @@ def _recover_transactions(destination: Path) -> None:
         shutil.rmtree(transaction, ignore_errors=True)
 
 
-def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file: PrepareFile | None = None) -> BackupResult:
+def run_backup(
+    sources: Iterable[Source],
+    destination: str | Path,
+    prepare_file: PrepareFile | None = None,
+    progress: ProgressCallback | None = None,
+    should_cancel: CancellationCheck | None = None,
+) -> BackupResult:
     """Make ``Current`` an exact mirror. Deletions occur only after a full readable scan."""
     destination = Path(destination).expanduser()
     resolved = validate_layout(tuple(sources), destination)
@@ -234,22 +248,45 @@ def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file:
     staged, rollback = transaction / "staged", transaction / "rollback"
     staged.mkdir(parents=True)
     inventory, requested = [], 0
+    def report(phase: str, completed: int = 0, total: int = 0, **details) -> None:
+        if progress is not None:
+            try:
+                progress({"phase": phase, "completed": completed, "total": total, **details})
+            except Exception:
+                # A display failure must never invalidate a verified backup.
+                pass
+
+    def cancel_if_needed() -> None:
+        if should_cancel is not None and should_cancel():
+            raise BackupError("Temps d’arrière-plan expiré ; reprise au prochain lancement")
+
     try:
         # Phase 1: enumerate every source. An incomplete iCloud directory aborts here.
         scanned = []
         for source, root in resolved:
+            cancel_if_needed()
+            report("scan", label=source.label)
             files = list(iter_source_files(root))
-            for path, _ in files:
+            scanned.append((source, root, files))
+
+        total_files = sum(len(files) for _, _, files in scanned)
+        prepared = 0
+        for source, _, files in scanned:
+            for path, relative in files:
+                cancel_if_needed()
                 if prepare_file is not None and prepare_file(path):
                     requested += 1
-            scanned.append((source, root, files))
+                prepared += 1
+                report("prepare", prepared, total_files, label=source.label, path=relative)
 
         # Phase 2: read/hash only new or changed files into the transaction.
         copied = unchanged = 0
+        processed = 0
         for source, root, files in scanned:
             records = []
             folder = folders[source.source_id]
             for path, relative in files:
+                cancel_if_needed()
                 try: stat = path.stat()
                 except OSError as exc: raise SourceAccessError(f"Fichier iCloud indisponible : {path}") from exc
                 key = f"{source.source_id}:{relative}"
@@ -265,10 +302,16 @@ def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file:
                 if same:
                     digest = old["sha256"]; unchanged += 1
                 else:
-                    size, digest = _copy_and_hash(path, staged / folder / relative)
+                    size, digest = _copy_and_hash(
+                        path,
+                        staged / folder / relative,
+                        should_cancel=should_cancel,
+                    )
                     if size != stat.st_size: raise SourceAccessError(f"Fichier modifié pendant la lecture : {path}")
                     copied += 1
                 records.append({"path": relative, "size": stat.st_size, "mtimeNs": stat.st_mtime_ns, "sha256": digest})
+                processed += 1
+                report("mirror", processed, total_files, label=source.label, path=relative)
             inventory.append({"sourceId": source.source_id, "label": source.label, "folder": folder, "fileCount": len(records), "files": records})
 
         desired = {f"{s['sourceId']}:{f['path']}" for s in inventory for f in s["files"]}
@@ -282,6 +325,7 @@ def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file:
         if global_bundle.exists(): legacy.append(global_bundle)
 
         changed_targets = [(p, current / p.relative_to(staged)) for p in staged.rglob("*") if p.is_file()]
+        report("publish", total_files, total_files)
         manifest_path = current / "MANIFEST.json"
         affected = list(dict.fromkeys([target for _, target in changed_targets] + obsolete + legacy + [manifest_path]))
         created = []
@@ -315,6 +359,7 @@ def run_backup(sources: Iterable[Source], destination: str | Path, prepare_file:
             raise BackupError(f"Publication annulée, sauvegarde précédente restaurée : {exc}") from exc
         _remove_empty(current)
         shutil.rmtree(transaction, ignore_errors=True)
+        report("complete", total_files, total_files)
         return BackupResult("complete", run_id, str(current), str(current / "MANIFEST.json"), copied, len(obsolete), unchanged, sum(s["fileCount"] for s in inventory), requested)
     except Exception:
         shutil.rmtree(transaction, ignore_errors=True)

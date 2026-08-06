@@ -14,7 +14,7 @@ Application Pyto locale pour maintenir une copie exacte et vérifiée des dossie
 - `.git`, les caches Python et `.DS_Store` sont exclus ;
 - aucune version historique et aucun ZIP ne sont conservés.
 
-La demande de téléchargement iCloud est explicite, mais iOS reste maître de son exécution. La lecture intégrale de chaque fichier modifié constitue la vérification finale : hors ligne, manque d’espace ou erreur fournisseur provoquent un échec sûr.
+La demande de téléchargement iCloud est explicite, mais iOS reste maître de son exécution. La lecture intégrale de chaque fichier modifié constitue la vérification finale : hors ligne, manque d’espace ou erreur fournisseur provoquent un échec sûr.\n\nL’interface affiche la phase, le fichier courant, le nombre traité et le pourcentage. L’application demande également une extension d’exécution à iOS lorsque l’utilisateur change d’app. Cette extension est temporaire et décidée par iOS : elle améliore les changements d’app courts, mais ne garantit pas une exécution illimitée en arrière-plan. Une expiration annule proprement la transaction ; le lancement suivant repart du dernier miroir valide.
 
 ## Installation Pyto
 

@@ -13,9 +13,12 @@ class MirrorTests(unittest.TestCase):
             root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir()
             (source/'a.txt').write_text('a'); (source/'b.txt').write_text('b')
             requested=[]
-            first=run_backup([Source('one','Source',str(source))],dest,lambda p: requested.append(p) or True)
+            events=[]
+            first=run_backup([Source('one','Source',str(source))],dest,lambda p: requested.append(p) or True,progress=events.append)
             self.assertEqual((first.copied_files,first.unchanged_files,first.requested_downloads),(2,0,2))
             self.assertEqual(len(requested),2)
+            self.assertEqual(events[-1]['phase'],'complete')
+            self.assertTrue(any(event['phase']=='mirror' and event['total']==2 for event in events))
             second=run_backup([Source('one','Source',str(source))],dest)
             self.assertEqual((second.copied_files,second.unchanged_files),(0,2))
             (source/'a.txt').write_text('changed'); (source/'b.txt').unlink(); (source/'c.txt').write_text('c')
@@ -71,5 +74,23 @@ class MirrorTests(unittest.TestCase):
             (tx/'JOURNAL.json').write_text(json.dumps({'state':'applying','created':['Current/created']}))
             core._recover_transactions(dest)
             self.assertEqual((current/'changed').read_text(),'stable'); self.assertFalse((current/'created').exists())
+
+    def test_cancellation_preserves_previous_mirror(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); item=source/'a'; item.write_text('old')
+            run_backup([Source('one','Source',str(source))],dest); item.write_text('new')
+            with self.assertRaises(BackupError):
+                run_backup([Source('one','Source',str(source))],dest,should_cancel=lambda: True)
+            self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'old')
+
+    def test_broken_progress_display_does_not_break_backup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; source.mkdir(); (source/'a').write_text('safe')
+            result=run_backup(
+                [Source('one','Source',str(source))],
+                root/'backup',
+                progress=lambda event: (_ for _ in ()).throw(RuntimeError('display')),
+            )
+            self.assertEqual(result.status,'complete')
 
 if __name__=='__main__': unittest.main()

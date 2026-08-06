@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib
 import os
 import time
+import threading
 
 class PytoUnavailable(RuntimeError): pass
 
@@ -51,3 +52,46 @@ def request_icloud_download(path: Path) -> bool:
         return True
     except Exception:
         return False
+
+
+class BackgroundExecution:
+    """Best-effort iOS assertion for finishing user-started work after app switching."""
+
+    def __init__(self, name: str = "ProjectOS Backup"):
+        self.name = name
+        self.expired = threading.Event()
+        self._application = None
+        self._identifier = None
+
+    def begin(self) -> bool:
+        try:
+            from UIKit import UIApplication
+            self._application = UIApplication.sharedApplication
+
+            def expiration_handler():
+                self.expired.set()
+                self.end()
+
+            method = getattr(
+                self._application,
+                "beginBackgroundTaskWithName_expirationHandler_",
+                None,
+            )
+            if method is None:
+                return False
+            self._identifier = method(self.name, expiration_handler)
+            return True
+        except Exception:
+            self._application = None
+            self._identifier = None
+            return False
+
+    def end(self) -> None:
+        if self._application is None or self._identifier is None:
+            return
+        identifier = self._identifier
+        self._identifier = None
+        try:
+            self._application.endBackgroundTask_(identifier)
+        except Exception:
+            pass
