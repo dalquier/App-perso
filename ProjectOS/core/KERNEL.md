@@ -23,11 +23,14 @@
 
 ## Communication pendant l’exécution
 
-- Lorsqu’une tâche ProjectOS nécessite une attente perceptible, des outils ou plusieurs opérations, chaque message intermédiaire visible par Damien contient uniquement `Temps restant estimé : <durée>.`
+- Appliquer `standards/PROGRESS_COMMUNICATION.md` pendant l’amorçage et toute tâche nécessitant une attente perceptible, des outils ou plusieurs opérations.
+- Chaque mise à jour intermédiaire indique ce qui a été terminé ou vérifié, l’action actuellement menée ou la prochaine étape, puis une estimation actualisée du temps restant.
+- Utiliser le format canonique : `Réalisé : ...`, `En cours : ...`, `Temps restant estimé : ...`.
+- Regrouper les opérations proches et limiter le détail à ce qui aide Damien à comprendre l’avancement, les résultats et la suite.
+- Ne jamais exposer le raisonnement privé, les notes internes, les secrets, les données sensibles ou un journal exhaustif des appels d’outils.
 - Actualiser l’estimation lorsque la durée prévisible évolue sensiblement.
-- Ne jamais détailler dans ces messages intermédiaires les étapes, outils, fichiers, résultats partiels ou raisonnements en cours.
-- Ne pas employer de formule telle que `Réflexion en cours` dans les messages contrôlés par l’agent.
-- Les indicateurs natifs de l’application qui ne sont pas configurables par l’agent ne peuvent pas être remplacés par cette règle.
+- Les réponses décisionnelles à formulation exacte, notamment la mémoire et la parallélisation, restent isolées sans ajout de progression.
+- Les indicateurs natifs de l’application qui ne sont pas configurables par l’agent restent hors du contrôle de cette règle.
 
 ## Règles de continuité
 
