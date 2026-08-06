@@ -53,6 +53,7 @@ def test_quick_analyze_builds_strict_request_without_raw_text_in_response(monkey
     assert captured["transient"]["raw_text"].startswith("63 %")
     assert result["import_id"] == "IMP-TEST"
     assert result["shortcut_can_commit"] is True
+    assert result["shortcut_needs_confirmation"] is False
     assert "63 % restant" not in str(result)
     assert "Quota restant : 63 %" in result["shortcut_summary"]
 
@@ -104,7 +105,62 @@ def test_quick_commit_confirms_nonblocking_warning(monkeypatch):
     ]
 
 
-def test_quick_commit_blocks_ambiguous_candidate(monkeypatch):
+def test_quick_commit_accepts_ambiguous_populated_candidate_after_save(monkeypatch):
+    captured = {}
+
+    def fake_commit(request):
+        captured.update(request)
+        return {"status": "committed", "snapshot_id": "SNP-20260805-001"}
+
+    monkeypatch.setattr(quick, "commit_import", fake_commit)
+    staged = candidate(
+        field_confidence={
+            "remaining_percent": "ambiguous",
+            "reset_at": "ambiguous",
+            "measurement_scope": "certain",
+        }
+    )
+    result = quick.commit_staged("IMP-TEST", staging=FakeStaging(staged))
+
+    assert result["status"] == "committed"
+    assert captured["validated_by_user"] is True
+    assert result["confirmed_ambiguous_fields"] == [
+        "remaining_percent",
+        "reset_at",
+    ]
+
+
+def test_quick_analyze_marks_ambiguous_values_as_confirmation_not_correction(monkeypatch):
+    def fake_analyze(request):
+        return {
+            "candidate": candidate(
+                field_confidence={
+                    "remaining_percent": "ambiguous",
+                    "reset_at": "ambiguous",
+                    "measurement_scope": "certain",
+                }
+            ),
+            "import_id": request["import_id"],
+        }
+
+    monkeypatch.setattr(quick, "analyze", fake_analyze)
+    result = quick.analyze_text(
+        "0 % restant\nReset 11 août 2026 17:49",
+        captured_at="2026-08-05T13:45:00+02:00",
+        import_id="IMP-AMBIGUOUS",
+    )
+
+    assert result["shortcut_can_commit"] is True
+    assert result["shortcut_needs_confirmation"] is True
+    assert result["shortcut_confirmation_fields"] == [
+        "remaining_percent",
+        "reset_at",
+    ]
+    assert "Confirmation requise" in result["shortcut_summary"]
+    assert "Correction requise" not in result["shortcut_summary"]
+
+
+def test_quick_commit_still_blocks_missing_value(monkeypatch):
     called = False
 
     def fake_commit(request):
@@ -114,11 +170,12 @@ def test_quick_commit_blocks_ambiguous_candidate(monkeypatch):
 
     monkeypatch.setattr(quick, "commit_import", fake_commit)
     staged = candidate(
+        remaining_percent=None,
         field_confidence={
-            "remaining_percent": "ambiguous",
+            "remaining_percent": "absent",
             "reset_at": "certain",
             "measurement_scope": "certain",
-        }
+        },
     )
     result = quick.commit_staged("IMP-TEST", staging=FakeStaging(staged))
 
