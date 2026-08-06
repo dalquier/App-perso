@@ -113,7 +113,7 @@ function sessionView() {
   const session = state.lastSession;
   if (session.completed) {
     const record = state.sessionRecords.find((item) => item.sourceSessionId === session.id);
-    const alreadyProposed = state.memoryEntries.some((entry) => entry.source?.id === record?.id);
+    const alreadyProposed = state.memoryEntries.some((entry) => entry.source?.sessionRecordId === record?.id);
     return `<section class="session-complete"><span class="complete-mark">✓</span><h1>Un pas à la fois.</h1><dl>${Object.entries(session.answers).map(([key, value]) => `<div><dt>${stepCopy[key][0]}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>${record ? `<section class="local-note"><p><strong>Résumé local</strong><br>${escapeHtml(record.summary)}</p></section><section class="local-note"><p><strong>Plan d’action</strong><br>${escapeHtml(record.actionPlan)}</p></section>${alreadyProposed ? `<button class="button" data-view="memory">Voir ma mémoire</button>` : `<button class="button primary-button" data-propose-session-memory="${record.id}">Proposer ce plan dans ma mémoire</button>`}` : ""}<button class="button" data-view="home">Accueil</button></section>`;
   }
   const steps = ["situation", "emotion", "thought", "action"];
@@ -123,7 +123,7 @@ function sessionView() {
 }
 
 function memoryView() {
-  const entries = state.memoryEntries.map((entry) => `<article class="conversation-row"><div><strong>${entry.status === MEMORY_STATUS.confirmed ? "Mémoire confirmée" : "Proposition à valider"}</strong><p>${escapeHtml(entry.content)}</p><small>Source : séance ${escapeHtml(entry.source?.id || "inconnue")}</small></div>${entry.status === MEMORY_STATUS.proposed ? `<button class="mini" data-confirm-memory="${entry.id}">Confirmer</button>` : ""}<button class="mini" data-edit-memory="${entry.id}">Corriger</button><button class="mini danger" data-delete-memory="${entry.id}">Supprimer</button></article>`).join("");
+  const entries = state.memoryEntries.map((entry) => `<article class="conversation-row"><div><strong>${entry.status === MEMORY_STATUS.confirmed ? "Mémoire confirmée" : "Proposition à valider"}</strong><p>${escapeHtml(entry.content)}</p><small>Source : séance ${escapeHtml(entry.source?.sessionRecordId || "inconnue")}</small></div>${entry.status === MEMORY_STATUS.proposed ? `<button class="mini" data-confirm-memory="${entry.id}">Confirmer</button>` : ""}<button class="mini" data-edit-memory="${entry.id}">Corriger</button><button class="mini danger" data-delete-memory="${entry.id}">Supprimer</button></article>`).join("");
   return `<section class="page-heading"><button class="back" data-view="home">←</button><div><p class="eyebrow">Sous votre contrôle</p><h1>Ma mémoire</h1></div></section><p class="lead">Rien n’est ajouté automatiquement. Vous confirmez, corrigez ou supprimez chaque élément.</p><div class="conversation-list">${entries || `<div class="empty-state"><span>✦</span><h2>Mémoire vide</h2><p>Terminez une séance puis choisissez explicitement ce que vous souhaitez conserver.</p></div>`}</div>`;
 }
 
@@ -237,8 +237,8 @@ app.addEventListener("click", (event) => {
   const proposal = event.target.closest("[data-propose-session-memory]");
   if (proposal) {
     const record = state.sessionRecords.find((item) => item.id === proposal.dataset.proposeSessionMemory);
-    if (record && !state.memoryEntries.some((entry) => entry.source?.id === record.id)) {
-      state.memoryEntries = [...state.memoryEntries, proposeMemory({ content: record.actionPlan, sourceSessionId: record.id, kind: "action" })];
+    if (record && !state.memoryEntries.some((entry) => entry.source?.sessionRecordId === record.id)) {
+      state.memoryEntries = [...state.memoryEntries, proposeMemory({ content: record.actionPlan, sessionRecordId: record.id, sourceSessionId: record.sourceSessionId, kind: "action" })];
       persist();
     }
     setView("memory");

@@ -28,15 +28,16 @@ export function createSessionRecord(session, { now = new Date() } = {}) {
   };
 }
 
-export function proposeMemory({ content, sourceSessionId, kind = "insight", now = new Date() }) {
+export function proposeMemory({ content, sessionRecordId, sourceSessionId, kind = "insight", now = new Date() }) {
   const cleaned = String(content || "").trim();
   if (!cleaned) throw new Error("Le contenu de mémoire est requis.");
-  if (!sourceSessionId) throw new Error("L'identifiant de séance source est requis.");
+  if (!sessionRecordId) throw new Error("L'identifiant de l'enregistrement de séance est requis.");
+  if (!sourceSessionId) throw new Error("L'identifiant de la séance source est requis.");
   return {
     id: stableId("memory", now),
     kind,
     content: cleaned,
-    source: { type: "session", id: sourceSessionId },
+    source: { type: "session", sessionRecordId, sourceSessionId },
     status: MEMORY_STATUS.proposed,
     createdAt: nowIso(now),
     updatedAt: nowIso(now),

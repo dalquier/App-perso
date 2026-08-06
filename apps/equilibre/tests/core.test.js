@@ -14,7 +14,7 @@ import { createLocalConversationProvider, DEFAULT_LOCAL_STREAM_DELAY_MS } from "
 import { isIOSDevice, isStandaloneDisplay, localStorageContextNotice } from "../src/platform/displayMode.js";
 import { scrollChatToBottom } from "../src/platform/viewport.js";
 import { detectSensitiveContent, SAFETY_MESSAGE } from "../src/safety/sensitiveGuard.js";
-import { BUILD01_BACKUP_KEY, V2_BACKUP_KEY, createStore, defaultState, migrateBuild01, migrateState, STORAGE_KEY, STORAGE_VERSION } from "../src/storage/localStore.js";
+import { BUILD01_BACKUP_KEY, V2_BACKUP_KEY, createStore, defaultState, migrateBuild01, migrateState, normalizeMemoryEntry, STORAGE_KEY, STORAGE_VERSION } from "../src/storage/localStore.js";
 
 const memoryStorage = () => {
   const data = new Map();
@@ -170,19 +170,19 @@ describe("BUILD-03 séances et mémoire contrôlée", () => {
 
   it("crée uniquement une proposition avant confirmation", () => {
     const record = createSessionRecord(completedSession(), { now: new Date("2026-02-01T10:10:00Z") });
-    const entry = proposeMemory({ content: record.actionPlan, sourceSessionId: record.id, kind: "action", now: new Date("2026-02-01T10:11:00Z") });
-    expect(entry).toMatchObject({ content: "Préparer deux lignes", status: MEMORY_STATUS.proposed, source: { type: "session", id: record.id } });
+    const entry = proposeMemory({ content: record.actionPlan, sessionRecordId: record.id, sourceSessionId: record.sourceSessionId, kind: "action", now: new Date("2026-02-01T10:11:00Z") });
+    expect(entry).toMatchObject({ content: "Préparer deux lignes", status: MEMORY_STATUS.proposed, source: { type: "session", sessionRecordId: record.id, sourceSessionId: record.sourceSessionId } });
   });
 
   it("confirme une proposition immuablement", () => {
-    const proposed = proposeMemory({ content: "Action fictive", sourceSessionId: "session-fixture", now: new Date("2026-02-01T10:11:00Z") });
+    const proposed = proposeMemory({ content: "Action fictive", sessionRecordId: "record-fixture", sourceSessionId: "session-fixture", now: new Date("2026-02-01T10:11:00Z") });
     const confirmed = confirmMemory(proposed, new Date("2026-02-01T10:12:00Z"));
     expect(confirmed.status).toBe(MEMORY_STATUS.confirmed);
     expect(proposed.status).toBe(MEMORY_STATUS.proposed);
   });
 
   it("corrige puis supprime une mémoire", () => {
-    const proposed = proposeMemory({ content: "Avant", sourceSessionId: "session-fixture", now: new Date("2026-02-01T10:11:00Z") });
+    const proposed = proposeMemory({ content: "Avant", sessionRecordId: "record-fixture", sourceSessionId: "session-fixture", now: new Date("2026-02-01T10:11:00Z") });
     const corrected = updateMemory(proposed, "Après", new Date("2026-02-01T10:12:00Z"));
     expect(corrected.content).toBe("Après");
     expect(removeMemory([corrected], corrected.id)).toEqual([]);
@@ -207,7 +207,7 @@ describe("BUILD-03 séances et mémoire contrôlée", () => {
     const storage = memoryStorage();
     const store = createStore(storage);
     const sessionRecord = createSessionRecord(completedSession(), { now: new Date("2026-02-01T10:10:00Z") });
-    const memoryEntry = confirmMemory(proposeMemory({ content: sessionRecord.actionPlan, sourceSessionId: sessionRecord.id, now: new Date("2026-02-01T10:11:00Z") }), new Date("2026-02-01T10:12:00Z"));
+    const memoryEntry = confirmMemory(proposeMemory({ content: sessionRecord.actionPlan, sessionRecordId: sessionRecord.id, sourceSessionId: sessionRecord.sourceSessionId, now: new Date("2026-02-01T10:11:00Z") }), new Date("2026-02-01T10:12:00Z"));
     const state = { ...defaultState(), sessionRecords: [sessionRecord], memoryEntries: [memoryEntry] };
     store.save(state);
     expect(store.load()).toMatchObject({ version: 3, sessionRecords: [{ id: sessionRecord.id }], memoryEntries: [{ status: MEMORY_STATUS.confirmed }] });
@@ -216,7 +216,7 @@ describe("BUILD-03 séances et mémoire contrôlée", () => {
   it("l'effacement total supprime aussi la mémoire", () => {
     const storage = memoryStorage();
     const store = createStore(storage);
-    store.save({ ...defaultState(), memoryEntries: [proposeMemory({ content: "Fixture", sourceSessionId: "session-fixture" })] });
+    store.save({ ...defaultState(), memoryEntries: [proposeMemory({ content: "Fixture", sessionRecordId: "record-fixture", sourceSessionId: "session-fixture" })] });
     store.clear();
     expect(storage.getItem(STORAGE_KEY)).toBeNull();
     expect(store.load().memoryEntries).toEqual([]);
@@ -232,59 +232,90 @@ describe("provenance des mémoires — chaîne vérifiée", () => {
     return session;
   };
 
-  it("refuse une source vide dans proposeMemory", () => {
-    expect(() => proposeMemory({ content: "Action fictive", sourceSessionId: "" })).toThrow("source");
+  it("refuse un sessionRecordId vide dans proposeMemory", () => {
+    expect(() => proposeMemory({ content: "Action fictive", sessionRecordId: "", sourceSessionId: "sess-x" })).toThrow("enregistrement");
   });
 
-  it("refuse une source absente dans proposeMemory", () => {
-    expect(() => proposeMemory({ content: "Action fictive", sourceSessionId: undefined })).toThrow("source");
+  it("refuse un sourceSessionId absent dans proposeMemory", () => {
+    expect(() => proposeMemory({ content: "Action fictive", sessionRecordId: "rec-x", sourceSessionId: undefined })).toThrow("source");
   });
 
-  it("lie la mémoire à l'enregistrement de séance source", () => {
+  it("structure de provenance complète — sessionRecordId et sourceSessionId distincts", () => {
     const session = completedSession();
     const record = createSessionRecord(session, { now: new Date("2026-03-01T10:10:00Z") });
-    const entry = proposeMemory({ content: record.actionPlan, sourceSessionId: record.id, kind: "action" });
+    const entry = proposeMemory({ content: record.actionPlan, sessionRecordId: record.id, sourceSessionId: record.sourceSessionId, kind: "action" });
     expect(entry.source.type).toBe("session");
-    expect(entry.source.id).toBe(record.id);
-    // Chaîne complète : mémoire → enregistrement → séance
-    expect(record.sourceSessionId).toBe(session.id);
+    expect(entry.source.sessionRecordId).toBe(record.id);
+    expect(entry.source.sourceSessionId).toBe(session.id);
+    expect(entry.source.sessionRecordId).not.toBe(entry.source.sourceSessionId);
     expect(session.completed).toBe(true);
   });
 
-  it("source.id de la mémoire retrouve le bon enregistrement dans sessionRecords", () => {
+  it("source.sessionRecordId retrouve le bon enregistrement dans sessionRecords", () => {
     const record = createSessionRecord(completedSession(), { now: new Date("2026-03-01T10:10:00Z") });
-    const entry = proposeMemory({ content: record.actionPlan, sourceSessionId: record.id });
+    const entry = proposeMemory({ content: record.actionPlan, sessionRecordId: record.id, sourceSessionId: record.sourceSessionId });
     const sessionRecords = [record];
-    const found = sessionRecords.find((r) => r.id === entry.source.id);
+    const found = sessionRecords.find((r) => r.id === entry.source.sessionRecordId);
     expect(found).toBeDefined();
-    expect(found.sourceSessionId).toBeTruthy();
+    expect(found.sourceSessionId).toBe(entry.source.sourceSessionId);
+  });
+
+  it("normalise une ancienne entrée source.id vers sessionRecordId + sourceSessionId", () => {
+    const oldEntry = { id: "mem-1", content: "Ancien contenu", source: { type: "session", id: "rec-old-123" }, status: "proposed" };
+    const normalized = normalizeMemoryEntry(oldEntry);
+    expect(normalized.source.sessionRecordId).toBe("rec-old-123");
+    expect(normalized.source.sourceSessionId).toBeNull();
+    expect(normalized.source.id).toBeUndefined();
+  });
+
+  it("ne modifie pas une entrée déjà au nouveau format", () => {
+    const newEntry = { id: "mem-2", content: "Contenu", source: { type: "session", sessionRecordId: "rec-new", sourceSessionId: "sess-new" }, status: "proposed" };
+    expect(normalizeMemoryEntry(newEntry)).toBe(newEntry);
+  });
+
+  it("load() normalise les anciennes entrées source.id au chargement", () => {
+    const storage = memoryStorage();
+    const store = createStore(storage);
+    const oldState = JSON.stringify({
+      version: 3,
+      settings: { saveLocally: true, theme: "system" },
+      conversations: [],
+      activeConversationId: null,
+      sessionRecords: [],
+      memoryEntries: [{ id: "mem-legacy", content: "Ancienne mémoire", source: { type: "session", id: "record-legacy-id" }, status: "proposed" }],
+    });
+    storage.setItem(STORAGE_KEY, oldState);
+    const loaded = store.load();
+    expect(loaded.memoryEntries[0].source.sessionRecordId).toBe("record-legacy-id");
+    expect(loaded.memoryEntries[0].source.sourceSessionId).toBeNull();
+    expect(loaded.memoryEntries[0].source.id).toBeUndefined();
   });
 });
 
 describe("garde-fou avant correction de mémoire", () => {
   it("bloque un contenu sensible et retourne blocked:true", () => {
-    const entry = proposeMemory({ content: "Plan fictif", sourceSessionId: "session-fixture" });
+    const entry = proposeMemory({ content: "Plan fictif", sessionRecordId: "record-fixture", sourceSessionId: "session-fixture" });
     const result = applyMemoryCorrection(entry, "je veux mourir");
     expect(result.blocked).toBe(true);
     expect(result.entry).toBe(entry); // entrée originale inchangée
   });
 
   it("applique la correction si le contenu est sûr", () => {
-    const entry = proposeMemory({ content: "Plan fictif", sourceSessionId: "session-fixture" });
+    const entry = proposeMemory({ content: "Plan fictif", sessionRecordId: "record-fixture", sourceSessionId: "session-fixture" });
     const result = applyMemoryCorrection(entry, "Nouvelle action réaliste");
     expect(result.blocked).toBe(false);
     expect(result.entry.content).toBe("Nouvelle action réaliste");
   });
 
   it("rejette un contenu vide sans modification", () => {
-    const entry = proposeMemory({ content: "Plan fictif", sourceSessionId: "session-fixture" });
+    const entry = proposeMemory({ content: "Plan fictif", sessionRecordId: "record-fixture", sourceSessionId: "session-fixture" });
     const result = applyMemoryCorrection(entry, "   ");
     expect(result.blocked).toBe(false);
     expect(result.entry).toBe(entry);
   });
 
   it("préserve l'entrée originale immuablement après correction sûre", () => {
-    const entry = proposeMemory({ content: "Avant", sourceSessionId: "session-fixture" });
+    const entry = proposeMemory({ content: "Avant", sessionRecordId: "record-fixture", sourceSessionId: "session-fixture" });
     const result = applyMemoryCorrection(entry, "Après");
     expect(result.entry.content).toBe("Après");
     expect(entry.content).toBe("Avant");
@@ -326,6 +357,45 @@ describe("sauvegarde brute réversible migration v2→v3", () => {
     const backup = JSON.parse(storage.getItem(V2_BACKUP_KEY));
     expect(backup.version).toBe(2);
     expect(backup.conversations[0].messages[0].content).toBe("archive v2");
+  });
+
+  it("idempotence — un deuxième load() ne réécrit pas la sauvegarde v2", () => {
+    const storage = memoryStorage();
+    const store = createStore(storage);
+    const conversation = addMessage(createConversation(), createMessage({ role: "user", content: "idempotence v2" }));
+    const raw = JSON.stringify({ version: 2, settings: { saveLocally: true, theme: "system" }, conversations: [conversation], activeConversationId: conversation.id });
+    storage.setItem(STORAGE_KEY, raw);
+    store.load(); // premier chargement — crée la sauvegarde
+    const firstBackup = storage.getItem(V2_BACKUP_KEY);
+    // Simuler un second chargement avec un état v2 différent (ne doit pas écraser)
+    const raw2 = JSON.stringify({ ...JSON.parse(raw), conversations: [] });
+    storage.setItem(STORAGE_KEY, raw2);
+    store.load(); // second chargement — la sauvegarde ne doit pas changer
+    expect(storage.getItem(V2_BACKUP_KEY)).toBe(firstBackup);
+  });
+
+  it("clear() supprime la sauvegarde v2", () => {
+    const storage = memoryStorage();
+    const store = createStore(storage);
+    const conversation = addMessage(createConversation(), createMessage({ role: "user", content: "fixture clear" }));
+    const raw = JSON.stringify({ version: 2, settings: { saveLocally: true, theme: "system" }, conversations: [conversation], activeConversationId: conversation.id });
+    storage.setItem(STORAGE_KEY, raw);
+    store.load();
+    expect(storage.getItem(V2_BACKUP_KEY)).not.toBeNull();
+    store.clear();
+    expect(storage.getItem(V2_BACKUP_KEY)).toBeNull();
+  });
+
+  it("désactivation de la persistance supprime la sauvegarde v2", () => {
+    const storage = memoryStorage();
+    const store = createStore(storage);
+    const conversation = addMessage(createConversation(), createMessage({ role: "user", content: "fixture disable" }));
+    const raw = JSON.stringify({ version: 2, settings: { saveLocally: true, theme: "system" }, conversations: [conversation], activeConversationId: conversation.id });
+    storage.setItem(STORAGE_KEY, raw);
+    store.load();
+    expect(storage.getItem(V2_BACKUP_KEY)).not.toBeNull();
+    store.save({ ...defaultState(), settings: { saveLocally: false, theme: "system" } });
+    expect(storage.getItem(V2_BACKUP_KEY)).toBeNull();
   });
 });
 

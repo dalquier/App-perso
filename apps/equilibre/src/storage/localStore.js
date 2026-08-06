@@ -73,6 +73,13 @@ export function migrateBuild01(raw = {}) {
   };
 }
 
+export const normalizeMemoryEntry = (entry) => {
+  if (!entry?.source) return entry;
+  if (entry.source.sessionRecordId !== undefined) return entry; // déjà au nouveau format
+  // ancien format { type, id } → nouveau format { type, sessionRecordId, sourceSessionId }
+  return { ...entry, source: { type: entry.source.type || "session", sessionRecordId: entry.source.id ?? null, sourceSessionId: null } };
+};
+
 const normalizeMessage = (message) => {
   if (!message || typeof message !== "object") return null;
   const status = [MESSAGE_STATUS.generating, MESSAGE_STATUS.partial].includes(message.status)
@@ -111,7 +118,7 @@ export function migrateState(raw) {
     conversations,
     activeConversationId,
     sessionRecords: Array.isArray(raw.sessionRecords) ? raw.sessionRecords.filter(Boolean) : [],
-    memoryEntries: Array.isArray(raw.memoryEntries) ? raw.memoryEntries.filter(Boolean) : [],
+    memoryEntries: Array.isArray(raw.memoryEntries) ? raw.memoryEntries.filter(Boolean).map(normalizeMemoryEntry) : [],
   };
 }
 
@@ -123,7 +130,7 @@ export function createStore(storage = globalThis.localStorage) {
       const serialized = storage.getItem(STORAGE_KEY);
       const raw = JSON.parse(serialized);
       if (raw?.version === 1 && serialized) storage.setItem(BUILD01_BACKUP_KEY, serialized);
-      if (raw?.version === 2 && serialized) storage.setItem(V2_BACKUP_KEY, serialized);
+      if (raw?.version === 2 && serialized && !storage.getItem(V2_BACKUP_KEY)) storage.setItem(V2_BACKUP_KEY, serialized);
       const loaded = migrateState(raw);
       writesBlocked = false;
       return loaded;
@@ -140,6 +147,7 @@ export function createStore(storage = globalThis.localStorage) {
     if (writesBlocked || state.storageError || state.writesBlocked) return false;
     if (!state.settings.saveLocally) {
       storage.removeItem(STORAGE_KEY);
+      storage.removeItem(V2_BACKUP_KEY);
       return true;
     }
     storage.setItem(STORAGE_KEY, JSON.stringify({ ...state, version: STORAGE_VERSION, storageError: undefined, writesBlocked: undefined }));
@@ -149,6 +157,7 @@ export function createStore(storage = globalThis.localStorage) {
   const clear = () => {
     writesBlocked = false;
     storage.removeItem(STORAGE_KEY);
+    storage.removeItem(V2_BACKUP_KEY);
   };
 
   return { load, save, clear };
