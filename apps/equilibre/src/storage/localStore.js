@@ -1,8 +1,9 @@
 import { CONVERSATION_SCHEMA_VERSION, MESSAGE_STATUS } from "../domain/conversation.js";
 
 export const STORAGE_KEY = "equilibre.local.v1";
-export const STORAGE_VERSION = 2;
+export const STORAGE_VERSION = 3;
 export const BUILD01_BACKUP_KEY = `${STORAGE_KEY}.build01.backup`;
+export const V2_BACKUP_KEY = `${STORAGE_KEY}.v2.backup`;
 
 const MIGRATION_EPOCH = "2026-01-01T00:00:00.000Z";
 
@@ -14,6 +15,8 @@ export function defaultState() {
     activeConversationId: null,
     messages: [],
     lastSession: null,
+    sessionRecords: [],
+    memoryEntries: [],
   };
 }
 
@@ -70,6 +73,13 @@ export function migrateBuild01(raw = {}) {
   };
 }
 
+export const normalizeMemoryEntry = (entry) => {
+  if (!entry?.source) return entry;
+  if (entry.source.sessionRecordId !== undefined) return entry; // déjà au nouveau format
+  // ancien format { type, id } → nouveau format { type, sessionRecordId, sourceSessionId }
+  return { ...entry, source: { type: entry.source.type || "session", sessionRecordId: entry.source.id ?? null, sourceSessionId: null } };
+};
+
 const normalizeMessage = (message) => {
   if (!message || typeof message !== "object") return null;
   const status = [MESSAGE_STATUS.generating, MESSAGE_STATUS.partial].includes(message.status)
@@ -81,6 +91,14 @@ const normalizeMessage = (message) => {
 export function migrateState(raw) {
   if (!raw || typeof raw !== "object") return defaultState();
   if (raw.version === 1) return migrateBuild01(raw);
+  if (raw.version === 2) {
+    return migrateState({
+      ...raw,
+      version: STORAGE_VERSION,
+      sessionRecords: [],
+      memoryEntries: [],
+    });
+  }
   if (raw.version !== STORAGE_VERSION) throw new Error(`Version de stockage inconnue: ${raw.version}`);
   const base = defaultState();
   const conversations = Array.isArray(raw.conversations)
@@ -93,7 +111,15 @@ export function migrateState(raw) {
   const activeConversationId = conversations.some((c) => c.id === raw.activeConversationId)
     ? raw.activeConversationId
     : conversations[0]?.id || null;
-  return { ...base, ...raw, settings: { ...base.settings, ...(raw.settings || {}) }, conversations, activeConversationId };
+  return {
+    ...base,
+    ...raw,
+    settings: { ...base.settings, ...(raw.settings || {}) },
+    conversations,
+    activeConversationId,
+    sessionRecords: Array.isArray(raw.sessionRecords) ? raw.sessionRecords.filter(Boolean) : [],
+    memoryEntries: Array.isArray(raw.memoryEntries) ? raw.memoryEntries.filter(Boolean).map(normalizeMemoryEntry) : [],
+  };
 }
 
 export function createStore(storage = globalThis.localStorage) {
@@ -104,6 +130,7 @@ export function createStore(storage = globalThis.localStorage) {
       const serialized = storage.getItem(STORAGE_KEY);
       const raw = JSON.parse(serialized);
       if (raw?.version === 1 && serialized) storage.setItem(BUILD01_BACKUP_KEY, serialized);
+      if (raw?.version === 2 && serialized && !storage.getItem(V2_BACKUP_KEY)) storage.setItem(V2_BACKUP_KEY, serialized);
       const loaded = migrateState(raw);
       writesBlocked = false;
       return loaded;
@@ -120,6 +147,7 @@ export function createStore(storage = globalThis.localStorage) {
     if (writesBlocked || state.storageError || state.writesBlocked) return false;
     if (!state.settings.saveLocally) {
       storage.removeItem(STORAGE_KEY);
+      storage.removeItem(V2_BACKUP_KEY);
       return true;
     }
     storage.setItem(STORAGE_KEY, JSON.stringify({ ...state, version: STORAGE_VERSION, storageError: undefined, writesBlocked: undefined }));
@@ -129,6 +157,7 @@ export function createStore(storage = globalThis.localStorage) {
   const clear = () => {
     writesBlocked = false;
     storage.removeItem(STORAGE_KEY);
+    storage.removeItem(V2_BACKUP_KEY);
   };
 
   return { load, save, clear };

@@ -1,6 +1,15 @@
 import "./styles.css";
 import { answerSession, createSession } from "./domain/session.js";
 import {
+  applyMemoryCorrection,
+  confirmMemory,
+  createSessionRecord,
+  proposeMemory,
+  removeMemory,
+  updateMemory,
+  MEMORY_STATUS,
+} from "./domain/memory.js";
+import {
   changeConversationMode,
   CONVERSATION_MODES,
   createConversation,
@@ -77,7 +86,7 @@ const stepCopy = {
   action: ["La prochaine action", "Quel tout petit pas réaliste pouvez-vous choisir ?", "Ex. : Ouvrir le document pendant deux minutes."],
 };
 
-const shell = (content) => `<div class="app-shell"><header class="topbar"><button class="brand" data-view="home" aria-label="Retour à l’accueil"><span class="brand-mark">É</span><span>Équilibre</span></button><button class="icon-button" data-view="settings" aria-label="Réglages">•••</button></header><main tabindex="-1">${content}</main><nav class="tabbar" aria-label="Navigation principale"><button class="tab ${view === "home" ? "active" : ""}" data-view="home">⌂ Accueil</button><button class="tab ${view === "conversations" ? "active" : ""}" data-view="conversations">☰ Historique</button><button class="tab ${view === "chat" ? "active" : ""}" data-view="chat">◌ Échanger</button><button class="tab ${view === "session" ? "active" : ""}" data-view="session">◇ Séance</button></nav></div>`;
+const shell = (content) => `<div class="app-shell"><header class="topbar"><button class="brand" data-view="home" aria-label="Retour à l’accueil"><span class="brand-mark">É</span><span>Équilibre</span></button><button class="icon-button" data-view="settings" aria-label="Réglages">•••</button></header><main tabindex="-1">${content}</main><nav class="tabbar" aria-label="Navigation principale"><button class="tab ${view === "home" ? "active" : ""}" data-view="home">⌂ Accueil</button><button class="tab ${view === "conversations" ? "active" : ""}" data-view="conversations">☰ Historique</button><button class="tab ${view === "chat" ? "active" : ""}" data-view="chat">◌ Échanger</button><button class="tab ${view === "session" ? "active" : ""}" data-view="session">◇ Séance</button><button class="tab ${view === "memory" ? "active" : ""}" data-view="memory">✦ Mémoire</button></nav></div>`;
 
 function homeView() {
   const conversation = activeConversation();
@@ -102,11 +111,20 @@ function chatView() {
 function sessionView() {
   if (!state.lastSession) state.lastSession = createSession();
   const session = state.lastSession;
-  if (session.completed) return `<section class="session-complete"><span class="complete-mark">✓</span><h1>Un pas à la fois.</h1><dl>${Object.entries(session.answers).map(([key, value]) => `<div><dt>${stepCopy[key][0]}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl><button class="button primary-button" data-view="home">Accueil</button></section>`;
+  if (session.completed) {
+    const record = state.sessionRecords.find((item) => item.sourceSessionId === session.id);
+    const alreadyProposed = state.memoryEntries.some((entry) => entry.source?.sessionRecordId === record?.id);
+    return `<section class="session-complete"><span class="complete-mark">✓</span><h1>Un pas à la fois.</h1><dl>${Object.entries(session.answers).map(([key, value]) => `<div><dt>${stepCopy[key][0]}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>${record ? `<section class="local-note"><p><strong>Résumé local</strong><br>${escapeHtml(record.summary)}</p></section><section class="local-note"><p><strong>Plan d’action</strong><br>${escapeHtml(record.actionPlan)}</p></section>${alreadyProposed ? `<button class="button" data-view="memory">Voir ma mémoire</button>` : `<button class="button primary-button" data-propose-session-memory="${record.id}">Proposer ce plan dans ma mémoire</button>`}` : ""}<button class="button" data-view="home">Accueil</button></section>`;
+  }
   const steps = ["situation", "emotion", "thought", "action"];
   const index = steps.indexOf(session.step);
   const copy = stepCopy[session.step];
   return `<section class="session-head"><button class="back" data-view="home">×</button><span>Étape ${index + 1} sur 4</span></section><div class="progress"><i style="width:${((index + 1) / 4) * 100}%"></i></div><section class="session-card"><p class="eyebrow">${copy[0]}</p><h1>${copy[1]}</h1><form id="session-form"><textarea rows="5" maxlength="1000" placeholder="${copy[2]}" required>${escapeHtml(session.answers[session.step] || "")}</textarea><div class="session-actions">${index > 0 ? `<button class="button" type="button" data-prev-step>← Retour</button>` : ""}<button class="button primary-button" type="submit">Continuer →</button></div></form></section>`;
+}
+
+function memoryView() {
+  const entries = state.memoryEntries.map((entry) => `<article class="conversation-row"><div><strong>${entry.status === MEMORY_STATUS.confirmed ? "Mémoire confirmée" : "Proposition à valider"}</strong><p>${escapeHtml(entry.content)}</p><small>Source : séance ${escapeHtml(entry.source?.sessionRecordId || "inconnue")}</small></div>${entry.status === MEMORY_STATUS.proposed ? `<button class="mini" data-confirm-memory="${entry.id}">Confirmer</button>` : ""}<button class="mini" data-edit-memory="${entry.id}">Corriger</button><button class="mini danger" data-delete-memory="${entry.id}">Supprimer</button></article>`).join("");
+  return `<section class="page-heading"><button class="back" data-view="home">←</button><div><p class="eyebrow">Sous votre contrôle</p><h1>Ma mémoire</h1></div></section><p class="lead">Rien n’est ajouté automatiquement. Vous confirmez, corrigez ou supprimez chaque élément.</p><div class="conversation-list">${entries || `<div class="empty-state"><span>✦</span><h2>Mémoire vide</h2><p>Terminez une séance puis choisissez explicitement ce que vous souhaitez conserver.</p></div>`}</div>`;
 }
 
 function settingsView() {
@@ -114,7 +132,7 @@ function settingsView() {
 }
 
 function render({ followChat = false } = {}) {
-  const content = view === "chat" ? chatView() : view === "conversations" ? conversationsView() : view === "session" ? sessionView() : view === "settings" ? settingsView() : homeView();
+  const content = view === "chat" ? chatView() : view === "conversations" ? conversationsView() : view === "session" ? sessionView() : view === "memory" ? memoryView() : view === "settings" ? settingsView() : homeView();
   app.innerHTML = shell(content);
   document.documentElement.dataset.theme = state.settings.theme;
   const theme = document.querySelector("#theme-setting");
@@ -216,6 +234,46 @@ app.addEventListener("click", (event) => {
     render();
   }
 
+  const proposal = event.target.closest("[data-propose-session-memory]");
+  if (proposal) {
+    const record = state.sessionRecords.find((item) => item.id === proposal.dataset.proposeSessionMemory);
+    if (record && !state.memoryEntries.some((entry) => entry.source?.sessionRecordId === record.id)) {
+      state.memoryEntries = [...state.memoryEntries, proposeMemory({ content: record.actionPlan, sessionRecordId: record.id, sourceSessionId: record.sourceSessionId, kind: "action" })];
+      persist();
+    }
+    setView("memory");
+  }
+
+  const confirmation = event.target.closest("[data-confirm-memory]");
+  if (confirmation) {
+    state.memoryEntries = state.memoryEntries.map((entry) => entry.id === confirmation.dataset.confirmMemory ? confirmMemory(entry) : entry);
+    persist();
+    render();
+  }
+
+  const edition = event.target.closest("[data-edit-memory]");
+  if (edition) {
+    const entry = state.memoryEntries.find((item) => item.id === edition.dataset.editMemory);
+    const content = prompt("Corriger cet élément", entry?.content || "");
+    if (entry && content?.trim()) {
+      const result = applyMemoryCorrection(entry, content);
+      if (result.blocked) {
+        alert(SAFETY_MESSAGE);
+      } else {
+        state.memoryEntries = state.memoryEntries.map((item) => item.id === entry.id ? result.entry : item);
+        persist();
+        render();
+      }
+    }
+  }
+
+  const memoryDeletion = event.target.closest("[data-delete-memory]");
+  if (memoryDeletion && confirm("Supprimer définitivement cet élément de mémoire ?")) {
+    state.memoryEntries = removeMemory(state.memoryEntries, memoryDeletion.dataset.deleteMemory);
+    persist();
+    render();
+  }
+
   if (event.target.closest("[data-start-session]")) {
     state.lastSession = createSession();
     persist();
@@ -283,6 +341,9 @@ app.addEventListener("submit", (event) => {
       return;
     }
     state.lastSession = answerSession(state.lastSession, value);
+    if (state.lastSession.completed && !state.sessionRecords.some((item) => item.sourceSessionId === state.lastSession.id)) {
+      state.sessionRecords = [...state.sessionRecords, createSessionRecord(state.lastSession)];
+    }
     persist();
     render();
   }
@@ -290,6 +351,10 @@ app.addEventListener("submit", (event) => {
 
 render();
 if ("serviceWorker" in navigator) window.addEventListener("load", async () => {
-  const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
-  await registration.update();
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+    await registration.update();
+  } catch (_) {
+    // Service worker non disponible — l'application reste fonctionnelle
+  }
 });
