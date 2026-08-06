@@ -20,16 +20,11 @@ La demande de téléchargement iCloud est explicite, mais iOS reste maître de s
 
 Copier `apps/projectos-backup/` dans le dossier Pyto de l’iPhone puis lancer `run.py`. La configuration existante est conservée.
 
-## Configuration de Google Drive
+## Transfert vers Google Drive
 
-L'application conserve deux autorisations distinctes :
+Google Drive apparaît dans l’app Fichiers mais ne permet pas à Pyto de sélectionner durablement un dossier fournisseur. La destination Drive n’est donc jamais configurée dans l’interface Pyto.
 
-- **Destination de transit** : dossier local iCloud qui contient le miroir vérifié ;
-- **Destination Google Drive** : dossier distant choisi explicitement dans l'app Fichiers.
-
-Pour configurer Drive, activer Google Drive dans **Fichiers > Parcourir**, toucher **Destination Google Drive**, puis sélectionner `App-perso/ProjectOS-Backups`. Ce dossier n'est jamais ajouté aux sources. L'autorisation est conservée par un bookmark Pyto et peut être renouvelée depuis la même ligne si iOS ou le fournisseur Drive l'invalide.
-
-Cette étape configure seulement l'accès sûr à la destination. Le transfert incrémental vers Drive et son déclenchement par Raccourcis restent le jalon BUILD-02 suivant.
+Le transfert sera orchestré par Raccourcis. Avant de construire le miroir distant complet, un test court vérifie que l’action Fichiers peut copier le dossier `Current` vers Google Drive sans dépendre d’un bookmark Pyto. Voir `ProjectOS/projects/ProjectOSBackup/guides/SHORTCUT_DRIVE_TEST.md`.
 
 ## Sortie
 
