@@ -6,11 +6,19 @@
 2. Vérifier les références vivantes.
 3. Déterminer le niveau de risque et de réversibilité.
 4. Classer le travail comme limité ou substantiel selon `standards/CODE_WORK_ROUTING.md`.
-5. Appliquer `standards/TOOLCHAIN_POLICY.md`.
-6. Choisir l’outil le plus direct et fiable.
-7. Réaliser le plus petit changement cohérent.
-8. Vérifier le résultat avec des preuves.
-9. Documenter et livrer.
+5. Après résolution du régime de mémoire, appliquer `standards/PARALLEL_EXECUTION.md` et distinguer les vérifications internes parallélisables des flux visibles soumis à autorisation.
+6. Appliquer `standards/TOOLCHAIN_POLICY.md`.
+7. Choisir l’outil le plus direct et fiable.
+8. Réaliser le plus petit changement cohérent.
+9. Vérifier le résultat avec des preuves.
+10. Documenter et livrer.
+
+## Décision de parallélisation
+
+- Les lectures, recherches et vérifications internes sans effet de bord peuvent être exécutées en parallèle automatiquement lorsqu’elles sont peu coûteuses et sans ressource mutable commune.
+- Plusieurs tâches, agents, conversations, branches ou livrables visibles ne sont lancés en parallèle qu’après application complète de `standards/PARALLEL_EXECUTION.md` et réponse positive de Damien à la question canonique.
+- Une dépendance, un fichier partagé, une branche partagée, une ressource mutable commune ou l’absence de coordinateur impose une exécution séquentielle.
+- Le diagnostic précède toujours la correction lorsque le contenu du correctif dépend du diagnostic.
 
 ## Choix des outils
 
@@ -79,6 +87,7 @@ Une autorisation antérieure ne s’étend jamais à une nouvelle tâche, une re
 - Replit sans IA avant tout usage de l’agent Replit.
 - Opération mécanique directe avant agent IA.
 - Une itération mieux spécifiée avant plusieurs essais coûteux.
+- Parallélisation utile avant séquentialité par défaut, mais uniquement lorsque les flux sont autonomes, exclusifs et coordonnés.
 
 ## Risque
 
