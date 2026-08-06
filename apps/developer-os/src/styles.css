@@ -94,6 +94,13 @@ button:disabled {
   display: grid;
   place-items: center;
 }
+.header-codex { color: var(--blue); font-weight: 800; text-decoration: none; min-height: 44px; display: grid; place-items: center; }
+.module-title { display:flex; align-items:start; justify-content:space-between; gap:12px; }
+.inline-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.inline-actions.compact { margin-bottom:16px; }
+.prompt-preview { white-space:pre-line; display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden; line-clamp:5; }
+.codex-card h2 a { color:inherit; }
+.codex-card .inline-actions a { flex:1; }
 main {
   width: min(760px, 100%);
   margin: auto;
