@@ -73,7 +73,7 @@ export const emptyDraft = (): ProjectDraft => ({
   priority: "normal",
   nextAction: "",
   canonicalSourceType: "github_repo",
-  canonicalSource: "",
+  canonicalSource: "dalquier/App-perso",
   lastKnownState: "",
   isActive: false,
 });
