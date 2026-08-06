@@ -7,6 +7,7 @@ import json
 import mimetypes
 from pathlib import Path, PurePosixPath
 import urllib.request
+from urllib.parse import urlsplit, urlunsplit
 
 
 MAX_RAW_FILE_BYTES = 7 * 1024 * 1024
@@ -26,13 +27,31 @@ def manifest_files(manifest: dict) -> dict[str, dict]:
     return result
 
 
+def normalize_apps_script_url(url: str) -> str:
+    """Accept harmless iOS/Google copy artefacts while keeping the relay host strict."""
+    cleaned = "".join(url.split()).strip("\\\"'“”")
+    parsed = urlsplit(cleaned)
+    path = parsed.path.rstrip("/")
+    segments = path.split("/")
+    valid = (
+        parsed.scheme == "https"
+        and parsed.hostname == "script.google.com"
+        and segments[:3] == ["", "macros", "s"]
+        and len(segments) == 5
+        and bool(segments[3])
+        and segments[4] == "exec"
+    )
+    if not valid:
+        raise ValueError("URL Apps Script /exec invalide")
+    return urlunsplit(("https", "script.google.com", path, "", ""))
+
+
 class AppsScriptClient:
     def __init__(self, url: str, token: str, timeout: int = 60):
-        if not url.startswith("https://script.google.com/macros/s/") or not url.endswith("/exec"):
-            raise ValueError("URL Apps Script /exec invalide")
+        normalized_url = normalize_apps_script_url(url)
         if len(token) < 24:
             raise ValueError("Le jeton doit contenir au moins 24 caractères")
-        self.url, self.token, self.timeout = url, token, timeout
+        self.url, self.token, self.timeout = normalized_url, token, timeout
 
     def call(self, action: str, **payload) -> dict:
         body = json.dumps({"token": self.token, "action": action, **payload}).encode()
