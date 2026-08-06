@@ -134,13 +134,14 @@ describe("CodexForm", () => {
     window.history.pushState({}, "", "/codex/new");
     const { repository } = createCodexRepository();
     vi.spyOn(window, "open").mockReturnValue(null);
+
+    renderForm(repository);
+    const user = userEvent.setup();
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
     });
 
-    renderForm(repository);
-    const user = userEvent.setup();
     await user.type(screen.getByLabelText("Nom *"), "Nouvelle tâche");
     await user.type(screen.getByLabelText("Prompt *"), "Prompt conservé");
     await user.click(screen.getByRole("button", { name: "Lancer dans Codex" }));
