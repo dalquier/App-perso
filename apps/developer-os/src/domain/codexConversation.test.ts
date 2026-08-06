@@ -20,7 +20,11 @@ const conversation: CodexConversation = {
 };
 
 function exported(value: unknown) {
-  return { schemaVersion: 1, exportedAt: new Date().toISOString(), conversations: [value] };
+  return {
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    conversations: [value],
+  };
 }
 
 describe("Codex conversation", () => {
@@ -43,7 +47,8 @@ describe("Codex conversation", () => {
   });
 
   it("rejette un objet sans nom avec une erreur métier", () => {
-    const { name: _name, ...withoutName } = conversation;
+    const withoutName: Partial<CodexConversation> = { ...conversation };
+    delete withoutName.name;
     expect(() => parseCodexExport(exported(withoutName))).toThrow(
       "nom manquant",
     );
