@@ -6,7 +6,7 @@ import threading
 from pathlib import Path
 
 from .core import BackupError, Source, run_backup
-from .pyto_access import PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
+from .pyto_access import BackgroundExecution, PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
 from .state import ConfigStore, infer_source_label
 
 
@@ -133,8 +133,33 @@ class BackupApplication:
 
     def _backup(self, sender=None) -> None:
         self.backup_button.enabled = False
-        self.status.text = "Préchargement iCloud et synchronisation…"
+        self.status.text = "Démarrage du miroir…"
+        self.background_execution = BackgroundExecution()
+        self.background_execution.begin()
         threading.Thread(target=self._run_backup, daemon=True).start()
+
+    def _show_progress(self, event: dict) -> None:
+        phase = event.get("phase")
+        completed = event.get("completed", 0)
+        total = event.get("total", 0)
+        label = event.get("label", "")
+        path = event.get("path", "")
+        if phase == "scan":
+            text = f"Analyse de {label}…"
+        elif phase == "prepare":
+            percent = int(completed * 100 / total) if total else 0
+            text = f"Chargement iCloud : {completed}/{total} ({percent}%)"
+        elif phase == "mirror":
+            percent = int(completed * 100 / total) if total else 0
+            text = f"Miroir : {completed}/{total} ({percent}%)"
+        elif phase == "publish":
+            text = "Publication sécurisée du miroir…"
+        else:
+            return
+        if path and phase in {"prepare", "mirror"}:
+            text += "\n" + Path(path).name[:42]
+        import mainthread
+        mainthread.run_async(lambda: setattr(self.status, "text", text))
 
     def _run_backup(self) -> None:
         message = ""
@@ -148,12 +173,19 @@ class BackupApplication:
             for item in self.store.sources():
                 if item.enabled:
                     sources.append(Source(item.source_id, item.label, resolve_folder(item.bookmark_name)))
-            result = run_backup(sources, destination, prepare_file=request_icloud_download)
+            result = run_backup(
+                sources,
+                destination,
+                prepare_file=request_icloud_download,
+                progress=self._show_progress,
+                should_cancel=self.background_execution.expired.is_set,
+            )
             message = (f"Miroir vérifié : {result.copied_files} copiés, "
                        f"{result.deleted_files} supprimés, {result.unchanged_files} inchangés")
         except Exception as exc:
             message = f"Échec : {exc}"
         finally:
+            self.background_execution.end()
             import mainthread
 
             def finish():
