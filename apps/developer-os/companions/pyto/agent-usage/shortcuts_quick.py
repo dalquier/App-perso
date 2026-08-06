@@ -87,11 +87,26 @@ def _warning_codes(candidate: dict) -> list[str]:
     return result
 
 
-def _commit_blockers(candidate: dict) -> list[str]:
+def _confirmation_fields(candidate: dict) -> list[str]:
+    """Return populated fields that need explicit human confirmation.
+
+    Selecting ``Enregistrer`` in the Shortcut is that explicit confirmation.
+    These fields are therefore not hard blockers when a usable value exists.
+    """
+    confidence = candidate.get("field_confidence") or {}
+    return [
+        field
+        for field in ("remaining_percent", "reset_at", "measurement_scope")
+        if candidate.get(field) is not None and confidence.get(field) == "ambiguous"
+    ]
+
+
+def _hard_commit_blockers(candidate: dict) -> list[str]:
+    """Return defects that cannot be resolved by pressing Save alone."""
     confidence = candidate.get("field_confidence") or {}
     blockers: list[str] = []
     for field in ("remaining_percent", "reset_at", "measurement_scope"):
-        if candidate.get(field) is None or confidence.get(field) in {"ambiguous", "absent"}:
+        if candidate.get(field) is None or confidence.get(field) == "absent":
             blockers.append(field)
     blockers.extend(
         code for code in _warning_codes(candidate) if code in BLOCKING_WARNING_CODES
@@ -110,7 +125,8 @@ def _summary(candidate: dict) -> str:
         credits_text = _CREDIT_LABELS.get(credits_status, "inconnus")
 
     warnings = _warning_codes(candidate)
-    blockers = _commit_blockers(candidate)
+    blockers = _hard_commit_blockers(candidate)
+    confirmation_fields = _confirmation_fields(candidate)
     lines = [
         "Vérifier le relevé",
         "",
@@ -120,14 +136,18 @@ def _summary(candidate: dict) -> str:
     ]
     if warnings:
         lines.extend(("", "Avertissements : " + ", ".join(warnings)))
-    lines.extend(
-        (
-            "",
-            "Prêt à enregistrer."
-            if not blockers
-            else "Correction requise : " + ", ".join(blockers),
+    if blockers:
+        lines.extend(("", "Correction requise : " + ", ".join(blockers)))
+    elif confirmation_fields:
+        lines.extend(
+            (
+                "",
+                "Confirmation requise : " + ", ".join(confirmation_fields),
+                "Choisissez Enregistrer pour confirmer ces valeurs.",
+            )
         )
-    )
+    else:
+        lines.extend(("", "Prêt à enregistrer."))
     return "\n".join(lines)
 
 
@@ -163,11 +183,15 @@ def analyze_text(
     }
     response = analyze(request)
     candidate = response.get("candidate") or {}
+    blockers = _hard_commit_blockers(candidate)
+    confirmation_fields = _confirmation_fields(candidate)
     return {
         **response,
         "shortcut_summary": _summary(candidate),
-        "shortcut_can_commit": not _commit_blockers(candidate),
-        "shortcut_blockers": _commit_blockers(candidate),
+        "shortcut_can_commit": not blockers,
+        "shortcut_needs_confirmation": bool(confirmation_fields),
+        "shortcut_confirmation_fields": confirmation_fields,
+        "shortcut_blockers": blockers,
     }
 
 
@@ -177,12 +201,17 @@ def commit_staged(
     validated_at: str | None = None,
     staging: StagingStore | None = None,
 ) -> dict:
-    """Commit a staged candidate after the user selected Save in Shortcuts."""
+    """Commit a staged candidate after the user selected Save in Shortcuts.
+
+    Selecting Save explicitly confirms populated fields classified as ambiguous.
+    Missing values and hard date/scope warnings remain blocking.
+    """
     clean_import_id = validate_import_id(import_id.strip())
     staging_store = staging or StagingStore()
     staged = staging_store.load(clean_import_id)
     candidate = staged.get("candidate") or {}
-    blockers = _commit_blockers(candidate)
+    blockers = _hard_commit_blockers(candidate)
+    confirmation_fields = _confirmation_fields(candidate)
     if blockers:
         return {
             "schemaVersion": 1,
@@ -214,6 +243,7 @@ def commit_staged(
     )
     return {
         **response,
+        "confirmed_ambiguous_fields": confirmation_fields,
         "shortcut_summary": (
             "Relevé enregistré."
             if response.get("status") == "committed"
