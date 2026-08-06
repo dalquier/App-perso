@@ -19,6 +19,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 
 - `standards/TOOLCHAIN_POLICY.md` : politique obligatoire de développement frugal et rôle de chaque outil.
 - `standards/CREDIT_OPTIMIZATION.md` : optimisation obligatoire des crédits, quotas et appels payants, avec recommandation d’outil avant chaque prompt opérationnel.
+- `standards/PARALLEL_EXECUTION.md` : détection, autorisation et orchestration des flux de travail indépendants.
 - `standards/LONG_CONTENT_DELIVERY.md` : choix entre réponse conversationnelle, fichier téléchargeable et livraison GitHub pour les contenus longs, prompts et code.
 - `standards/AGENT_USAGE_TRACKING.md` : suivi des tâches Codex/Work, relevés de quota, règles d’attribution et confidentialité.
 - `standards/QUALITY_UX_SECURITY.md` : qualité, UX iPhone et sécurité.
@@ -39,6 +40,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `ADR/ADR-001-FRUGAL-DEVELOPMENT-TOOLCHAIN.md` : ChatGPT et Codex développent ; Replit Starter exécute, teste, stocke et déploie.
 - `ADR/ADR-002-PERMANENT-CODEX-CONVERSATION-MEMORY.md` : consentement permanent à l’enregistrement structuré de toutes les conversations ProjectOS exécutées avec Codex.
 - `ADR/ADR-003-DIRECT-CONVERSATION-ARCHIVING.md` : archive directe Drive ; ChatGPT au choix, Codex systématique.
+- `ADR/ADR-004-CONTROLLED-PARALLEL-EXECUTION.md` : autorisation simple et garde-fous pour paralléliser les flux indépendants.
 
 ## Guides
 
