@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   ManualExecutionError, ManualExecutionService, RunRepositoryError, buildPersistedRun,
-  createRunExport, fictionalRunRequest, importCompleteRun, importRunRequest,
+  createRunExport, fictionalRunRequest, importCompleteRun, importRunRequest, parseRunExport,
 } from "../domain/conversationOrchestrator";
 import { IndexedDbRunRepository } from "../repositories/indexedDbRunRepository";
 
@@ -78,6 +78,68 @@ describe("conversation run import and IndexedDB persistence", () => {
     await expect(importCompleteRun(make().repository, createRunExport(incompatible, "2026-01-02T01:00:00Z"))).rejects.toMatchObject({ code: "invalid_data" });
   });
 
+  it.each([
+    ["completed with a ready mission", "completed"],
+    ["failed without a supporting mission or policy", "failed"],
+  ] as const)("rejects a globally incoherent state: %s", async (_name, state) => {
+    const run = await buildPersistedRun({ ...fictionalRunRequest, master: { ...fictionalRunRequest.master, required_jobs: ["JOB-001"] }, jobs: [{ ...fictionalRunRequest.jobs[0] }] }, "2026-01-02T00:00:00Z"); run.state.state = state;
+    const payload = createRunExport(run, "2026-01-02T01:00:00Z");
+    await expect(importCompleteRun(make().repository, payload)).rejects.toMatchObject({ code: "invalid_data", errors: [expect.objectContaining({ path: "$.run.state.state" })] });
+  });
+
+  it("rejects ready when every mission is completed even with a correct state.jobs table", async () => {
+    const service = new ManualExecutionService(); let run = await buildPersistedRun({ ...fictionalRunRequest, master: { ...fictionalRunRequest.master, required_jobs: ["JOB-001"] }, jobs: [{ ...fictionalRunRequest.jobs[0] }] }, "2026-01-02T00:00:00Z");
+    run = service.markLaunched(run, "JOB-001", "2026-01-02T00:00:30Z"); run = await service.importResponse(run, "JOB-001", "Fictional", "2026-01-02T00:01:00Z", true); run.state.state = "ready";
+    await expect(importCompleteRun(make().repository, createRunExport(run, "2026-01-02T01:00:00Z"))).rejects.toMatchObject({ code: "invalid_data", errors: [expect.objectContaining({ path: "$.run.state.state" })] });
+  });
+
+  it.each([
+    ["non-object export", null],
+    ["unsupported version", { export_format: "developeros.conversation-run", export_version: "9.0", exported_at: "2026-01-02T00:00:00Z", run: {} }],
+    ["missing exported_at", { export_format: "developeros.conversation-run", export_version: "1.0", run: {} }],
+    ["invalid exported_at", { export_format: "developeros.conversation-run", export_version: "1.0", exported_at: "not-a-date", run: {} }],
+  ])("always returns structured errors for %s", (_name, payload) => {
+    try { parseRunExport(payload); throw new Error("Expected rejection"); } catch (caught) {
+      expect(caught).toBeInstanceOf(RunRepositoryError); const repositoryError = caught as RunRepositoryError;
+      expect(repositoryError.code).toBe("invalid_data"); expect(repositoryError.errors.length).toBeGreaterThan(0);
+      expect(repositoryError.errors.every((item) => item.path && item.code && item.message)).toBe(true);
+    }
+  });
+
+  it.each(["run identifier", "canonical plan", "original request"] as const)("returns structured errors for invalid %s", async (kind) => {
+    const run = await buildPersistedRun(fictionalRunRequest, "2026-01-02T00:00:00Z"); const payload = createRunExport(run, "2026-01-02T01:00:00Z");
+    if (kind === "run identifier") payload.run.run_id = "RUN-OTHER";
+    if (kind === "canonical plan") (payload.run.plan.jobs[0] as { conversation_title: string }).conversation_title = "Altered fictional title";
+    if (kind === "original request") (payload.run.request_original as unknown as Record<string, unknown>).jobs = [];
+    try { await importCompleteRun(make().repository, payload); throw new Error("Expected rejection"); } catch (caught) {
+      expect(caught).toBeInstanceOf(RunRepositoryError); const repositoryError = caught as RunRepositoryError;
+      expect(repositoryError).toMatchObject({ code: "invalid_data" }); expect(repositoryError.errors.length).toBeGreaterThan(0);
+      expect(repositoryError.errors.every((item) => item.path && item.code && item.message)).toBe(true);
+    }
+  });
+
+  it.each([
+    ["prepared before creation", (run: Awaited<ReturnType<typeof buildPersistedRun>>) => { run.missions["JOB-001"].attempts[0].prepared_at = "2025-12-31T23:59:59Z"; }],
+    ["prepared after update", (run: Awaited<ReturnType<typeof buildPersistedRun>>) => { run.missions["JOB-001"].attempts[0].prepared_at = "2026-01-02T00:02:00Z"; }],
+    ["launch before preparation", (run: Awaited<ReturnType<typeof buildPersistedRun>>) => { run.missions["JOB-001"].attempts[0].launched_at = "2025-12-31T23:59:59Z"; }],
+    ["manual launch missing", (run: Awaited<ReturnType<typeof buildPersistedRun>>) => { run.missions["JOB-001"].attempts[0].launched_at = null; }],
+    ["result start before preparation", (run: Awaited<ReturnType<typeof buildPersistedRun>>) => { run.missions["JOB-001"].attempts[0].result!.started_at = "2025-12-31T23:59:59Z"; }],
+    ["manual start differs from launch", (run: Awaited<ReturnType<typeof buildPersistedRun>>) => { run.missions["JOB-001"].attempts[0].result!.started_at = "2026-01-02T00:00:45Z"; }],
+    ["completion before start", (run: Awaited<ReturnType<typeof buildPersistedRun>>) => { run.missions["JOB-001"].attempts[0].result!.completed_at = "2026-01-02T00:00:15Z"; }],
+    ["result after run update", (run: Awaited<ReturnType<typeof buildPersistedRun>>) => { run.missions["JOB-001"].attempts[0].result!.completed_at = "2026-01-02T00:02:00Z"; }],
+  ])("rejects temporal inconsistency: %s", async (_name, mutate) => {
+    const service = new ManualExecutionService(); let run = await buildPersistedRun({ ...fictionalRunRequest, master: { ...fictionalRunRequest.master, required_jobs: ["JOB-001"] }, jobs: [{ ...fictionalRunRequest.jobs[0] }] }, "2026-01-02T00:00:00Z");
+    run = service.markLaunched(run, "JOB-001", "2026-01-02T00:00:30Z"); run = await service.importResponse(run, "JOB-001", "Fictional", "2026-01-02T00:01:00Z", true); mutate(run);
+    await expect(importCompleteRun(make().repository, createRunExport(run, "2026-01-02T01:00:00Z"))).rejects.toMatchObject({ code: "invalid_data", errors: expect.arrayContaining([expect.objectContaining({ path: expect.any(String), code: expect.any(String), message: expect.any(String) })]) });
+  });
+
+  it("rejects launched_at on an unlaunched attempt and updated_at before created_at", async () => {
+    const initial = await buildPersistedRun(fictionalRunRequest, "2026-01-02T00:00:00Z"); initial.missions["JOB-001"].attempts[0].launched_at = "2026-01-02T00:00:00Z";
+    await expect(importCompleteRun(make().repository, createRunExport(initial, "2026-01-02T01:00:00Z"))).rejects.toMatchObject({ code: "invalid_data" });
+    const reversed = await buildPersistedRun(fictionalRunRequest, "2026-01-02T00:00:00Z"); reversed.updated_at = "2025-12-31T23:59:59Z"; reversed.state.updated_at = reversed.updated_at;
+    await expect(importCompleteRun(make().repository, createRunExport(reversed, "2026-01-02T01:00:00Z"))).rejects.toMatchObject({ code: "invalid_data" });
+  });
+
   it("requires explicit deletion confirmation", async () => {
     const { repository } = make(); const run = await importRunRequest(repository, fictionalRunRequest, "2026-01-02T00:00:00Z");
     await expect(repository.delete(run.run_id, { confirmed: false } as unknown as { confirmed: true })).rejects.toMatchObject({ code: "invalid_data" });
@@ -138,6 +200,34 @@ describe("manual ChatGPT Plus service", () => {
     run = service.markLaunched(run, "JOB-001", "2026-01-02T00:00:30Z"); run = await service.importResponse(run, "JOB-001", "Immutable fictional raw", "2026-01-02T00:01:00Z", true);
     const retried = service.retry(run, "JOB-001", "2026-01-02T00:02:00Z");
     expect(retried.missions["JOB-001"].attempts.map((attempt) => attempt.attempt)).toEqual([1, 2]); expect(retried.missions["JOB-001"].attempts[0].result?.response_raw).toBe("Immutable fictional raw");
+  });
+
+  it("reblocks ready and prepared downstream missions without rewriting their attempts", async () => {
+    const request = structuredClone(fictionalRunRequest); request.jobs[1].execution_channel = "chatgpt_plus_manual";
+    const service = new ManualExecutionService(); let run = await buildPersistedRun(request, "2026-01-02T00:00:00Z");
+    run = service.markLaunched(run, "JOB-001", "2026-01-02T00:00:10Z"); run = await service.importResponse(run, "JOB-001", "Upstream fictional", "2026-01-02T00:00:20Z", true);
+    const ready = service.retry(run, "JOB-001", "2026-01-02T00:00:30Z"); expect(ready.missions["JOB-002"].state).toBe("blocked_by_dependency"); expect(ready.missions["JOB-002"].attempts).toHaveLength(1);
+    const preparedRun = structuredClone(run); preparedRun.missions["JOB-002"].state = "prepared_manual"; preparedRun.missions["JOB-002"].attempts[0].state = "prepared_manual";
+    const prepared = service.retry(preparedRun, "JOB-001", "2026-01-02T00:00:30Z"); expect(prepared.missions["JOB-002"].state).toBe("blocked_by_dependency"); expect(prepared.missions["JOB-002"].attempts).toHaveLength(1);
+  });
+
+  it.each(["launched_manual", "waiting_response_import", "completed"] as const)("refuses retry when a downstream mission is %s", async (downstreamState) => {
+    const request = structuredClone(fictionalRunRequest); request.jobs[1].execution_channel = "chatgpt_plus_manual";
+    const service = new ManualExecutionService(); let run = await buildPersistedRun(request, "2026-01-02T00:00:00Z");
+    run = service.markLaunched(run, "JOB-001", "2026-01-02T00:00:10Z"); run = await service.importResponse(run, "JOB-001", "Upstream fictional", "2026-01-02T00:00:20Z", true);
+    run = service.markLaunched(run, "JOB-002", "2026-01-02T00:00:30Z");
+    if (downstreamState === "waiting_response_import") { run.missions["JOB-002"].state = downstreamState; run.missions["JOB-002"].attempts[0].state = downstreamState; }
+    if (downstreamState === "completed") run = await service.importResponse(run, "JOB-002", "Downstream fictional", "2026-01-02T00:00:40Z", true);
+    expect(() => service.retry(run, "JOB-001", "2026-01-02T00:00:50Z")).toThrow(expect.objectContaining({ code: "downstream_started", blocking_job_ids: ["JOB-002"] }));
+  });
+
+  it("reports a transitively started third mission as a retry blocker", async () => {
+    const request = structuredClone(fictionalRunRequest); request.jobs[1].execution_channel = "chatgpt_plus_manual"; request.jobs.push({ job_id: "JOB-003", execution_channel: "chatgpt_plus_manual", prompt: "Review a third fictional system.", depends_on: ["JOB-002"] }); request.master.required_jobs.push("JOB-003");
+    const service = new ManualExecutionService(); let run = await buildPersistedRun(request, "2026-01-02T00:00:00Z");
+    run = service.markLaunched(run, "JOB-001", "2026-01-02T00:00:10Z"); run = await service.importResponse(run, "JOB-001", "First fictional", "2026-01-02T00:00:20Z", true);
+    run = service.markLaunched(run, "JOB-002", "2026-01-02T00:00:30Z"); run = await service.importResponse(run, "JOB-002", "Second fictional", "2026-01-02T00:00:40Z", true);
+    run = service.markLaunched(run, "JOB-003", "2026-01-02T00:00:50Z");
+    expect(() => service.retry(run, "JOB-001", "2026-01-02T00:01:00Z")).toThrow(expect.objectContaining({ code: "downstream_started", blocking_job_ids: expect.arrayContaining(["JOB-002", "JOB-003"]) }));
   });
 });
 

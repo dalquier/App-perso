@@ -1,5 +1,6 @@
 import { EXECUTION_CHANNELS, JOB_STATES, RUN_STATES, type JobResult, type JobState, type PlannedJob, type RunPlan, type RunRequest, type RunStateDocument } from "./types";
 import { validateRunRequest } from "./validation";
+import { deriveRunState } from "./stateMachine";
 
 export const PERSISTED_RUN_VERSION = 1 as const;
 export const RUN_EXPORT_VERSION = "1.0" as const;
@@ -63,6 +64,7 @@ export function createRunExport(run: PersistedRun, exportedAt: string): RunExpor
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const validDate = (value: unknown): value is string => typeof value === "string" && value.length > 0 && Number.isFinite(Date.parse(value));
+const validIsoDate = (value: unknown): value is string => validDate(value) && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value);
 const error = (errors: PersistedRunValidationError[], path: string, code: PersistedRunValidationError["code"], message: string) => errors.push({ path, code, message });
 const exactKeys = (actual: readonly string[], expected: readonly string[]) => actual.length === expected.length && actual.every((key) => expected.includes(key));
 
@@ -123,6 +125,13 @@ export function validatePersistedRun(input: unknown): PersistedRunValidationErro
   const actualIds = Object.keys(input.missions);
   if (!exactKeys(actualIds, expectedIds)) error(errors, "$.run.missions", "integrity", "missions must exactly match all plan jobs.");
   if (isRecord(stateJobs) && (!exactKeys(Object.keys(stateJobs), expectedIds) || expectedIds.some((id) => stateJobs[id] !== (isRecord(missions[id]) ? missions[id].state : undefined)))) error(errors, "$.run.state.jobs", "integrity", "state jobs must exactly match mission states.");
+  const missionStates = expectedIds.map((id) => isRecord(missions[id]) ? missions[id].state : undefined).filter((state): state is JobState => JOB_STATES.includes(state as JobState));
+  if (missionStates.length === expectedIds.length && isRecord(input.request_original) && isRecord(input.request_original.run)) {
+    const failurePolicy = ["fail_fast", "continue_independent", "manual_decision"].includes(input.request_original.run.failure_policy as string) ? input.request_original.run.failure_policy as import("./types").FailurePolicy : "continue_independent";
+    const explicitState = input.state.state === "archived" || input.state.state === "cancelled" ? input.state.state : undefined;
+    const canonicalState = deriveRunState(missionStates, { preparationState: "ready", failurePolicy, ...(explicitState ? { explicitState } : {}) });
+    if (input.state.state !== canonicalState) error(errors, "$.run.state.state", "integrity", `Run state must be ${canonicalState} for its mission states and failure policy.`);
+  }
   for (const job of planJobs) {
     const path = `$.run.missions.${job.job_id}`; const mission = missions[job.job_id];
     if (!isRecord(mission)) { error(errors, path, "required", "mission is missing."); continue; }
@@ -138,14 +147,24 @@ export function validatePersistedRun(input: unknown): PersistedRunValidationErro
       if (!isRecord(attempt)) { error(errors, attemptPath, "type", "attempt must be an object."); return; }
       if (!JOB_STATES.includes(attempt.state as never)) error(errors, `${attemptPath}.state`, "value", "attempt state is invalid.");
       if (!validDate(attempt.prepared_at)) error(errors, `${attemptPath}.prepared_at`, "value", "prepared_at must be a valid date-time.");
+      if (validDate(attempt.prepared_at) && validDate(input.created_at) && Date.parse(attempt.prepared_at) < Date.parse(input.created_at)) error(errors, `${attemptPath}.prepared_at`, "integrity", "prepared_at cannot precede run creation.");
+      if (validDate(attempt.prepared_at) && validDate(input.updated_at) && Date.parse(attempt.prepared_at) > Date.parse(input.updated_at)) error(errors, `${attemptPath}.prepared_at`, "integrity", "prepared_at cannot exceed run updated_at.");
       if (attempt.launched_at !== null && !validDate(attempt.launched_at)) error(errors, `${attemptPath}.launched_at`, "value", "launched_at must be null or a valid date-time.");
+      if (["pending", "blocked_by_dependency", "ready", "prepared_manual"].includes(attempt.state as string) && attempt.launched_at !== null) error(errors, `${attemptPath}.launched_at`, "integrity", `launched_at must be null while attempt is ${String(attempt.state)}.`);
+      const manualLaunchRequired = job.execution_channel === "chatgpt_plus_manual" && ["launched_manual", "waiting_response_import", "completed"].includes(attempt.state as string);
+      if (manualLaunchRequired && !validDate(attempt.launched_at)) error(errors, `${attemptPath}.launched_at`, "required", "A launched manual attempt requires launched_at.");
       if (validDate(attempt.prepared_at) && validDate(attempt.launched_at) && Date.parse(attempt.launched_at) < Date.parse(attempt.prepared_at)) error(errors, `${attemptPath}.launched_at`, "integrity", "launched_at cannot precede prepared_at.");
+      if (validDate(attempt.launched_at) && validDate(input.updated_at) && Date.parse(attempt.launched_at) > Date.parse(input.updated_at)) error(errors, `${attemptPath}.launched_at`, "integrity", "launched_at cannot exceed run updated_at.");
       const terminalWithResult = ["completed", "failed_terminal", "cancelled"].includes(attempt.state as string);
       if (terminalWithResult && attempt.result === null) error(errors, `${attemptPath}.result`, "required", "A terminal attempt requires a result.");
       if (!terminalWithResult && attempt.result !== null) error(errors, `${attemptPath}.result`, "integrity", "A non-terminal attempt cannot contain a result.");
       if (attempt.result !== null) {
         validateResult(attempt.result, `${attemptPath}.result`, input.run_id as string, job, index + 1, errors);
         if (isRecord(attempt.result) && attempt.result.status !== attempt.state) error(errors, `${attemptPath}.result.status`, "integrity", "result status must match attempt state.");
+        if (isRecord(attempt.result) && validDate(attempt.result.started_at) && validDate(attempt.prepared_at) && Date.parse(attempt.result.started_at) < Date.parse(attempt.prepared_at)) error(errors, `${attemptPath}.result.started_at`, "integrity", "started_at cannot precede prepared_at.");
+        if (isRecord(attempt.result) && job.execution_channel === "chatgpt_plus_manual" && validDate(attempt.launched_at) && attempt.result.started_at !== attempt.launched_at) error(errors, `${attemptPath}.result.started_at`, "integrity", "Manual started_at must equal launched_at.");
+        if (isRecord(attempt.result) && validDate(attempt.result.started_at) && validDate(input.updated_at) && Date.parse(attempt.result.started_at) > Date.parse(input.updated_at)) error(errors, `${attemptPath}.result.started_at`, "integrity", "started_at cannot exceed run updated_at.");
+        if (isRecord(attempt.result) && validDate(attempt.result.completed_at) && validDate(input.updated_at) && Date.parse(attempt.result.completed_at) > Date.parse(input.updated_at)) error(errors, `${attemptPath}.result.completed_at`, "integrity", "completed_at cannot exceed run updated_at.");
       }
     });
     const current = mission.attempts.at(-1);
@@ -155,10 +174,14 @@ export function validatePersistedRun(input: unknown): PersistedRunValidationErro
 }
 
 export function parseRunExport(input: unknown): RunExport {
-  if (!isRecord(input) || input.export_format !== "developeros.conversation-run" || input.export_version !== RUN_EXPORT_VERSION || typeof input.exported_at !== "string" || !isRecord(input.run)) {
-    throw new RunRepositoryError("Unsupported or malformed run export.", "invalid_data");
-  }
-  const run = input.run; const errors = validatePersistedRun(run);
+  const exportErrors: PersistedRunValidationError[] = [];
+  if (!isRecord(input)) throw new RunRepositoryError("Unsupported or malformed run export.", "invalid_data", undefined, [{ path: "$", code: "type", message: "Export must be an object." }]);
+  if (input.export_format !== "developeros.conversation-run") error(exportErrors, "$.export_format", "value", "export_format is unsupported.");
+  if (input.export_version !== RUN_EXPORT_VERSION) error(exportErrors, "$.export_version", "value", `export_version must be ${RUN_EXPORT_VERSION}.`);
+  if (!validIsoDate(input.exported_at)) error(exportErrors, "$.exported_at", input.exported_at === undefined ? "required" : "value", "exported_at must be a valid ISO date-time.");
+  if (!isRecord(input.run)) error(exportErrors, "$.run", "required", "run must be an object.");
+  if (exportErrors.length) throw new RunRepositoryError("Unsupported or malformed run export.", "invalid_data", undefined, exportErrors);
+  const run = input.run as Record<string, unknown>; const errors = validatePersistedRun(run);
   if (isRecord(run.request_original)) {
     const request = validateRunRequest(run.request_original);
     if (!request.ok) errors.push(...request.errors.map((item) => ({ path: `$.run.request_original${item.path.slice(1)}`, code: "integrity" as const, message: item.message })));

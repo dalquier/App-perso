@@ -1,11 +1,11 @@
 import { DependencyContextBuilder } from "./context";
 import { deriveRunState, transitionJob } from "./stateMachine";
-import type { JobResult, PlannedJob, RunRequestJob } from "./types";
+import type { JobResult, JobState, PlannedJob, RunRequestJob } from "./types";
 import type { MissionAttempt, PersistedMission, PersistedRun } from "./runPersistence";
 
-export type ManualExecutionErrorCode = "not_found" | "wrong_channel" | "dependency_blocked" | "invalid_state" | "identity_confirmation_required";
+export type ManualExecutionErrorCode = "not_found" | "wrong_channel" | "dependency_blocked" | "invalid_state" | "identity_confirmation_required" | "downstream_started";
 export class ManualExecutionError extends Error {
-  constructor(message: string, readonly code: ManualExecutionErrorCode) { super(message); this.name = "ManualExecutionError"; }
+  constructor(message: string, readonly code: ManualExecutionErrorCode, readonly blocking_job_ids: readonly string[] = []) { super(message); this.name = "ManualExecutionError"; }
 }
 
 export interface PreparedManualMission { run_id: string; job_id: string; attempt: number; conversation_title: string; identity_marker: string; effective_prompt: string }
@@ -24,7 +24,16 @@ const plannedJob = (run: PersistedRun, jobId: string): PlannedJob => {
   if (!found) throw new ManualExecutionError(`Unknown job: ${jobId}.`, "not_found");
   return found;
 };
-const currentResults = (run: PersistedRun): JobResult[] => Object.values(run.missions).flatMap((mission) => {
+const downstreamJobIds = (run: PersistedRun, jobId: string): string[] => {
+  const found = new Set<string>(); const queue = [jobId];
+  while (queue.length) {
+    const dependency = queue.shift()!;
+    for (const job of run.plan.jobs) if (job.depends_on.includes(dependency) && !found.has(job.job_id)) { found.add(job.job_id); queue.push(job.job_id); }
+  }
+  return [...found];
+};
+const currentResults = (run: PersistedRun, dependencyIds: readonly string[]): JobResult[] => Object.values(run.missions).flatMap((mission) => {
+  if (!dependencyIds.includes(mission.job_id)) return [];
   const current = mission.attempts.find((attempt) => attempt.attempt === mission.current_attempt);
   return current?.result?.status === "completed" ? [current.result] : [];
 });
@@ -66,7 +75,7 @@ export class ManualExecutionService {
     const missing = job.depends_on.filter((id) => run.missions[id]?.state !== "completed");
     if (missing.length) throw new ManualExecutionError(`Dependencies are incomplete: ${missing.join(", ")}.`, "dependency_blocked");
     const source = sourceJob(run, jobId);
-    const context = job.depends_on.length ? new DependencyContextBuilder().build(job, currentResults(run), { runId: run.run_id, mode: job.dependency_input_mode, maxBytes: 1_000_000 }) : "";
+    const context = job.depends_on.length ? new DependencyContextBuilder().build(job, currentResults(run, job.depends_on), { runId: run.run_id, mode: job.dependency_input_mode, maxBytes: 1_000_000 }) : "";
     const parts = [envelope(run.run_id, job, mission.current_attempt), source.instructions, context, source.prompt, source.output_format ? `OUTPUT_FORMAT:\n${source.output_format}` : undefined].filter(Boolean);
     return { run_id: run.run_id, job_id: jobId, attempt: mission.current_attempt, conversation_title: job.conversation_title, identity_marker: marker(run.run_id, jobId, mission.current_attempt), effective_prompt: parts.join("\n\n") };
   }
@@ -105,9 +114,18 @@ export class ManualExecutionService {
     if (!retryable.includes(mission.state as (typeof retryable)[number])) throw new ManualExecutionError("The job has no terminal or retryable attempt to retry.", "invalid_state");
     const current = mission.attempts.find((item) => item.attempt === mission.current_attempt);
     if (!current || current.state !== mission.state || (mission.state === "completed" && !current.result)) throw new ManualExecutionError("The current attempt is incomplete and cannot be retried.", "invalid_state");
+    const downstream = downstreamJobIds(run, jobId);
+    const blockingStates: readonly JobState[] = ["launched_manual", "waiting_response_import", "queued_api", "running_api", "completed", "failed_retryable", "failed_terminal", "cancelled", "superseded"];
+    const blockers = downstream.filter((id) => blockingStates.includes(run.missions[id].state));
+    if (blockers.length) throw new ManualExecutionError(`Retry blocked by downstream missions that already started or terminated: ${blockers.join(", ")}.`, "downstream_started", blockers);
     if (mission.state === "failed_retryable") transitionJob(mission.state, "ready");
     else transitionJob(mission.state, "superseded");
     const attempt: MissionAttempt = { attempt: mission.current_attempt + 1, state: "ready", prepared_at: now, launched_at: null, result: null };
-    return replaceMission(run, { ...mission, state: "ready", current_attempt: attempt.attempt, attempts: [...mission.attempts, attempt] }, now);
+    const missions = { ...run.missions };
+    for (const id of downstream) {
+      const item = missions[id];
+      if (["blocked_by_dependency", "ready", "prepared_manual"].includes(item.state)) missions[id] = { ...item, state: "blocked_by_dependency", attempts: item.attempts.map((candidate) => candidate.attempt === item.current_attempt ? { ...candidate, state: "blocked_by_dependency" } : candidate) };
+    }
+    return replaceMission({ ...run, missions }, { ...mission, state: "ready", current_attempt: attempt.attempt, attempts: [...mission.attempts, attempt] }, now);
   }
 }
