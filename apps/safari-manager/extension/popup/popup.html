@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Safari Manager</title><link rel="stylesheet" href="popup.css"></head>
+<body>
+  <main>
+    <header><div><h1>Safari Manager</h1><p id="count">Chargement…</p></div><button id="refresh" class="icon" aria-label="Actualiser">↻</button></header>
+    <label class="search"><span class="sr-only">Rechercher</span><input id="search" type="search" placeholder="Rechercher titre, domaine ou URL" autocomplete="off"></label>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <nav aria-label="Sélection"><button id="select-filtered">Sélectionner les résultats</button><button id="clear-selection">Tout désélectionner</button></nav>
+    <section id="duplicates" hidden><h2>Doublons sûrs</h2><div id="duplicate-groups"></div><button id="prepare-duplicates" class="danger-outline">Fermer les doublons…</button></section>
+    <ul id="tabs" aria-label="Onglets Safari"></ul>
+    <div id="empty" class="state" hidden></div>
+  </main>
+  <footer><span id="selected-count">0 sélectionné</span><button id="prepare-close" class="danger" disabled>Fermer la sélection…</button></footer>
+  <dialog id="confirm"><form method="dialog"><h2 id="confirm-title">Confirmer</h2><p id="confirm-summary"></p><div class="dialog-actions"><button value="cancel" autofocus>Annuler</button><button id="confirm-close" value="confirm" class="danger">Confirmer la fermeture</button></div></form></dialog>
+  <script type="module" src="popup.js"></script>
+</body></html>

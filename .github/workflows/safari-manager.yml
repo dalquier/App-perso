@@ -1,0 +1,39 @@
+name: Safari Manager
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "apps/safari-manager/**"
+      - ".github/workflows/safari-manager.yml"
+  pull_request:
+    paths:
+      - "apps/safari-manager/**"
+      - ".github/workflows/safari-manager.yml"
+permissions:
+  contents: read
+jobs:
+  test-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Tests unitaires
+        run: npm test
+        working-directory: apps/safari-manager
+      - name: Vérifications JavaScript
+        run: npm run check
+        working-directory: apps/safari-manager
+      - name: Valider et conditionner l'extension
+        run: python3 scripts/package_extension.py
+        working-directory: apps/safari-manager
+      - name: Vérifier le manifeste à la racine
+        run: unzip -l dist/safari-manager-extension.zip | grep -E ' manifest.json$'
+        working-directory: apps/safari-manager
+      - uses: actions/upload-artifact@v4
+        with:
+          name: safari-manager-extension
+          path: |
+            apps/safari-manager/dist/safari-manager-extension.zip
+            apps/safari-manager/dist/safari-manager-extension.zip.sha256
+          if-no-files-found: error

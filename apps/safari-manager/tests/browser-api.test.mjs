@@ -1,0 +1,4 @@
+import test from "node:test"; import assert from "node:assert/strict";
+import { getBrowserApi, queryAccessibleTabs, activateTab, removeTabsSafely, readableWindows } from "../extension/shared/browser-api.js";
+test("pilote une API browser simulée", async () => { const calls=[]; const api={tabs:{query:async(q)=>(calls.push(["query",q]),[{id:1}]),update:async(id,p)=>(calls.push(["update",id,p]),{}),remove:async(id)=>{calls.push(["remove",id]); if(id===2) throw new Error("refus");}}}; assert.equal(getBrowserApi({browser:api}),api); assert.deepEqual(await queryAccessibleTabs(api),[{id:1}]); await activateTab(api,1); assert.deepEqual(await removeTabsSafely(api,[1,2]),{removed:[1],failed:[{id:2,message:"refus"}]}); assert.equal(await readableWindows(api),null); assert.deepEqual(calls[0],["query",{}]); });
+test("refuse une API incomplète", () => assert.throws(() => getBrowserApi({browser:{tabs:{}}}),/accès/));

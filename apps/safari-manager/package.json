@@ -1,0 +1,1 @@
+{"private":true,"type":"module","scripts":{"test":"node --test tests/*.test.mjs","check":"node --check extension/popup/popup.js && node --check extension/background/service-worker.js && node --check extension/shared/*.js"}}

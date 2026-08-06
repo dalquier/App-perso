@@ -28,6 +28,7 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 | `developeros` | DeveloperOS | Developer OS, gestionnaire de projets, Project Manager Pyto, PWA DeveloperOS | prêt à construire | dépôt `dalquier/App-perso`; code `apps/developer-os/` | `ProjectOS/projects/DeveloperOS/` |
 | `equilibre` | Équilibre | Equilibre, compagnon TCC, TCC Budy, TCC Buddy, TCC_Budy | BUILD-02 intégré — BUILD-03 à préparer | dépôt `dalquier/App-perso`; code `apps/equilibre/` | `ProjectOS/projects/Equilibre/` |
 | `projectos-backup` | ProjectOS Backup | Projet 2, sauvegarde ProjectOS, backup de code | BUILD-01 construit — recette Pyto requise | dépôt `dalquier/App-perso`; code `apps/projectos-backup/` | `ProjectOS/projects/ProjectOSBackup/` |
+| `safarimanager` | Safari Manager | Safari Manager, Gestionnaire Safari, gestionnaire d’onglets Safari, fenêtres Safari, onglets Safari | BUILD-01 construit — recette TestFlight/iPhone requise | dépôt `dalquier/App-perso`; code `apps/safari-manager/` | `ProjectOS/projects/SafariManager/` |
 | `assistantia` | AssistantIA | Assistant IA | à migrer/compléter | à confirmer avant modification | à créer sous `ProjectOS/projects/AssistantIA/` |
 
 ## Résolution
