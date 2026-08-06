@@ -95,6 +95,27 @@ describe("ProjectForm", () => {
     expect(await screen.findByText("Le nom est obligatoire.")).toBeVisible();
   });
 
+  it("prefills an editable canonical source for new projects", async () => {
+    renderApp(makeRepository());
+    const source = await screen.findByLabelText("Source", { exact: true });
+    expect(source).toHaveValue("dalquier/App-perso");
+    await userEvent.clear(source);
+    expect(source).toHaveValue("");
+    await userEvent.type(source, "dalquier/Autre-projet");
+    expect(source).toHaveValue("dalquier/Autre-projet");
+  });
+
+  it("keeps the existing canonical source while editing", async () => {
+    const existing = {
+      ...baseProject,
+      canonicalSource: "dalquier/Projet-existant",
+    };
+    renderApp(makeRepository([existing]), `/projects/${existing.id}/edit`);
+    expect(
+      await screen.findByLabelText("Source", { exact: true }),
+    ).toHaveValue("dalquier/Projet-existant");
+  });
+
   it("keeps edit history on the previous detail while creation opens the new detail", async () => {
     const repository = makeRepository([baseProject]);
     renderApp(repository, "/");
@@ -135,10 +156,6 @@ describe("ProjectForm", () => {
       screen.getByRole("link", { name: "Nouvelle création rapide" }),
     );
     await userEvent.type(await screen.findByLabelText(/Nom/), "Nouveau");
-    await userEvent.type(
-      screen.getByLabelText("Source", { exact: true }),
-      "dalquier/App-perso",
-    );
     await userEvent.click(
       screen.getAllByRole("button", { name: "Enregistrer" })[0],
     );
@@ -155,10 +172,6 @@ describe("ProjectForm", () => {
   it("saves a valid project", async () => {
     renderForm();
     await userEvent.type(await screen.findByLabelText(/Nom/), "Nouveau");
-    await userEvent.type(
-      screen.getByLabelText("Source", { exact: true }),
-      "dalquier/App-perso",
-    );
     await userEvent.click(
       screen.getAllByRole("button", { name: "Enregistrer" })[0],
     );
