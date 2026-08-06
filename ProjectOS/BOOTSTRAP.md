@@ -11,13 +11,13 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 - La politique de toolchain frugale est permanente : ChatGPT et Codex réalisent le développement ; Replit Starter est réservé à l’exécution, aux tests, au stockage de travail et au déploiement.
 - L’optimisation des crédits, quotas, appels payants et ressources cloud est permanente et régie par `standards/CREDIT_OPTIMIZATION.md`.
 - L’évaluation des flux indépendants et leur éventuelle parallélisation sont régies par `standards/PARALLEL_EXECUTION.md`. Les lectures internes sans effet de bord peuvent être parallélisées automatiquement ; toute parallélisation visible nécessite la réponse décisionnelle canonique définie dans ce standard.
-- La communication de progression est régie par `standards/PROGRESS_COMMUNICATION.md`. Toute tâche nécessitant une attente perceptible, des outils ou plusieurs opérations donne des mises à jour factuelles indiquant les éléments réalisés, l’action en cours et le temps restant estimé.
+- La communication de progression est régie par `standards/PROGRESS_COMMUNICATION.md`. Toute tâche nécessitant une attente perceptible, des outils ou plusieurs opérations donne des mises à jour factuelles indiquant les éléments réalisés, l’action en cours, les étapes restantes et le temps restant estimé.
 - Avant chaque prompt opérationnel remis à Damien, annoncer l’outil le plus adapté, la raison du choix, le coût relatif, l’alternative moins coûteuse et la condition observable de bascule. Cette annonce reste distincte du prompt.
 - Toute tâche susceptible de produire une modification ou un artefact doit appliquer `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` avant la première modification. La capacité de livraison est un prérequis, et la récupération effective doit être prouvée avant de déclarer la tâche terminée.
 - Dans Codex Cloud, distinguer le sandbox terminal du mécanisme natif de publication GitHub : l’absence de `origin`, d’upstream, de `GH_TOKEN` ou d’authentification `gh` dans le terminal n’est pas bloquante lorsque l’environnement Codex est explicitement relié au dépôt et à la branche de base attendus.
 - La mémoire conversationnelle est régie par `standards/CONVERSATION_MEMORY.md` et l’archive intégrale par `standards/CONVERSATION_ARCHIVE_PIPELINE.md`. Un consentement permanent spécifique à Codex est actif depuis le 5 août 2026 : toute conversation ProjectOS exécutée avec Codex est enregistrée automatiquement, avec index et synthèse dans GitHub, puis transcription visible et fichiers accessibles directement dans Google Drive, jusqu’à révocation explicite.
-- Pendant l’amorçage et après celui-ci, les messages intermédiaires suivent le format `Réalisé : ...`, `En cours : ...`, `Temps restant estimé : ...`, avec un niveau de détail synthétique et utile.
-- Les mises à jour de progression décrivent uniquement des faits opérationnels, résultats vérifiés et prochaines étapes concrètes. Elles n’exposent jamais les raisonnements internes, secrets, données sensibles ou journaux techniques exhaustifs.
+- Pendant l’amorçage et après celui-ci, les messages intermédiaires suivent le format `Avancement`, `Réalisé`, `En cours`, `Reste à faire`, `Temps restant estimé` et, lorsque nécessaire, `Point d’attention`.
+- Les mises à jour de progression décrivent uniquement des faits opérationnels, résultats vérifiés, fichiers ou états utiles et prochaines étapes concrètes. Elles n’exposent jamais les raisonnements internes, secrets, données sensibles ou journaux techniques exhaustifs.
 - Les réponses décisionnelles à formulation exacte, notamment la mémoire et la parallélisation, restent isolées et ne doivent jamais être fusionnées avec une mise à jour de progression.
 
 ## 2. Séquence obligatoire
@@ -52,7 +52,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 23. Dès que la mémoire est activée, par consentement permanent Codex ou par réponse positive, initialiser l’archive Drive, puis charger sélectivement l’index, la chronologie et les synthèses pertinentes du projet.
 24. Si la réponse est `non` dans un régime à consentement ponctuel, poursuivre sans mémoire conversationnelle et sans bloquer le traitement.
 25. Après résolution du régime de mémoire, reprendre la demande initiale et appliquer `standards/PARALLEL_EXECUTION.md`. Si plusieurs flux visibles satisfont tous ses critères, envoyer uniquement la question canonique `Cette demande comporte des actions indépendantes. Les paralléliser ?` et attendre la réponse avant de lancer ces flux.
-26. Si aucune autorisation de parallélisation n’est nécessaire, ou après résolution de la question, exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible.
+26. Si aucune autorisation de parallélisation n’est nécessaire, ou après résolution de la question, exécuter la méthode ProjectOS jusqu’à la livraison ou au meilleur résultat vérifiable possible en appliquant `standards/PROGRESS_COMMUNICATION.md`.
 
 ## 3. Ordre d’autorité
 
@@ -114,7 +114,7 @@ Si une référence est modifiée pendant la conversation, recharger sa dernière
 
 ## 7. Sortie d’amorçage
 
-Pendant le chargement, chaque message intermédiaire suit `standards/PROGRESS_COMMUNICATION.md` et indique brièvement ce qui a été chargé ou vérifié, ce qui reste en cours et le temps restant estimé. La première réponse reste courte et ne contient qu’un état des vérifications, puis l’indication d’activation automatique avec Codex ou la question de consentement avec les autres outils.
+Pendant le chargement, chaque message intermédiaire suit `standards/PROGRESS_COMMUNICATION.md` et indique brièvement ce qui a été chargé ou vérifié, l’action en cours, ce qu’il reste à faire et le temps restant estimé. La première réponse reste courte et ne contient qu’un état des vérifications, puis l’indication d’activation automatique avec Codex ou la question de consentement avec les autres outils.
 
 L’amorçage doit aboutir à un état de travail comprenant :
 - projet identifié ou niveau transverse confirmé ;
