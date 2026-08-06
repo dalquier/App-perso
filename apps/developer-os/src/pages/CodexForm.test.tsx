@@ -145,8 +145,10 @@ describe("CodexForm", () => {
     await user.type(screen.getByLabelText("Prompt *"), "Prompt conservé");
     await user.click(screen.getByRole("button", { name: "Lancer dans Codex" }));
 
-    expect(await screen.findByDisplayValue("Prompt conservé")).toHaveAttribute(
-      "readonly",
+    await screen.findByRole("button", { name: "Copier à nouveau" });
+    const textareas = screen.getAllByDisplayValue("Prompt conservé");
+    expect(textareas.some((textarea) => textarea.hasAttribute("readonly"))).toBe(
+      true,
     );
   });
 });
