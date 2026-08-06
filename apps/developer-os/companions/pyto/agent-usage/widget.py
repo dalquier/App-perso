@@ -52,7 +52,11 @@ def _dynamic_color(widgets: Any, light: str, dark: str) -> Any:
 
 
 def _font(widgets: Any, size: float, bold: bool = False) -> Any:
-    factory = widgets.Font.bold_system_font_of_size if bold else widgets.Font.system_font_of_size
+    factory = (
+        widgets.Font.bold_system_font_of_size
+        if bold
+        else widgets.Font.system_font_of_size
+    )
     return factory(size)
 
 
@@ -65,39 +69,79 @@ def _add_text(
     *,
     bold: bool = False,
 ) -> None:
-    layout.add_row([widgets.Text(text, color=color, font=_font(widgets, size, bold=bold))])
+    layout.add_row(
+        [widgets.Text(text, color=color, font=_font(widgets, size, bold=bold))]
+    )
+
+
+def _row_style(size: str, index: int) -> tuple[float, bool, str]:
+    if index == 0:
+        return ({"small": 34, "medium": 40, "large": 46}[size], True, "accent")
+    if index == 1:
+        return ({"small": 12, "medium": 13, "large": 14}[size], True, "primary")
+    if index == 2:
+        return ({"small": 11, "medium": 13, "large": 15}[size], True, "primary")
+    return ({"small": 10, "medium": 11, "large": 12}[size], False, "secondary")
 
 
 def _apply_layout(widgets: Any, layout: Any, rendered: RenderedWidget) -> None:
     theme = rendered.theme
-    background = _dynamic_color(widgets, theme.light_background, theme.dark_background)
+    background = _dynamic_color(
+        widgets, theme.light_background, theme.dark_background
+    )
     primary = _dynamic_color(widgets, theme.light_primary, theme.dark_primary)
-    secondary = _dynamic_color(widgets, theme.light_secondary, theme.dark_secondary)
+    secondary = _dynamic_color(
+        widgets, theme.light_secondary, theme.dark_secondary
+    )
+    accent = _dynamic_color(widgets, theme.light_accent, theme.dark_accent)
+    colors = {"primary": primary, "secondary": secondary, "accent": accent}
+
     layout.set_background_color(background)
     set_link = getattr(layout, "set_link", None)
     if callable(set_link):
         set_link(rendered.link)
 
-    rows = list(rendered.rows)
-    if hasattr(layout, "add_vertical_spacer"):
-        layout.add_vertical_spacer()
-    for index, row in enumerate(rows):
+    _add_text(
+        widgets,
+        layout,
+        rendered.title,
+        secondary,
+        {"small": 10, "medium": 11, "large": 12}[rendered.size],
+        bold=True,
+    )
+
+    gauge = next((chart for chart in rendered.charts if chart.kind == "gauge"), None)
+    history = next((chart for chart in rendered.charts if chart.kind == "history"), None)
+
+    for index, row in enumerate(rendered.rows):
+        font_size, bold, color_role = _row_style(rendered.size, index)
         _add_text(
             widgets,
             layout,
             row,
-            primary if index < 2 else secondary,
-            28 if index == 0 else 15 if index == 1 else 12,
-            bold=index < 2,
+            colors[color_role],
+            font_size,
+            bold=bold,
         )
-        if index == 1:
-            for chart in rendered.charts:
-                if chart.kind == "gauge" and chart.image is not None:
-                    layout.add_row([widgets.Image(image=chart.image)])
-    if rendered.size == "large":
-        for chart in rendered.charts:
-            if chart.kind == "history" and chart.image is not None:
-                layout.add_row([widgets.Image(image=chart.image)])
+        if index == 0 and gauge is not None:
+            if gauge.image is not None:
+                layout.add_row([widgets.Image(image=gauge.image)])
+            else:
+                _add_text(
+                    widgets,
+                    layout,
+                    gauge.fallback_text,
+                    secondary,
+                    9 if rendered.size == "small" else 10,
+                )
+        if (
+            rendered.size == "large"
+            and index == 7
+            and history is not None
+            and history.image is not None
+        ):
+            layout.add_row([widgets.Image(image=history.image)])
+
     if hasattr(layout, "add_vertical_spacer"):
         layout.add_vertical_spacer()
 
