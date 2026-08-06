@@ -1,13 +1,13 @@
 # ADR-004 — Exécution parallèle contrôlée
 
-- **Statut :** proposé
+- **Statut :** accepté
 - **Date :** 2026-08-06
 
 ## Contexte
 
 Certaines demandes ProjectOS contiennent plusieurs travaux indépendants pouvant être menés simultanément. Une exécution strictement séquentielle ralentit alors inutilement la livraison. À l’inverse, une parallélisation implicite peut créer des conflits de fichiers ou de branches, dupliquer le travail, augmenter les coûts IA et rendre la réconciliation incertaine.
 
-Le régime de mémoire conversationnelle impose en outre une question de consentement prioritaire au démarrage des conversations ChatGPT. Les messages intermédiaires de progression utilisent un format strict limité au temps restant.
+Le régime de mémoire conversationnelle impose en outre une question de consentement prioritaire au démarrage des conversations ChatGPT. Les mises à jour intermédiaires sont régies par `standards/PROGRESS_COMMUNICATION.md` et donnent un avancement factuel ainsi qu’une estimation révisable du temps restant. Les réponses décisionnelles exactes restent isolées de ces mises à jour.
 
 ## Décision
 
@@ -20,7 +20,7 @@ ProjectOS distingue deux régimes :
 Cette demande comporte des actions indépendantes. Les paralléliser ?
 ```
 
-La question est une réponse décisionnelle dédiée, distincte d’un message de progression. Dans une nouvelle conversation ChatGPT, elle n’est posée qu’après résolution du consentement mémoire.
+La question est une réponse décisionnelle dédiée, distincte d’une mise à jour de progression. Dans une nouvelle conversation ChatGPT, elle n’est posée qu’après résolution du consentement mémoire.
 
 La parallélisation visible exige des flux autonomes, des branches, fichiers et ressources mutables exclusifs, un coût marginal proportionné, des canaux de livraison vérifiables et un coordinateur chargé de la réconciliation.
 
@@ -49,4 +49,4 @@ La parallélisation visible exige des flux autonomes, des branches, fichiers et 
 
 ## Retour arrière
 
-Annuler la Pull Request introduisant le standard et ses références. Après intégration, cette ADR peut être marquée remplacée par une décision ultérieure, mais ne doit pas être supprimée sans décision versionnée.
+Après intégration, remplacer cette ADR par une décision ultérieure explicitement versionnée. Ne pas la supprimer sans conserver la traçabilité de la décision remplacée.
