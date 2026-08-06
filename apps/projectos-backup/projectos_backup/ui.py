@@ -74,6 +74,12 @@ class BackupApplication:
         destination.detail_text_label.text = "Configurée" if config.get("destinationBookmark") else "À choisir"
         destination.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
         cells.append(destination)
+        drive_destination = self.ui.TableViewCell(text="Destination Google Drive")
+        drive_destination.detail_text_label.text = (
+            "Configurée" if config.get("driveDestinationBookmark") else "À choisir"
+        )
+        drive_destination.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
+        cells.append(drive_destination)
         for source in self._sources_with_repaired_labels():
             cell = self.ui.TableViewCell(text=source.label)
             cell.detail_text_label.text = "Active" if source.enabled else "Suspendue"
@@ -87,14 +93,17 @@ class BackupApplication:
         if index == 0:
             self._choose_destination()
             return
-        source = self.store.sources()[index - 1]
+        if index == 1:
+            self._choose_drive_destination()
+            return
+        source = self.store.sources()[index - 2]
         self.store.toggle_source(source.source_id)
         self.refresh()
 
     def _deleted(self, section, index: int) -> None:
-        if index == 0:
+        if index < 2:
             return
-        source = self.store.sources()[index - 1]
+        source = self.store.sources()[index - 2]
         removed = self.store.remove_source(source.source_id)
         delete_bookmark(removed.bookmark_name)
         self.refresh()
@@ -106,6 +115,17 @@ class BackupApplication:
             if previous:
                 delete_bookmark(previous)
             self.status.text = f"Destination : {Path(path).name}"
+            self.refresh()
+        except PytoUnavailable as exc:
+            self.status.text = str(exc)
+
+    def _choose_drive_destination(self) -> None:
+        try:
+            bookmark_name, path = choose_folder("drive-destination")
+            previous = self.store.set_drive_destination(bookmark_name)
+            if previous:
+                delete_bookmark(previous)
+            self.status.text = f"Google Drive : {Path(path).name}"
             self.refresh()
         except PytoUnavailable as exc:
             self.status.text = str(exc)
