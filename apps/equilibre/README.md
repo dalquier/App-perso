@@ -48,3 +48,8 @@ L'icône source versionnée est `public/icons/icon.svg`. Les scripts `predev` et
 ## BUILD-02 — Conversations persistantes
 
 BUILD-02 ajoute un historique local multi-conversations, des modes conversationnels, une réponse progressive simulée, l’interruption de génération, les erreurs fournisseur récupérables et une migration depuis le schéma BUILD-01. Voir `docs/BUILD_02_ARCHITECTURE.md` pour l’architecture, le modèle de données, les migrations, la recette Replit/iPhone et le retour arrière.
+
+
+## BUILD-03 — Séances et mémoire contrôlée
+
+BUILD-03 enregistre localement les séances terminées sous forme structurée, avec résumé déterministe et plan d’action. La mémoire n’est jamais alimentée automatiquement : l’utilisateur crée une proposition, puis peut la confirmer, la corriger ou la supprimer. Le stockage version 3 migre la version 2 sans perte. Voir `docs/BUILD_03_ARCHITECTURE.md`.
