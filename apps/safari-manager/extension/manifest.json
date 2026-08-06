@@ -5,6 +5,9 @@
   "description": "Inventorier, rechercher et fermer prudemment les onglets Safari.",
   "permissions": ["tabs"],
   "host_permissions": ["<all_urls>"],
+  "icons": {
+    "512": "images/icon.svg"
+  },
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "Safari Manager"
