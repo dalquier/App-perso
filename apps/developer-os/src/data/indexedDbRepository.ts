@@ -5,8 +5,9 @@ import {
   type ProjectRepository,
 } from "./repository";
 
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = "projects";
+const RUNS_STORE = "conversation-runs";
 
 type DeveloperOsDb = IDBPDatabase<unknown>;
 
@@ -19,6 +20,10 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         if (!db.objectStoreNames.contains(STORE)) {
           const store = db.createObjectStore(STORE, { keyPath: "id" });
           store.createIndex("updatedAt", "updatedAt");
+        }
+        if (!db.objectStoreNames.contains(RUNS_STORE)) {
+          const runs = db.createObjectStore(RUNS_STORE, { keyPath: "run_id" });
+          runs.createIndex("updated_at", "updated_at");
         }
       },
       blocked() {
