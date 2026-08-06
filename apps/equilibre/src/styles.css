@@ -15,7 +15,7 @@ main { outline:none; } .hero { padding:44px 2px 32px; } .eyebrow { text-transfor
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 @media (max-height:700px) { .hero { padding-top:20px; } .hero h1 { font-size:38px; } .session-card { padding-top:30px; } }
 @media (min-width:700px) { .app-shell { border-left:1px solid var(--line); border-right:1px solid var(--line); } }
-.tabbar { grid-template-columns:repeat(4,1fr); padding-left:14px; padding-right:14px; }
+.tabbar { grid-template-columns:repeat(5,minmax(0,1fr)); padding-left:8px; padding-right:8px; }\n.tab { min-width:0; font-size:10px; white-space:nowrap; }
 .small-primary { min-width:44px; min-height:44px; border:0; border-radius:14px; background:var(--accent); color:#fff; font-size:22px; }
 .conversation-list { display:grid; gap:12px; padding-bottom:18px; }
 .conversation-row { display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:stretch; border:1px solid var(--line); border-radius:20px; background:var(--surface); padding:10px; }
