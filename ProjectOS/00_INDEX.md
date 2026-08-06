@@ -20,6 +20,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/TOOLCHAIN_POLICY.md` : politique obligatoire de développement frugal et rôle de chaque outil.
 - `standards/CREDIT_OPTIMIZATION.md` : optimisation obligatoire des crédits, quotas et appels payants, avec recommandation d’outil avant chaque prompt opérationnel.
 - `standards/PARALLEL_EXECUTION.md` : détection, autorisation et orchestration des flux de travail indépendants.
+- `standards/PROGRESS_COMMUNICATION.md` : mises à jour factuelles sur les tâches réalisées, l’action en cours et le temps restant estimé.
 - `standards/LONG_CONTENT_DELIVERY.md` : choix entre réponse conversationnelle, fichier téléchargeable et livraison GitHub pour les contenus longs, prompts et code.
 - `standards/AGENT_USAGE_TRACKING.md` : suivi des tâches Codex/Work, relevés de quota, règles d’attribution et confidentialité.
 - `standards/QUALITY_UX_SECURITY.md` : qualité, UX iPhone et sécurité.
