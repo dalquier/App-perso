@@ -1,7 +1,7 @@
 import { CONVERSATION_SCHEMA_VERSION, MESSAGE_STATUS } from "../domain/conversation.js";
 
 export const STORAGE_KEY = "equilibre.local.v1";
-export const STORAGE_VERSION = 2;
+export const STORAGE_VERSION = 3;
 export const BUILD01_BACKUP_KEY = `${STORAGE_KEY}.build01.backup`;
 
 const MIGRATION_EPOCH = "2026-01-01T00:00:00.000Z";
@@ -14,6 +14,8 @@ export function defaultState() {
     activeConversationId: null,
     messages: [],
     lastSession: null,
+    sessionRecords: [],
+    memoryEntries: [],
   };
 }
 
@@ -81,6 +83,14 @@ const normalizeMessage = (message) => {
 export function migrateState(raw) {
   if (!raw || typeof raw !== "object") return defaultState();
   if (raw.version === 1) return migrateBuild01(raw);
+  if (raw.version === 2) {
+    return migrateState({
+      ...raw,
+      version: STORAGE_VERSION,
+      sessionRecords: [],
+      memoryEntries: [],
+    });
+  }
   if (raw.version !== STORAGE_VERSION) throw new Error(`Version de stockage inconnue: ${raw.version}`);
   const base = defaultState();
   const conversations = Array.isArray(raw.conversations)
@@ -93,7 +103,15 @@ export function migrateState(raw) {
   const activeConversationId = conversations.some((c) => c.id === raw.activeConversationId)
     ? raw.activeConversationId
     : conversations[0]?.id || null;
-  return { ...base, ...raw, settings: { ...base.settings, ...(raw.settings || {}) }, conversations, activeConversationId };
+  return {
+    ...base,
+    ...raw,
+    settings: { ...base.settings, ...(raw.settings || {}) },
+    conversations,
+    activeConversationId,
+    sessionRecords: Array.isArray(raw.sessionRecords) ? raw.sessionRecords.filter(Boolean) : [],
+    memoryEntries: Array.isArray(raw.memoryEntries) ? raw.memoryEntries.filter(Boolean) : [],
+  };
 }
 
 export function createStore(storage = globalThis.localStorage) {
