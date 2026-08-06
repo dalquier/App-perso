@@ -112,8 +112,8 @@ describe("ProjectForm", () => {
     };
     renderApp(makeRepository([existing]), `/projects/${existing.id}/edit`);
     expect(
-      await screen.findByLabelText("Source", { exact: true }),
-    ).toHaveValue("dalquier/Projet-existant");
+      await screen.findByDisplayValue("dalquier/Projet-existant"),
+    ).toBeVisible();
   });
 
   it("keeps edit history on the previous detail while creation opens the new detail", async () => {
