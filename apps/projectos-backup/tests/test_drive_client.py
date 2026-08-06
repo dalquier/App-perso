@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from projectos_backup.drive_client import DriveSyncError, manifest_files, sync_current
+from projectos_backup.drive_client import (\n    DriveSyncError, manifest_files, normalize_apps_script_url, sync_current,\n)
 
 def manifest(records):
     return {"status": "complete", "sources": [{"folder": "Pyto", "files": records}]}
@@ -18,6 +18,17 @@ class FakeClient:
         return {}
 
 class DriveClientTests(unittest.TestCase):
+    def test_normalizes_google_copy_artifacts(self):
+        raw = "  “https://script.google.com/macros/s/AKfy-test_123/exec/?authuser=0”  "
+        self.assertEqual(
+            normalize_apps_script_url(raw),
+            "https://script.google.com/macros/s/AKfy-test_123/exec",
+        )
+
+    def test_rejects_wrong_relay_host(self):
+        with self.assertRaises(ValueError):
+            normalize_apps_script_url("https://example.com/macros/s/id/exec")
+
     def test_manifest_files_prefixes_source_folder(self):
         self.assertEqual(list(manifest_files(manifest([{"path": "a.py"}]))), ["Pyto/a.py"])
 
