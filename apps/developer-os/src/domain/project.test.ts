@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { emptyDraft, validateCanonicalSource, validateDraft } from "./project";
 
 describe("project validation", () => {
+  it("prefills the canonical GitHub repository for new projects", () => {
+    const draft = emptyDraft();
+    expect(draft.canonicalSourceType).toBe("github_repo");
+    expect(draft.canonicalSource).toBe("dalquier/App-perso");
+  });
+
   it("rejects dangerous canonical sources", () => {
     expect(validateCanonicalSource("other", "javascript:alert(1)")).toMatch(
       /protocole/,
