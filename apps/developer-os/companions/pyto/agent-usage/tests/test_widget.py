@@ -20,7 +20,10 @@ RESET = "2026-08-12T18:00:00+02:00"
 
 def write_jsonl(root: Path, name: str, rows: list[dict]) -> None:
     path = root / name
-    path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+    path.write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows),
+        encoding="utf-8",
+    )
 
 
 def snapshot(
@@ -65,9 +68,27 @@ def interval(
     cycle: str = "cycle-a",
     ended_at: str = "2026-08-05T10:00:00+00:00",
 ) -> dict:
-    task_ids = ["TSK-20260805-001"] if mode == "single_task" else ["TSK-20260805-001", "TSK-20260805-002"] if mode == "multi_task" else []
-    confidence = "attributed" if mode == "single_task" else "interval_only" if mode == "multi_task" else "unknown"
-    invalid_reason = "reset" if mode == "reset_or_correction" else "different_quota_scope_or_cycle" if mode == "not_comparable" else None
+    task_ids = (
+        ["TSK-20260805-001"]
+        if mode == "single_task"
+        else ["TSK-20260805-001", "TSK-20260805-002"]
+        if mode == "multi_task"
+        else []
+    )
+    confidence = (
+        "attributed"
+        if mode == "single_task"
+        else "interval_only"
+        if mode == "multi_task"
+        else "unknown"
+    )
+    invalid_reason = (
+        "reset"
+        if mode == "reset_or_correction"
+        else "different_quota_scope_or_cycle"
+        if mode == "not_comparable"
+        else None
+    )
     return {
         "schemaVersion": 1,
         "interval_id": f"INT-20260805-{index:03d}",
@@ -92,14 +113,17 @@ def task(
     ended_at: str | None = "2026-08-05T09:00:00+00:00",
     *,
     task_id: str = "TSK-20260805-001",
+    tool: str = "codex",
+    title: str = "Fixture",
+    started_at: str = "2026-08-05T08:30:00+00:00",
 ) -> dict:
     return {
         "schemaVersion": 1,
         "task_id": task_id,
-        "tool": "codex",
+        "tool": tool,
         "project_id": "DeveloperOS",
-        "title": "Fixture",
-        "started_at": "2026-08-05T08:30:00+00:00",
+        "title": title,
+        "started_at": started_at,
         "ended_at": ended_at,
         "status": status,
         "source": "manual",
@@ -138,7 +162,9 @@ def test_reader_backup_only_is_explicit(tmp_path):
 def test_reader_corrupt_primary_keeps_valid_rows_without_backup_substitution(tmp_path):
     now = datetime(2026, 8, 5, 10, tzinfo=timezone.utc)
     primary = tmp_path / "usage_snapshots.jsonl"
-    primary.write_text(json.dumps(snapshot(1, 70, now)) + "\n{bad}\n", encoding="utf-8")
+    primary.write_text(
+        json.dumps(snapshot(1, 70, now)) + "\n{bad}\n", encoding="utf-8"
+    )
     write_jsonl(tmp_path, "usage_snapshots.jsonl.bak", [snapshot(2, 99, now)])
     result = read_widget_data(tmp_path)
     assert result.storage_state == "corrupt"
@@ -156,13 +182,29 @@ def test_reader_duplicate_snapshot_ids_marks_corrupt(tmp_path):
 
 def test_viewmodel_thresholds_and_null_zero(tmp_path):
     now = datetime(2026, 8, 5, 10, tzinfo=timezone.utc)
-    for percent, state in ((80, "comfortable"), (30, "warning"), (10, "critical"), (0, "exhausted")):
-        write_jsonl(tmp_path, "usage_snapshots.jsonl", [snapshot(1, percent, now, credits=0)])
+    for percent, state in (
+        (80, "comfortable"),
+        (30, "warning"),
+        (10, "critical"),
+        (0, "exhausted"),
+    ):
+        write_jsonl(
+            tmp_path,
+            "usage_snapshots.jsonl",
+            [snapshot(1, percent, now, credits=0)],
+        )
         vm = build_view_model(read_widget_data(tmp_path), now=now)
         assert vm.state == state
         assert vm.credits_text == "Crédits : 0"
-    write_jsonl(tmp_path, "usage_snapshots.jsonl", [snapshot(1, 80, now, credits=None)])
-    assert build_view_model(read_widget_data(tmp_path), now=now).credits_text is None
+    write_jsonl(
+        tmp_path,
+        "usage_snapshots.jsonl",
+        [snapshot(1, 80, now, credits=None)],
+    )
+    assert (
+        build_view_model(read_widget_data(tmp_path), now=now).credits_text
+        == "Crédits : inconnus"
+    )
 
 
 def test_unvalidated_or_non_observed_snapshot_is_not_displayed(tmp_path):
@@ -172,17 +214,29 @@ def test_unvalidated_or_non_observed_snapshot_is_not_displayed(tmp_path):
         "usage_snapshots.jsonl",
         [
             snapshot(1, 80, now, confidence="estimated", human_validated=True),
-            snapshot(2, 70, now, confidence="observed", human_validated=False, source="manual"),
+            snapshot(
+                2,
+                70,
+                now,
+                confidence="observed",
+                human_validated=False,
+                source="manual",
+            ),
         ],
     )
     vm = build_view_model(read_widget_data(tmp_path), now=now)
     assert vm.percent_value is None
     assert vm.status_text == "Donnée indisponible"
+    assert vm.credits_text == "Crédits : inconnus"
 
 
 def test_stale_data_hides_forecast(tmp_path):
     base = datetime(2026, 8, 1, 10, tzinfo=timezone.utc)
-    snaps = [snapshot(1, 90, base), snapshot(2, 80, base + timedelta(days=1)), snapshot(3, 70, base + timedelta(days=2))]
+    snaps = [
+        snapshot(1, 90, base),
+        snapshot(2, 80, base + timedelta(days=1)),
+        snapshot(3, 70, base + timedelta(days=2)),
+    ]
     write_jsonl(tmp_path, "usage_snapshots.jsonl", snaps)
     write_jsonl(
         tmp_path,
@@ -192,7 +246,10 @@ def test_stale_data_hides_forecast(tmp_path):
             interval(2, snaps[1]["snapshot_id"], snaps[2]["snapshot_id"], 10),
         ],
     )
-    vm = build_view_model(read_widget_data(tmp_path), now=datetime(2026, 8, 5, 10, tzinfo=timezone.utc))
+    vm = build_view_model(
+        read_widget_data(tmp_path),
+        now=datetime(2026, 8, 5, 10, tzinfo=timezone.utc),
+    )
     assert vm.state == "stale"
     assert vm.forecast_text == "Prévision indisponible"
 
@@ -210,11 +267,28 @@ def test_forecast_after_reset_is_hidden(tmp_path):
         tmp_path,
         "usage_intervals.jsonl",
         [
-            interval(1, snaps[0]["snapshot_id"], snaps[1]["snapshot_id"], 1, ended_at=snaps[1]["captured_at"]),
-            interval(2, snaps[1]["snapshot_id"], snaps[2]["snapshot_id"], 1, ended_at=snaps[2]["captured_at"]),
+            interval(
+                1,
+                snaps[0]["snapshot_id"],
+                snaps[1]["snapshot_id"],
+                1,
+                ended_at=snaps[1]["captured_at"],
+            ),
+            interval(
+                2,
+                snaps[1]["snapshot_id"],
+                snaps[2]["snapshot_id"],
+                1,
+                ended_at=snaps[2]["captured_at"],
+            ),
         ],
     )
-    assert build_view_model(read_widget_data(tmp_path), now=base + timedelta(hours=2)).forecast_text == "Prévision indisponible"
+    assert (
+        build_view_model(
+            read_widget_data(tmp_path), now=base + timedelta(hours=2)
+        ).forecast_text
+        == "Prévision indisponible"
+    )
 
 
 def test_history_same_cycle_and_breaks_on_increase(tmp_path):
@@ -232,19 +306,73 @@ def test_history_same_cycle_and_breaks_on_increase(tmp_path):
     assert vm.history_summary == "Historique indisponible"
 
 
-def test_tasks_are_deduplicated_and_multitask_not_attributed(tmp_path):
-    now = datetime(2026, 8, 5, 10, tzinfo=timezone.utc)
-    snap = snapshot(1, 80, now)
+def test_latest_task_activity_and_observed_usage_are_visible(tmp_path):
+    now = datetime(2026, 8, 6, 14, tzinfo=timezone.utc)
+    snap = snapshot(1, 80, now, credits=250)
     write_jsonl(tmp_path, "usage_snapshots.jsonl", [snap])
-    write_jsonl(tmp_path, "tasks.jsonl", [task("running", None), task("completed")])
+    write_jsonl(
+        tmp_path,
+        "tasks.jsonl",
+        [
+            task("running", None, title="Ancien état"),
+            task(
+                "completed",
+                "2026-08-06T13:42:00+00:00",
+                title="BUILD-03 — Widget Pyto Calm Instrument",
+            ),
+            task(
+                "completed",
+                "2026-08-06T12:00:00+00:00",
+                task_id="TSK-20260806-002",
+                tool="work",
+                title="Revue UX",
+                started_at="2026-08-06T11:00:00+00:00",
+            ),
+        ],
+    )
     write_jsonl(
         tmp_path,
         "usage_intervals.jsonl",
-        [interval(1, "SNP-20260805-010", snap["snapshot_id"], 10, mode="multi_task")],
+        [
+            interval(
+                1,
+                "SNP-20260805-010",
+                snap["snapshot_id"],
+                12,
+                mode="multi_task",
+                ended_at="2026-08-06T13:40:00+00:00",
+            )
+        ],
     )
     vm = build_view_model(read_widget_data(tmp_path), now=now)
-    assert vm.tasks_text == "1 tâche(s) logique(s)"
-    assert vm.intervals_text == "0 intervalle(s) attribuable(s)"
+    assert vm.credits_text == "+250 crédits"
+    assert vm.activity_text == "1 Codex · 1 Work"
+    assert vm.usage_text == "−12 pts observés"
+    assert vm.last_task_text.startswith("Dernière commande : aujourd’hui · ")
+    assert "BUILD-03 — Widget Pyto" in vm.last_task_detail
+    assert vm.last_task_detail.endswith("Terminée")
+
+
+def test_empty_quota_still_surfaces_last_task(tmp_path):
+    write_jsonl(
+        tmp_path,
+        "tasks.jsonl",
+        [
+            task(
+                "completed",
+                "2026-08-06T13:42:00+00:00",
+                title="Dernière commande utile",
+                started_at="2026-08-06T13:00:00+00:00",
+            )
+        ],
+    )
+    vm = build_view_model(
+        read_widget_data(tmp_path),
+        now=datetime(2026, 8, 6, 14, tzinfo=timezone.utc),
+    )
+    assert vm.percent_text == "—"
+    assert "Dernière commande" in vm.last_task_text
+    assert "Dernière commande utile" in vm.last_task_detail
 
 
 def test_charts_are_in_memory_and_have_text_fallback(tmp_path, monkeypatch):
@@ -259,13 +387,28 @@ def test_charts_are_in_memory_and_have_text_fallback(tmp_path, monkeypatch):
     assert "63 %" in no_pillow.fallback_text
 
 
-def test_render_three_sizes_and_at_most_two_images(tmp_path):
-    vm = build_view_model(read_widget_data(tmp_path))
+def test_render_three_sizes_prioritise_credits_and_last_task(tmp_path):
+    now = datetime(2026, 8, 6, 14, tzinfo=timezone.utc)
+    write_jsonl(
+        tmp_path,
+        "usage_snapshots.jsonl",
+        [snapshot(1, 63, now, credits=250)],
+    )
+    write_jsonl(
+        tmp_path,
+        "tasks.jsonl",
+        [task(title="BUILD-03 Widget", ended_at="2026-08-06T13:42:00+00:00")],
+    )
+    vm = build_view_model(read_widget_data(tmp_path), now=now)
     for size in ("small", "medium", "large"):
         rendered = render_widget(vm, size=size)
         assert rendered.size == size
-        assert rendered.link == "open:diagnostic"
+        assert rendered.link == "open:summary"
         assert len(rendered.charts) <= 2
+        assert vm.credits_text in rendered.rows
+    medium = render_widget(vm, size="medium")
+    assert vm.last_task_text in medium.rows
+    assert vm.last_task_detail in medium.rows
 
 
 def test_links_are_allowlisted():
@@ -333,7 +476,12 @@ class FakeWidget:
 
 def test_real_pyto_adapter_builds_three_layouts(tmp_path):
     now = datetime.now(timezone.utc)
-    write_jsonl(tmp_path, "usage_snapshots.jsonl", [snapshot(1, 63, now)])
+    write_jsonl(
+        tmp_path,
+        "usage_snapshots.jsonl",
+        [snapshot(1, 63, now, credits=250)],
+    )
+    write_jsonl(tmp_path, "tasks.jsonl", [task(title="BUILD-03 Widget")])
     shown = []
     scheduled = []
     fake = SimpleNamespace(
@@ -349,10 +497,22 @@ def test_real_pyto_adapter_builds_three_layouts(tmp_path):
     widget = show_pyto_widget(tmp_path, widgets_module=fake)
     assert shown == [widget]
     assert scheduled
-    for layout in (widget.small_layout, widget.medium_layout, widget.large_layout):
+    for layout in (
+        widget.small_layout,
+        widget.medium_layout,
+        widget.large_layout,
+    ):
         assert layout.background is not None
         assert layout.link in {"open:summary", "open:diagnostic"}
-        assert layout.rows
+        texts = [
+            item.text
+            for row in layout.rows
+            if isinstance(row, list)
+            for item in row
+            if isinstance(item, FakeText)
+        ]
+        assert "Agent Usage" in texts
+        assert any("Crédits" in text or "crédits" in text for text in texts)
 
 
 def test_next_reload_is_45_minutes():
