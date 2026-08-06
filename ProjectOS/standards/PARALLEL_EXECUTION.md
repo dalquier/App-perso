@@ -16,7 +16,7 @@ Cette demande comporte des actions indépendantes. Les paralléliser ?
 
 Cette réponse ne contient aucun préambule, aucune liste, aucune estimation de temps et aucun texte après la question.
 
-Elle constitue une réponse décisionnelle, distincte d’un message intermédiaire de progression au format `Temps restant estimé : <durée>.`.
+Elle constitue une réponse décisionnelle, distincte des mises à jour intermédiaires régies par `PROGRESS_COMMUNICATION.md`.
 
 ## 3. Ordre avec la mémoire conversationnelle
 
