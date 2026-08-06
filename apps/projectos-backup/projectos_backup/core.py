@@ -250,7 +250,11 @@ def run_backup(
     inventory, requested = [], 0
     def report(phase: str, completed: int = 0, total: int = 0, **details) -> None:
         if progress is not None:
-            progress({"phase": phase, "completed": completed, "total": total, **details})
+            try:
+                progress({"phase": phase, "completed": completed, "total": total, **details})
+            except Exception:
+                # A display failure must never invalidate a verified backup.
+                pass
 
     def cancel_if_needed() -> None:
         if should_cancel is not None and should_cancel():
