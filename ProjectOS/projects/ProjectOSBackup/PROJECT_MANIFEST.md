@@ -5,7 +5,7 @@
 - ID : `projectos-backup`
 - Nom : ProjectOS Backup
 - Alias : Projet 2, sauvegarde ProjectOS, backup de code
-- Statut : BUILD-01 validé sur iPhone — test de transfert Raccourcis vers Drive requis
+- Statut : BUILD-02.2 construit — déploiement Apps Script et recette iPhone requis
 
 ## Objectif
 
@@ -45,7 +45,7 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 2. Le moteur scanne toutes les sources et demande à iOS de charger les éléments iCloud.
 3. Seuls les fichiers nouveaux ou modifiés sont préparés dans `Transaction`.
 4. Après validation globale, les changements et suppressions sont appliqués avec rollback.
-5. Raccourcis reproduit ce miroir vers Google Drive.
+5. Pyto transmet les seuls changements à un relais Apps Script, qui maintient le miroir Google Drive.
 6. Un mécanisme cloud distinct capture la dernière branche `main` de `dalquier/App-perso`.
 
 ## Contraintes
