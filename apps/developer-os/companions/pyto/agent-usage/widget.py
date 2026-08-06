@@ -3,7 +3,16 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+import sys
 from typing import Any
+
+# Pyto widgets can execute a script with a working directory that is different
+# from the script directory. Ensure sibling modules remain importable in both
+# foreground execution and the WidgetKit extension.
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
 from widget_reader import read_widget_data
 from widget_render_native import RenderedWidget, render_widget
