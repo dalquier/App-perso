@@ -83,4 +83,14 @@ class MirrorTests(unittest.TestCase):
                 run_backup([Source('one','Source',str(source))],dest,should_cancel=lambda: True)
             self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'old')
 
+    def test_broken_progress_display_does_not_break_backup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; source.mkdir(); (source/'a').write_text('safe')
+            result=run_backup(
+                [Source('one','Source',str(source))],
+                root/'backup',
+                progress=lambda event: (_ for _ in ()).throw(RuntimeError('display')),
+            )
+            self.assertEqual(result.status,'complete')
+
 if __name__=='__main__': unittest.main()
