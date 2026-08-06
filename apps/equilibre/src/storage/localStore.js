@@ -3,6 +3,7 @@ import { CONVERSATION_SCHEMA_VERSION, MESSAGE_STATUS } from "../domain/conversat
 export const STORAGE_KEY = "equilibre.local.v1";
 export const STORAGE_VERSION = 3;
 export const BUILD01_BACKUP_KEY = `${STORAGE_KEY}.build01.backup`;
+export const V2_BACKUP_KEY = `${STORAGE_KEY}.v2.backup`;
 
 const MIGRATION_EPOCH = "2026-01-01T00:00:00.000Z";
 
@@ -122,6 +123,7 @@ export function createStore(storage = globalThis.localStorage) {
       const serialized = storage.getItem(STORAGE_KEY);
       const raw = JSON.parse(serialized);
       if (raw?.version === 1 && serialized) storage.setItem(BUILD01_BACKUP_KEY, serialized);
+      if (raw?.version === 2 && serialized) storage.setItem(V2_BACKUP_KEY, serialized);
       const loaded = migrateState(raw);
       writesBlocked = false;
       return loaded;

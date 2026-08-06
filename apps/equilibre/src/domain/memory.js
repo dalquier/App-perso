@@ -1,3 +1,5 @@
+import { detectSensitiveContent } from "../safety/sensitiveGuard.js";
+
 export const MEMORY_STATUS = Object.freeze({
   proposed: "proposed",
   confirmed: "confirmed",
@@ -29,6 +31,7 @@ export function createSessionRecord(session, { now = new Date() } = {}) {
 export function proposeMemory({ content, sourceSessionId, kind = "insight", now = new Date() }) {
   const cleaned = String(content || "").trim();
   if (!cleaned) throw new Error("Le contenu de mémoire est requis.");
+  if (!sourceSessionId) throw new Error("L'identifiant de séance source est requis.");
   return {
     id: stableId("memory", now),
     kind,
@@ -53,4 +56,16 @@ export function updateMemory(entry, content, now = new Date()) {
 
 export function removeMemory(entries, id) {
   return entries.filter((entry) => entry.id !== id);
+}
+
+/**
+ * Applique une correction de mémoire avec garde-fou sensible.
+ * Retourne { blocked: true } si le contenu déclenche le garde-fou,
+ * sinon { blocked: false, entry: <mémoire corrigée> }.
+ */
+export function applyMemoryCorrection(entry, rawContent, now = new Date()) {
+  const cleaned = String(rawContent || "").trim();
+  if (!cleaned || !entry) return { blocked: false, entry };
+  if (detectSensitiveContent(cleaned)) return { blocked: true, entry };
+  return { blocked: false, entry: updateMemory(entry, cleaned, now) };
 }

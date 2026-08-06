@@ -1,6 +1,7 @@
 import "./styles.css";
 import { answerSession, createSession } from "./domain/session.js";
 import {
+  applyMemoryCorrection,
   confirmMemory,
   createSessionRecord,
   proposeMemory,
@@ -255,9 +256,14 @@ app.addEventListener("click", (event) => {
     const entry = state.memoryEntries.find((item) => item.id === edition.dataset.editMemory);
     const content = prompt("Corriger cet élément", entry?.content || "");
     if (entry && content?.trim()) {
-      state.memoryEntries = state.memoryEntries.map((item) => item.id === entry.id ? updateMemory(item, content) : item);
-      persist();
-      render();
+      const result = applyMemoryCorrection(entry, content);
+      if (result.blocked) {
+        alert(SAFETY_MESSAGE);
+      } else {
+        state.memoryEntries = state.memoryEntries.map((item) => item.id === entry.id ? result.entry : item);
+        persist();
+        render();
+      }
     }
   }
 
@@ -345,6 +351,10 @@ app.addEventListener("submit", (event) => {
 
 render();
 if ("serviceWorker" in navigator) window.addEventListener("load", async () => {
-  const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
-  await registration.update();
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+    await registration.update();
+  } catch (_) {
+    // Service worker non disponible — l'application reste fonctionnelle
+  }
 });
