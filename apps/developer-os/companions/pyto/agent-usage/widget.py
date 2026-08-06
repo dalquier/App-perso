@@ -47,8 +47,35 @@ def _rgb(widgets: Any, hex_color: str) -> Any:
     return widgets.Color.rgb(red, green, blue)
 
 
-def _dynamic_color(widgets: Any, light: str, dark: str) -> Any:
-    return widgets.Color.dynamic(light=_rgb(widgets, light), dark=_rgb(widgets, dark))
+def _dynamic_color(
+    widgets: Any,
+    light: str,
+    dark: str,
+    *,
+    system_fallback: str | None = None,
+) -> Any:
+    """Return a dynamic color, with a safe fallback for affected Pyto builds.
+
+    Some Pyto versions expose ``Color.dynamic`` but raise a TypeError inside
+    their runtime type checker. In that case, use a native system color when
+    available; otherwise keep the light custom color so widget rendering does
+    not fail.
+    """
+    light_color = _rgb(widgets, light)
+    dark_color = _rgb(widgets, dark)
+    dynamic = getattr(widgets.Color, "dynamic", None)
+    if callable(dynamic):
+        try:
+            return dynamic(light=light_color, dark=dark_color)
+        except (TypeError, ValueError, AttributeError):
+            pass
+
+    if system_fallback:
+        fallback = getattr(widgets, system_fallback, None)
+        if fallback is not None:
+            return fallback
+
+    return light_color
 
 
 def _font(widgets: Any, size: float, bold: bool = False) -> Any:
@@ -87,13 +114,29 @@ def _row_style(size: str, index: int) -> tuple[float, bool, str]:
 def _apply_layout(widgets: Any, layout: Any, rendered: RenderedWidget) -> None:
     theme = rendered.theme
     background = _dynamic_color(
-        widgets, theme.light_background, theme.dark_background
+        widgets,
+        theme.light_background,
+        theme.dark_background,
+        system_fallback="COLOR_SYSTEM_BACKGROUND",
     )
-    primary = _dynamic_color(widgets, theme.light_primary, theme.dark_primary)
+    primary = _dynamic_color(
+        widgets,
+        theme.light_primary,
+        theme.dark_primary,
+        system_fallback="COLOR_LABEL",
+    )
     secondary = _dynamic_color(
-        widgets, theme.light_secondary, theme.dark_secondary
+        widgets,
+        theme.light_secondary,
+        theme.dark_secondary,
+        system_fallback="COLOR_SECONDARY_LABEL",
     )
-    accent = _dynamic_color(widgets, theme.light_accent, theme.dark_accent)
+    accent = _dynamic_color(
+        widgets,
+        theme.light_accent,
+        theme.dark_accent,
+        system_fallback="COLOR_SYSTEM_BLUE",
+    )
     colors = {"primary": primary, "secondary": secondary, "accent": accent}
 
     layout.set_background_color(background)
