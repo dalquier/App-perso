@@ -5,7 +5,7 @@
 - ID : `projectos-backup`
 - Nom : ProjectOS Backup
 - Alias : Projet 2, sauvegarde ProjectOS, backup de code
-- Statut : BUILD-01 construit — recette Pyto et BUILD-02 Raccourcis requis
+- Statut : BUILD-01 validé sur iPhone — sélection de destination Drive construite, transfert BUILD-02 à réaliser
 
 ## Objectif
 
@@ -62,7 +62,8 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 
 - BUILD-01 : moteur Pyto et interface de sources dynamiques — construit.
 - BUILD-01.1 : miroir incrémental, rollback et préchargement iCloud — en revue.
-- BUILD-02 : Raccourci iOS vers Google Drive, remplacement vérifié et automatisation personnelle.
+- BUILD-02.1 : sélection explicite et persistante de la destination Google Drive dans Pyto — construit, recette iPhone requise.
+- BUILD-02.2 : miroir incrémental vers Google Drive et automatisation personnelle par Raccourcis.
 - BUILD-03 : capture cloud de `dalquier/App-perso`, restauration guidée et recette de crise.
 
 ## Définition de terminé
