@@ -12,12 +12,14 @@ SAFE_LINKS = {"open:summary", "open:tasks", "open:import", "open:diagnostic"}
 
 @dataclass(frozen=True)
 class WidgetTheme:
-    light_background: str = "#F8F6F1"
-    dark_background: str = "#101418"
-    light_primary: str = "#101820"
-    dark_primary: str = "#F1F4F6"
-    light_secondary: str = "#59626B"
-    dark_secondary: str = "#AEB7BF"
+    light_background: str = "#F4F6F8"
+    dark_background: str = "#0C0F14"
+    light_primary: str = "#15181D"
+    dark_primary: str = "#F5F7FA"
+    light_secondary: str = "#5F6875"
+    dark_secondary: str = "#AAB2BF"
+    light_accent: str = "#315FCC"
+    dark_accent: str = "#82A7FF"
 
 
 @dataclass(frozen=True)
@@ -28,6 +30,22 @@ class RenderedWidget:
     link: str
     charts: tuple[ChartAsset, ...]
     theme: WidgetTheme
+
+
+def _theme_for_state(state: str) -> WidgetTheme:
+    accent = {
+        "comfortable": ("#14765D", "#55D6AE"),
+        "warning": ("#8A5700", "#F5BC62"),
+        "critical": ("#A12B27", "#FF8C86"),
+        "exhausted": ("#701F25", "#FFAAA5"),
+        "stale": ("#775421", "#E6B96B"),
+        "unknown": ("#626A75", "#9BA4B1"),
+        "empty": ("#626A75", "#9BA4B1"),
+        "backup": ("#775421", "#E6B96B"),
+        "corrupt": ("#A12B27", "#FF8C86"),
+        "inaccessible": ("#A12B27", "#FF8C86"),
+    }.get(state, ("#315FCC", "#82A7FF"))
+    return WidgetTheme(light_accent=accent[0], dark_accent=accent[1])
 
 
 def render_widget(
@@ -41,46 +59,41 @@ def render_widget(
 
     gauge = quota_gauge(vm.percent_value, allow_pillow=allow_pillow)
     charts: list[ChartAsset] = [gauge]
+    storage_warning = () if vm.storage_text == "Stockage principal" else (vm.storage_text,)
+
     if size == "small":
         rows = (
             vm.percent_text,
             vm.status_text,
-            gauge.fallback_text if gauge.image is None else "Quota",
             vm.reset_text,
+            vm.credits_text,
             vm.freshness_text,
-        )
-        if vm.storage_text != "Stockage principal":
-            rows += (vm.storage_text,)
+        ) + storage_warning
     elif size == "medium":
         rows = (
             vm.percent_text,
-            vm.status_text,
-            gauge.fallback_text if gauge.image is None else "Quota",
-            vm.reset_text,
+            f"{vm.status_text} · {vm.reset_text}",
+            vm.credits_text,
+            vm.last_task_text,
+            vm.last_task_detail,
             vm.freshness_text,
-            vm.credits_text or "Crédits : non affichés",
-            vm.activity_text,
-            vm.forecast_text,
-            vm.storage_text,
-        )
+        ) + storage_warning
     else:
         history = history_chart(vm.history_points, allow_pillow=allow_pillow)
         charts.append(history)
         rows = (
             vm.percent_text,
-            vm.status_text,
-            vm.reset_text,
-            vm.credits_text or "Crédits : non affichés",
-            vm.freshness_text,
-            vm.weekly_text,
-            vm.tasks_text,
-            vm.intervals_text,
+            f"{vm.status_text} · {vm.reset_text}",
+            vm.credits_text,
+            vm.activity_text,
+            vm.usage_text,
+            vm.last_task_text,
+            vm.last_task_detail,
             vm.forecast_text,
             vm.history_summary,
-            vm.storage_text,
-            vm.source_text,
+            vm.freshness_text,
             vm.quality_text,
-        )
+        ) + storage_warning
         if history.image is None:
             rows += (history.fallback_text,)
 
@@ -91,5 +104,5 @@ def render_widget(
         rows=tuple(rows),
         link=safe_link,
         charts=tuple(charts[:2]),
-        theme=WidgetTheme(),
+        theme=_theme_for_state(vm.state),
     )
