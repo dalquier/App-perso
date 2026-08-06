@@ -1,3 +1,11 @@
+import {
+  confirmMemory,
+  createSessionRecord,
+  proposeMemory,
+  removeMemory,
+  updateMemory,
+  MEMORY_STATUS,
+} from "../src/domain/memory.js";
 import { describe, expect, it, vi } from "vitest";
 import { answerSession, createSession } from "../src/domain/session.js";
 import { addMessage, changeConversationMode, createConversation, createMessage, MESSAGE_STATUS, interruptConversationGeneration, renameConversation, updateConversationById, updateMessage } from "../src/domain/conversation.js";
@@ -135,5 +143,81 @@ describe("changement de conversation pendant génération", () => {
     conversation = addMessage(conversation, createMessage({ role: "assistant", content: "Terminé", status: MESSAGE_STATUS.complete }));
     const state = { ...defaultState(), conversations: [conversation], activeConversationId: conversation.id };
     expect(interruptConversationGeneration(state, conversation.id, "conversation_switched").conversations[0].messages[0]).toMatchObject({ content: "Terminé", status: MESSAGE_STATUS.complete, errorRef: null });
+  });
+});
+
+
+describe("BUILD-03 séances et mémoire contrôlée", () => {
+  const completedSession = () => {
+    let session = createSession(new Date("2026-02-01T10:00:00Z"));
+    for (const answer of ["Réunion fictive", "Tension 5/10", "Je dois tout réussir", "Préparer deux lignes"]) {
+      session = answerSession(session, answer);
+    }
+    return session;
+  };
+
+  it("crée un enregistrement structuré depuis une séance terminée", () => {
+    const record = createSessionRecord(completedSession(), { now: new Date("2026-02-01T10:10:00Z") });
+    expect(record.summary).toContain("Réunion fictive");
+    expect(record.actionPlan).toBe("Préparer deux lignes");
+    expect(record.sourceSessionId).toBeTruthy();
+  });
+
+  it("refuse une séance incomplète", () => {
+    expect(() => createSessionRecord(createSession())).toThrow("terminée");
+  });
+
+  it("crée uniquement une proposition avant confirmation", () => {
+    const record = createSessionRecord(completedSession(), { now: new Date("2026-02-01T10:10:00Z") });
+    const entry = proposeMemory({ content: record.actionPlan, sourceSessionId: record.id, kind: "action", now: new Date("2026-02-01T10:11:00Z") });
+    expect(entry).toMatchObject({ content: "Préparer deux lignes", status: MEMORY_STATUS.proposed, source: { type: "session", id: record.id } });
+  });
+
+  it("confirme une proposition immuablement", () => {
+    const proposed = proposeMemory({ content: "Action fictive", sourceSessionId: "session-fixture", now: new Date("2026-02-01T10:11:00Z") });
+    const confirmed = confirmMemory(proposed, new Date("2026-02-01T10:12:00Z"));
+    expect(confirmed.status).toBe(MEMORY_STATUS.confirmed);
+    expect(proposed.status).toBe(MEMORY_STATUS.proposed);
+  });
+
+  it("corrige puis supprime une mémoire", () => {
+    const proposed = proposeMemory({ content: "Avant", sourceSessionId: "session-fixture", now: new Date("2026-02-01T10:11:00Z") });
+    const corrected = updateMemory(proposed, "Après", new Date("2026-02-01T10:12:00Z"));
+    expect(corrected.content).toBe("Après");
+    expect(removeMemory([corrected], corrected.id)).toEqual([]);
+  });
+
+  it("migre la version 2 sans perte de conversation", () => {
+    const conversation = addMessage(createConversation(), createMessage({ role: "user", content: "fixture v2" }));
+    const migrated = migrateState({
+      version: 2,
+      settings: { saveLocally: true, theme: "dark" },
+      conversations: [conversation],
+      activeConversationId: conversation.id,
+      lastSession: null,
+    });
+    expect(migrated.version).toBe(3);
+    expect(migrated.conversations[0].messages[0].content).toBe("fixture v2");
+    expect(migrated.sessionRecords).toEqual([]);
+    expect(migrated.memoryEntries).toEqual([]);
+  });
+
+  it("persiste séances et mémoires en version 3", () => {
+    const storage = memoryStorage();
+    const store = createStore(storage);
+    const sessionRecord = createSessionRecord(completedSession(), { now: new Date("2026-02-01T10:10:00Z") });
+    const memoryEntry = confirmMemory(proposeMemory({ content: sessionRecord.actionPlan, sourceSessionId: sessionRecord.id, now: new Date("2026-02-01T10:11:00Z") }), new Date("2026-02-01T10:12:00Z"));
+    const state = { ...defaultState(), sessionRecords: [sessionRecord], memoryEntries: [memoryEntry] };
+    store.save(state);
+    expect(store.load()).toMatchObject({ version: 3, sessionRecords: [{ id: sessionRecord.id }], memoryEntries: [{ status: MEMORY_STATUS.confirmed }] });
+  });
+
+  it("l'effacement total supprime aussi la mémoire", () => {
+    const storage = memoryStorage();
+    const store = createStore(storage);
+    store.save({ ...defaultState(), memoryEntries: [proposeMemory({ content: "Fixture", sourceSessionId: "session-fixture" })] });
+    store.clear();
+    expect(storage.getItem(STORAGE_KEY)).toBeNull();
+    expect(store.load().memoryEntries).toEqual([]);
   });
 });
