@@ -24,11 +24,12 @@
 ## Communication pendant l’exécution
 
 - Appliquer `standards/PROGRESS_COMMUNICATION.md` pendant l’amorçage et toute tâche nécessitant une attente perceptible, des outils ou plusieurs opérations.
-- Chaque mise à jour intermédiaire indique ce qui a été terminé ou vérifié, l’action actuellement menée ou la prochaine étape, puis une estimation actualisée du temps restant.
-- Utiliser le format canonique : `Réalisé : ...`, `En cours : ...`, `Temps restant estimé : ...`.
-- Regrouper les opérations proches et limiter le détail à ce qui aide Damien à comprendre l’avancement, les résultats et la suite.
-- Ne jamais exposer le raisonnement privé, les notes internes, les secrets, les données sensibles ou un journal exhaustif des appels d’outils.
-- Actualiser l’estimation lorsque la durée prévisible évolue sensiblement.
+- Chaque mise à jour intermédiaire indique les tâches terminées ou vérifiées, l’action actuellement menée, les étapes essentielles restantes et une estimation actualisée du temps restant.
+- Utiliser le format canonique : `Avancement`, `Réalisé`, `En cours`, `Reste à faire`, `Temps restant estimé` et, lorsque nécessaire, `Point d’attention`.
+- Montrer les résultats obtenus, les fichiers ou états concernés et les contrôles effectués lorsqu’ils sont utiles au pilotage.
+- Regrouper les opérations proches et éviter le journal exhaustif de chaque appel d’outil.
+- Ne jamais exposer le raisonnement privé, les notes internes, les instructions invisibles, les secrets ou les données sensibles.
+- Actualiser l’estimation lorsque la durée prévisible évolue sensiblement et expliquer brièvement la cause si elle augmente.
 - Les réponses décisionnelles à formulation exacte, notamment la mémoire et la parallélisation, restent isolées sans ajout de progression.
 - Les indicateurs natifs de l’application qui ne sont pas configurables par l’agent restent hors du contrôle de cette règle.
 
