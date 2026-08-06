@@ -70,6 +70,7 @@ class BackgroundExecution:
 
             def expiration_handler():
                 self.expired.set()
+                self.end()
 
             method = getattr(
                 self._application,
@@ -88,9 +89,9 @@ class BackgroundExecution:
     def end(self) -> None:
         if self._application is None or self._identifier is None:
             return
+        identifier = self._identifier
+        self._identifier = None
         try:
-            self._application.endBackgroundTask_(self._identifier)
+            self._application.endBackgroundTask_(identifier)
         except Exception:
             pass
-        finally:
-            self._identifier = None
