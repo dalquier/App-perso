@@ -1,0 +1,14 @@
+{
+  "name": "@projectos/conversation-archive",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Resilient staging and verified retention for complete conversation archives.",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/atomic.js && node --check src/collector.js && node --check src/journal.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
