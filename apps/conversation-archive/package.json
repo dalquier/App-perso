@@ -6,7 +6,9 @@
   "description": "Resilient staging and verified retention for complete conversation archives.",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/atomic.js && node --check src/collector.js && node --check src/journal.js"
+    "check": "node --check src/*.js",
+    "mcp:stdio": "node src/mcp-cli.js",
+    "mcp:http": "node src/mcp-http.js"
   },
   "engines": {
     "node": ">=20"
