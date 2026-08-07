@@ -147,7 +147,6 @@ describe("changement de conversation pendant génération", () => {
   });
 });
 
-
 describe("BUILD-03 séances et mémoire contrôlée", () => {
   const completedSession = () => {
     let session = createSession(new Date("2026-02-01T10:00:00Z"));
@@ -197,20 +196,20 @@ describe("BUILD-03 séances et mémoire contrôlée", () => {
       activeConversationId: conversation.id,
       lastSession: null,
     });
-    expect(migrated.version).toBe(3);
+    expect(migrated.version).toBe(STORAGE_VERSION);
     expect(migrated.conversations[0].messages[0].content).toBe("fixture v2");
     expect(migrated.sessionRecords).toEqual([]);
     expect(migrated.memoryEntries).toEqual([]);
   });
 
-  it("persiste séances et mémoires en version 3", () => {
+  it("persiste séances et mémoires en version 4", () => {
     const storage = memoryStorage();
     const store = createStore(storage);
     const sessionRecord = createSessionRecord(completedSession(), { now: new Date("2026-02-01T10:10:00Z") });
     const memoryEntry = confirmMemory(proposeMemory({ content: sessionRecord.actionPlan, sessionRecordId: sessionRecord.id, sourceSessionId: sessionRecord.sourceSessionId, now: new Date("2026-02-01T10:11:00Z") }), new Date("2026-02-01T10:12:00Z"));
     const state = { ...defaultState(), sessionRecords: [sessionRecord], memoryEntries: [memoryEntry] };
     store.save(state);
-    expect(store.load()).toMatchObject({ version: 3, sessionRecords: [{ id: sessionRecord.id }], memoryEntries: [{ status: MEMORY_STATUS.confirmed }] });
+    expect(store.load()).toMatchObject({ version: STORAGE_VERSION, sessionRecords: [{ id: sessionRecord.id }], memoryEntries: [{ status: MEMORY_STATUS.confirmed }] });
   });
 
   it("l'effacement total supprime aussi la mémoire", () => {
@@ -297,7 +296,7 @@ describe("garde-fou avant correction de mémoire", () => {
     const entry = proposeMemory({ content: "Plan fictif", sessionRecordId: "record-fixture", sourceSessionId: "session-fixture" });
     const result = applyMemoryCorrection(entry, "je veux mourir");
     expect(result.blocked).toBe(true);
-    expect(result.entry).toBe(entry); // entrée originale inchangée
+    expect(result.entry).toBe(entry);
   });
 
   it("applique la correction si le contenu est sûr", () => {
@@ -322,8 +321,8 @@ describe("garde-fou avant correction de mémoire", () => {
   });
 });
 
-describe("sauvegarde brute réversible migration v2→v3", () => {
-  it("préserve une sauvegarde brute avant migration v2→v3", () => {
+describe("sauvegarde brute réversible migration v2→v4", () => {
+  it("préserve une sauvegarde brute avant migration v2→v4", () => {
     const storage = memoryStorage();
     const store = createStore(storage);
     const conversation = addMessage(createConversation(), createMessage({ role: "user", content: "fixture v2" }));
@@ -339,7 +338,7 @@ describe("sauvegarde brute réversible migration v2→v3", () => {
     expect(storage.getItem(V2_BACKUP_KEY)).toBe(raw);
   });
 
-  it("ne crée pas de sauvegarde v2 si la version est déjà 3", () => {
+  it("ne crée pas de sauvegarde v2 si la version est déjà 4", () => {
     const storage = memoryStorage();
     const store = createStore(storage);
     store.save(defaultState());
@@ -365,12 +364,11 @@ describe("sauvegarde brute réversible migration v2→v3", () => {
     const conversation = addMessage(createConversation(), createMessage({ role: "user", content: "idempotence v2" }));
     const raw = JSON.stringify({ version: 2, settings: { saveLocally: true, theme: "system" }, conversations: [conversation], activeConversationId: conversation.id });
     storage.setItem(STORAGE_KEY, raw);
-    store.load(); // premier chargement — crée la sauvegarde
+    store.load();
     const firstBackup = storage.getItem(V2_BACKUP_KEY);
-    // Simuler un second chargement avec un état v2 différent (ne doit pas écraser)
     const raw2 = JSON.stringify({ ...JSON.parse(raw), conversations: [] });
     storage.setItem(STORAGE_KEY, raw2);
-    store.load(); // second chargement — la sauvegarde ne doit pas changer
+    store.load();
     expect(storage.getItem(V2_BACKUP_KEY)).toBe(firstBackup);
   });
 
@@ -407,7 +405,6 @@ describe("service worker non bloquant", () => {
         const reg = await failingRegister("/sw.js", { updateViaCache: "none" });
         await reg.update();
       } catch (_) {
-        // intentionnellement non propagé
       }
     };
     await expect(safeRegister()).resolves.toBeUndefined();
@@ -423,7 +420,6 @@ describe("service worker non bloquant", () => {
         const reg = await register("/sw.js", { updateViaCache: "none" });
         await reg.update();
       } catch (_) {
-        // intentionnellement non propagé
       }
     };
     await expect(safeRegister()).resolves.toBeUndefined();
