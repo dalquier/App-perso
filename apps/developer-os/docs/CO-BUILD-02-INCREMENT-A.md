@@ -21,4 +21,4 @@ Les limites facultatives sont documentées dans `.env.example` et validées dans
 
 `ExecutionProvider` reçoit le contexte effectif complet d'une mission. `FakeExecutionProvider` produit une réponse SHA-256 stable ou un scénario injecté et n'effectue aucun appel réseau. Le futur provider OpenAI utilisera Responses API avec `store: false`, `background: false`, un timeout explicite et `maxRetries: 0`; ces appels ne font pas partie de cet incrément.
 
-La production utilisera `PostgresRunRepository` et Replit Database. Aucun repository fichier n'est prévu pour la production.
+La production utilisera un `PostgresRunRepository` sur PostgreSQL dans le backend séparé de CO-BUILD-02. Le fournisseur d'hébergement et de base reste à décider dans ce périmètre ; aucun repository fichier n'est prévu pour la production.
