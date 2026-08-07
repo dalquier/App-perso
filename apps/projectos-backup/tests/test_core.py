@@ -80,13 +80,16 @@ class MirrorTests(unittest.TestCase):
             unchanged=source/'a'; changed=source/'b'; unchanged.write_text('a'); changed.write_text('b')
             run_backup([Source('one','Source',str(source))],dest)
             changed.write_text('changed-size')
-            requested=[]
+            requested=[]; events=[]
             result=run_backup(
                 [Source('one','Source',str(source))],
                 dest,
                 prepare_file=lambda path: requested.append(path.name) or True,
+                progress=events.append,
             )
             self.assertEqual(requested,['b'])
+            prepare_events=[event for event in events if event['phase']=='prepare']
+            self.assertEqual([(event['completed'],event['total']) for event in prepare_events],[(1,0)])
             self.assertEqual((result.copied_files,result.unchanged_files,result.requested_downloads),(1,1,1))
 
     def test_deep_verify_repairs_same_size_corruption(self):
