@@ -1,20 +1,30 @@
 import { CONVERSATION_SCHEMA_VERSION, MESSAGE_STATUS } from "../domain/conversation.js";
 
 export const STORAGE_KEY = "equilibre.local.v1";
-export const STORAGE_VERSION = 3;
+export const STORAGE_VERSION = 4;
 export const BUILD01_BACKUP_KEY = `${STORAGE_KEY}.build01.backup`;
 export const V2_BACKUP_KEY = `${STORAGE_KEY}.v2.backup`;
+export const V3_BACKUP_KEY = `${STORAGE_KEY}.v3.backup`;
+export const V4_ROLLBACK_BACKUP_KEY = `${STORAGE_KEY}.v4.rollback.backup`;
+export const BACKUP_KEYS = Object.freeze([
+  BUILD01_BACKUP_KEY,
+  V2_BACKUP_KEY,
+  V3_BACKUP_KEY,
+  V4_ROLLBACK_BACKUP_KEY,
+]);
 
 const MIGRATION_EPOCH = "2026-01-01T00:00:00.000Z";
 
 export function defaultState() {
   return {
     version: STORAGE_VERSION,
+    storageRevision: 0,
     settings: { saveLocally: true, theme: "system" },
     conversations: [],
     activeConversationId: null,
     messages: [],
     lastSession: null,
+    protocolRuns: [],
     sessionRecords: [],
     memoryEntries: [],
   };
@@ -75,9 +85,15 @@ export function migrateBuild01(raw = {}) {
 
 export const normalizeMemoryEntry = (entry) => {
   if (!entry?.source) return entry;
-  if (entry.source.sessionRecordId !== undefined) return entry; // déjà au nouveau format
-  // ancien format { type, id } → nouveau format { type, sessionRecordId, sourceSessionId }
-  return { ...entry, source: { type: entry.source.type || "session", sessionRecordId: entry.source.id ?? null, sourceSessionId: null } };
+  if (entry.source.sessionRecordId !== undefined) return entry;
+  return {
+    ...entry,
+    source: {
+      type: entry.source.type || "session",
+      sessionRecordId: entry.source.id ?? null,
+      sourceSessionId: null,
+    },
+  };
 };
 
 const normalizeMessage = (message) => {
@@ -88,24 +104,17 @@ const normalizeMessage = (message) => {
   return { ...message, content: String(message.content ?? ""), status };
 };
 
-export function migrateState(raw) {
-  if (!raw || typeof raw !== "object") return defaultState();
-  if (raw.version === 1) return migrateBuild01(raw);
-  if (raw.version === 2) {
-    return migrateState({
-      ...raw,
-      version: STORAGE_VERSION,
-      sessionRecords: [],
-      memoryEntries: [],
-    });
-  }
-  if (raw.version !== STORAGE_VERSION) throw new Error(`Version de stockage inconnue: ${raw.version}`);
+const validRevision = (value) => Number.isSafeInteger(value) && value >= 0;
+
+function normalizeV4(raw) {
   const base = defaultState();
   const conversations = Array.isArray(raw.conversations)
     ? raw.conversations.filter(Boolean).map((conversation) => ({
         ...conversation,
         schemaVersion: conversation.schemaVersion || CONVERSATION_SCHEMA_VERSION,
-        messages: Array.isArray(conversation.messages) ? conversation.messages.map(normalizeMessage).filter(Boolean) : [],
+        messages: Array.isArray(conversation.messages)
+          ? conversation.messages.map(normalizeMessage).filter(Boolean)
+          : [],
       }))
     : [];
   const activeConversationId = conversations.some((c) => c.id === raw.activeConversationId)
@@ -114,51 +123,251 @@ export function migrateState(raw) {
   return {
     ...base,
     ...raw,
+    version: STORAGE_VERSION,
+    storageRevision: validRevision(raw.storageRevision) ? raw.storageRevision : 0,
     settings: { ...base.settings, ...(raw.settings || {}) },
     conversations,
     activeConversationId,
+    protocolRuns: Array.isArray(raw.protocolRuns) ? raw.protocolRuns.filter(Boolean) : [],
     sessionRecords: Array.isArray(raw.sessionRecords) ? raw.sessionRecords.filter(Boolean) : [],
-    memoryEntries: Array.isArray(raw.memoryEntries) ? raw.memoryEntries.filter(Boolean).map(normalizeMemoryEntry) : [],
+    memoryEntries: Array.isArray(raw.memoryEntries)
+      ? raw.memoryEntries.filter(Boolean).map(normalizeMemoryEntry)
+      : [],
   };
+}
+
+export function migrateState(raw) {
+  if (!raw || typeof raw !== "object") return defaultState();
+  if (raw.version === 1) return normalizeV4(migrateBuild01(raw));
+  if (raw.version === 2) {
+    return normalizeV4({
+      ...raw,
+      version: STORAGE_VERSION,
+      storageRevision: 0,
+      sessionRecords: [],
+      memoryEntries: [],
+      protocolRuns: [],
+    });
+  }
+  if (raw.version === 3) {
+    return normalizeV4({
+      ...raw,
+      version: STORAGE_VERSION,
+      storageRevision: 0,
+      protocolRuns: [],
+    });
+  }
+  if (raw.version !== STORAGE_VERSION) {
+    throw new Error(`Version de stockage inconnue: ${raw.version}`);
+  }
+  return normalizeV4(raw);
+}
+
+function parseStoredState(serialized) {
+  if (serialized === null) return { kind: "missing", raw: null, value: null };
+  if (serialized === "") return { kind: "corrupt", raw: serialized, value: null };
+  try {
+    const value = JSON.parse(serialized);
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return { kind: "corrupt", raw: serialized, value: null };
+    }
+    return { kind: "state", raw: serialized, value };
+  } catch {
+    return { kind: "corrupt", raw: serialized, value: null };
+  }
+}
+
+function isBlankReactivationState(state) {
+  return state
+    && Array.isArray(state.conversations) && state.conversations.length === 0
+    && Array.isArray(state.protocolRuns) && state.protocolRuns.length === 0
+    && Array.isArray(state.sessionRecords) && state.sessionRecords.length === 0
+    && Array.isArray(state.memoryEntries) && state.memoryEntries.length === 0
+    && (state.lastSession === null || state.lastSession === undefined)
+    && (state.activeConversationId === null || state.activeConversationId === undefined)
+    && (!Array.isArray(state.messages) || state.messages.length === 0);
+}
+
+function storageErrorState(message) {
+  return { ...defaultState(), storageError: message, writesBlocked: true };
 }
 
 export function createStore(storage = globalThis.localStorage) {
   let writesBlocked = false;
+  let observedRevision = 0;
+  let externallyInvalidated = false;
+  let allowBlankReactivationAfterClear = false;
+
+  const observeRevisionFromSerialized = (serialized) => {
+    const parsed = parseStoredState(serialized);
+    if (parsed.kind !== "state" || parsed.value.version !== STORAGE_VERSION) return null;
+    const revision = parsed.value.storageRevision;
+    if (!validRevision(revision)) return null;
+    observedRevision = Math.max(observedRevision, revision);
+    return revision;
+  };
+
+  const persistLegacyAsV4 = (raw, serialized, backupKey) => {
+    if (storage.getItem(backupKey) === null) storage.setItem(backupKey, serialized);
+    const migrated = migrateState(raw);
+    const nextRevision = Math.max(1, observedRevision + 1);
+    const persisted = {
+      ...migrated,
+      version: STORAGE_VERSION,
+      storageRevision: nextRevision,
+      protocolRuns: Array.isArray(migrated.protocolRuns) ? migrated.protocolRuns : [],
+    };
+    const nextSerialized = JSON.stringify(persisted);
+    storage.setItem(STORAGE_KEY, nextSerialized);
+    observedRevision = nextRevision;
+    writesBlocked = false;
+    externallyInvalidated = false;
+    allowBlankReactivationAfterClear = false;
+    return persisted;
+  };
 
   const load = () => {
-    try {
-      const serialized = storage.getItem(STORAGE_KEY);
-      const raw = JSON.parse(serialized);
-      if (raw?.version === 1 && serialized) storage.setItem(BUILD01_BACKUP_KEY, serialized);
-      if (raw?.version === 2 && serialized && !storage.getItem(V2_BACKUP_KEY)) storage.setItem(V2_BACKUP_KEY, serialized);
-      const loaded = migrateState(raw);
+    const serialized = storage.getItem(STORAGE_KEY);
+    if (serialized === null) {
       writesBlocked = false;
+      externallyInvalidated = false;
+      allowBlankReactivationAfterClear = false;
+      observedRevision = 0;
+      return defaultState();
+    }
+
+    const parsed = parseStoredState(serialized);
+    if (parsed.kind !== "state") {
+      writesBlocked = true;
+      externallyInvalidated = false;
+      allowBlankReactivationAfterClear = false;
+      return storageErrorState("Stockage local corrompu : écriture bloquée jusqu’à effacement explicite.");
+    }
+
+    const raw = parsed.value;
+    try {
+      if (raw.version === 1) return persistLegacyAsV4(raw, serialized, BUILD01_BACKUP_KEY);
+      if (raw.version === 2) return persistLegacyAsV4(raw, serialized, V2_BACKUP_KEY);
+      if (raw.version === 3) return persistLegacyAsV4(raw, serialized, V3_BACKUP_KEY);
+
+      const loaded = migrateState(raw);
+      observedRevision = loaded.storageRevision;
+      writesBlocked = false;
+      externallyInvalidated = false;
+      allowBlankReactivationAfterClear = false;
       return loaded;
     } catch (error) {
-      if (String(error.message).includes("Version")) {
-        writesBlocked = true;
-        return { ...defaultState(), storageError: error.message, writesBlocked: true };
-      }
-      return defaultState();
+      writesBlocked = true;
+      externallyInvalidated = false;
+      allowBlankReactivationAfterClear = false;
+      return storageErrorState(String(error?.message || error));
     }
   };
 
   const save = (state) => {
-    if (writesBlocked || state.storageError || state.writesBlocked) return false;
-    if (!state.settings.saveLocally) {
-      storage.removeItem(STORAGE_KEY);
-      storage.removeItem(V2_BACKUP_KEY);
+    if (writesBlocked || externallyInvalidated || state?.storageError || state?.writesBlocked) return false;
+    if (!state?.settings?.saveLocally) {
+      clear();
       return true;
     }
-    storage.setItem(STORAGE_KEY, JSON.stringify({ ...state, version: STORAGE_VERSION, storageError: undefined, writesBlocked: undefined }));
+
+    const currentSerialized = storage.getItem(STORAGE_KEY);
+    const current = parseStoredState(currentSerialized);
+
+    if (current.kind === "corrupt") {
+      writesBlocked = true;
+      return false;
+    }
+
+    if (current.kind === "missing") {
+      if (observedRevision > 0) {
+        if (!allowBlankReactivationAfterClear || !isBlankReactivationState(state)) return false;
+      }
+    } else {
+      if (current.value.version !== STORAGE_VERSION || !validRevision(current.value.storageRevision)) {
+        writesBlocked = true;
+        return false;
+      }
+      const currentRevision = current.value.storageRevision;
+      if (currentRevision !== observedRevision) return false;
+    }
+
+    const nextRevision = observedRevision + 1;
+    try {
+      const serialized = JSON.stringify({
+        ...state,
+        version: STORAGE_VERSION,
+        storageRevision: nextRevision,
+        protocolRuns: Array.isArray(state.protocolRuns) ? state.protocolRuns : [],
+        storageError: undefined,
+        writesBlocked: undefined,
+      });
+      storage.setItem(STORAGE_KEY, serialized);
+    } catch {
+      return false;
+    }
+
+    observedRevision = nextRevision;
+    allowBlankReactivationAfterClear = false;
+    externallyInvalidated = false;
     return true;
   };
 
   const clear = () => {
-    writesBlocked = false;
+    const currentSerialized = storage.getItem(STORAGE_KEY);
+    observeRevisionFromSerialized(currentSerialized);
+
     storage.removeItem(STORAGE_KEY);
-    storage.removeItem(V2_BACKUP_KEY);
+    for (const key of BACKUP_KEYS) storage.removeItem(key);
+
+    writesBlocked = false;
+    externallyInvalidated = false;
+    allowBlankReactivationAfterClear = true;
   };
 
-  return { load, save, clear };
+  const handleStorageEvent = (event = {}) => {
+    if (event.key !== STORAGE_KEY) return false;
+    if (event.oldValue !== undefined && event.oldValue !== null) {
+      observeRevisionFromSerialized(event.oldValue);
+    }
+    if (event.newValue === null) {
+      allowBlankReactivationAfterClear = false;
+      externallyInvalidated = true;
+      return true;
+    }
+    const revision = observeRevisionFromSerialized(event.newValue);
+    if (revision !== null) {
+      allowBlankReactivationAfterClear = false;
+      externallyInvalidated = true;
+      return true;
+    }
+    writesBlocked = true;
+    externallyInvalidated = true;
+    return true;
+  };
+
+  const rollbackToV3 = () => {
+    const rawV3 = storage.getItem(V3_BACKUP_KEY);
+    const parsedV3 = parseStoredState(rawV3);
+    if (parsedV3.kind !== "state" || parsedV3.value.version !== 3) return false;
+
+    const currentV4 = storage.getItem(STORAGE_KEY);
+    const parsedV4 = parseStoredState(currentV4);
+    if (parsedV4.kind !== "state" || parsedV4.value.version !== STORAGE_VERSION) return false;
+
+    try {
+      if (storage.getItem(V4_ROLLBACK_BACKUP_KEY) === null) {
+        storage.setItem(V4_ROLLBACK_BACKUP_KEY, currentV4);
+      }
+      storage.setItem(STORAGE_KEY, rawV3);
+      writesBlocked = true;
+      externallyInvalidated = true;
+      allowBlankReactivationAfterClear = false;
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  return { load, save, clear, handleStorageEvent, rollbackToV3 };
 }
