@@ -3,7 +3,6 @@ import {
   CONVERSATION_RUNS_STORE,
   DB_VERSION,
   ensureDeveloperOsStores,
-  PROJECTS_STORE,
 } from "../data/indexedDbSchema";
 import {
   RunRepositoryError,
