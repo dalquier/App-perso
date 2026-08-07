@@ -2,7 +2,7 @@
 
 - Dernière mise à jour : 2026-08-07
 - Source de vérité : `dalquier/App-perso`, branche `main`
-- Base vérifiée lors de GOV-02 : `9ecc9d021f5dc365adbcb10286f26e27eccd2b50`
+- Base vérifiée post CO-BUILD-02A : `b22fd5002c4ead8ef73a8927c89f81b9d8b4ff23`
 - Déploiement PWA cible : `https://dalquier.github.io/App-perso/developer-os/`
 
 Cette roadmap décrit l’ordre de livraison et l’état d’intégration. Les spécifications détaillées restent dans les ADR et `docs/`. Un travail n’est `intégré` que lorsqu’il est fusionné et vérifié dans `main`.
@@ -31,6 +31,8 @@ Cette roadmap décrit l’ordre de livraison et l’état d’intégration. Les 
 | BUILD-02R V3 — reprise projet et références | intégré | PR #86 |
 | PAGES-01 — GitHub Pages | intégré | PR #89 |
 | PAGES-FIX — artefact sous `/developer-os/` | intégré | PR #92 |
+| CO-BUILD-02 — Incrément A | intégré | PR #103 ; commit d’intégration `b22fd5002c4ead8ef73a8927c89f81b9d8b4ff23` |
+| CO-QA-02A — gate Incrément A | terminé | défaut d’immutabilité imbriquée corrigé et testé dans PR #103 ; CI GitHub complète verte |
 
 ## 3. Travaux ouverts
 
@@ -38,22 +40,20 @@ Cette roadmap décrit l’ordre de livraison et l’état d’intégration. Les 
 
 Statut : **en cours**.
 
-- Incrément A publié en Draft PR #83.
-- Head vérifié de la PR lors de GOV-02 : `626e6d4396208f7a4dbf7d9c2e99373d0f8fb403`.
-- Par rapport au `main` vérifié par GOV-02, ce head est **divergent** : 13 commits propres à la branche et 35 commits de retard, avec merge-base `f3bdbb1d694059ca656294b993f09a68a7b66516`.
-- L’incrément A prépare la configuration serveur, les limites, les contrats d’exécution, un provider fictif déterministe et les tests serveur.
-- L’incrément A n’ajoute pas encore de serveur HTTP, d’authentification, de stockage serveur réel, de scheduler, de SDK OpenAI effectif ni d’UI API.
-- Tant que #83 n’est pas intégrée, aucun de ces éléments n’appartient à `main`.
-- Avant toute décision d’intégration de #83, appliquer le Freshness Gate : réconcilier la branche avec le `main` vivant, puis obtenir une nouvelle preuve CI sur le SHA réellement candidat à la fusion.
+- L’Incrément A est intégré dans `main` via PR #103.
+- La PR historique #83 est fermée sans fusion et conservée uniquement pour traçabilité ; elle est supersédée par #103.
+- L’Incrément A fournit la configuration serveur typée et bornée, les erreurs publiques assainies, les contrats `ExecutionProvider`, `ProviderRequest`, `ProviderResult`, `ProviderUsage`, un `FakeExecutionProvider` déterministe sans réseau et les tests serveur intégrés à la CI.
+- L’Incrément A n’ajoute pas encore de serveur HTTP, d’authentification, de stockage serveur réel, de migrations PostgreSQL, de scheduler, de SDK OpenAI effectif ni d’UI API.
+- L’Incrément B doit être défini depuis le `main` vivant et les contrats SPEC-00 / ADR-003 avant toute implémentation. Son périmètre ne doit pas être déduit implicitement des anciennes branches ou descriptions de PR.
 
 ### CO-QA-02A
 
-Statut : **en cours déclaré, non intégré**.
+Statut : **terminé**.
 
-- GOV-02 ne trouve ni fichier canonique ni Pull Request portant exactement l’identifiant `CO-QA-02A`.
-- Ce travail doit donc être traité comme une validation opérationnelle en cours, pas comme une livraison GitHub acquise.
-- Son résultat doit être consigné avant d’engager l’incrément suivant de CO-BUILD-02 lorsqu’il constitue un gate d’acceptation.
-- Une validation de l’ancien SHA #83 ne remplace pas la CI d’intégration à refaire après réconciliation avec `main`.
+- Le QA a identifié un défaut fonctionnel bloquant : `ProviderResult` était gelé uniquement au premier niveau et laissait `usageObserved` mutable.
+- PR #103 a reconstruit l’Incrément A depuis le `main` canonique, corrigé ce défaut et ajouté la preuve persistante correspondante.
+- Le SHA candidat de #103 a obtenu ProjectOS Quality et DeveloperOS CI verts, y compris Server tests, build de production et Mobile E2E.
+- Aucun gate CO-QA-02A restant ne bloque la préparation de l’Incrément B.
 
 ## 4. Séquencement Conversation Orchestrator
 
@@ -63,10 +63,11 @@ Ordre canonique :
 2. `CO-BUILD-01` — canal ChatGPT Plus manuel et persistance locale — **terminé**.
 3. QA de CO-BUILD-01 — recette spécifique du canal manuel ; toute preuve durable doit être conservée séparément du code.
 4. `CO-BUILD-02` — backend et canal OpenAI API — **en cours**, livré par incréments bornés.
-5. Après chaque incrément matériel de `CO-BUILD-02`, exécuter le QA correspondant avant de poursuivre lorsqu’il valide une hypothèse ou une capacité nécessaire au lot suivant. `CO-QA-02A` est actuellement ce gate pour l’Incrément A.
-6. Déclarer `CO-BUILD-02` terminé seulement lorsque le canal API prévu par SPEC-00 est réellement utilisable avec authentification, secret côté serveur, exécution OpenAI, reprise, stockage privé/rétention et validations applicables.
-7. `CO-BUILD-03` — hybride et synthèse maître — **futur**. Il ne commence pas avant la clôture de CO-BUILD-02 et de ses QA bloquants.
-8. Effectuer ensuite une recette finale Conversation Orchestrator couvrant au minimum les deux canaux, le mode hybride, la synthèse maître, les reprises, la sécurité des secrets, l’iPhone et l’intégration avec le déploiement réel.
+5. `CO-BUILD-02` Incrément A + `CO-QA-02A` — **terminés** ; l’Incrément B est la prochaine unité à préparer.
+6. Après chaque incrément matériel de `CO-BUILD-02`, exécuter le QA correspondant avant de poursuivre lorsqu’il valide une hypothèse ou une capacité nécessaire au lot suivant.
+7. Déclarer `CO-BUILD-02` terminé seulement lorsque le canal API prévu par SPEC-00 est réellement utilisable avec authentification, secret côté serveur, exécution OpenAI, reprise, stockage privé/rétention et validations applicables.
+8. `CO-BUILD-03` — hybride et synthèse maître — **futur**. Il ne commence pas avant la clôture de CO-BUILD-02 et de ses QA bloquants.
+9. Effectuer ensuite une recette finale Conversation Orchestrator couvrant au minimum les deux canaux, le mode hybride, la synthèse maître, les reprises, la sécurité des secrets, l’iPhone et l’intégration avec le déploiement réel.
 
 ## 5. CO-BUILD-03 — périmètre futur
 
@@ -100,8 +101,8 @@ Un workflow ou une PR verte ne remplace pas une recette physique lorsque celle-c
 
 ## 8. Prochaine action canonique
 
-1. terminer `CO-QA-02A` et consigner son verdict ;
-2. réconcilier la Draft PR #83 avec le `main` vivant en tenant compte du verdict QA ;
-3. obtenir une nouvelle preuve CI sur le SHA réconcilié ;
-4. seulement ensuite décider l’intégration de l’Incrément A et préparer l’incrément suivant de `CO-BUILD-02` ;
+1. préparer `CO-BUILD-02` Incrément B depuis le `main` vivant post PR #103 ;
+2. relire SPEC-00, ADR-003, l’Incrément A intégré et le code serveur actuel ;
+3. borner précisément l’Incrément B, ses fichiers autorisés, ses dépendances, son modèle de sécurité et son QA avant toute implémentation ;
+4. implémenter l’Incrément B sur une branche dédiée, obtenir une CI complète sur le SHA candidat réel puis exécuter son QA ;
 5. ne pas démarrer `CO-BUILD-03` avant clôture de CO-BUILD-02.
