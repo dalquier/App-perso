@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from "idb";
-import type { Project } from "../domain/project";
+import { normalizeProject, type Project } from "../domain/project";
 import {
   RepositoryUnavailableError,
   type ProjectRepository,
@@ -58,12 +58,13 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   async list(): Promise<Project[]> {
     const db = await this.db;
     const projects = (await db.getAll(STORE)) as Project[];
-    return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return projects.map(normalizeProject).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
   async get(id: string): Promise<Project | undefined> {
     const db = await this.db;
-    return (await db.get(STORE, id)) as Project | undefined;
+    const project = (await db.get(STORE, id)) as Project | undefined;
+    return project ? normalizeProject(project) : undefined;
   }
 
   async save(project: Project): Promise<Project> {
@@ -83,7 +84,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       }
     }
 
-    await tx.store.put(project);
+    await tx.store.put(normalizeProject(project));
     await tx.done;
     return project;
   }

@@ -1,6 +1,8 @@
 import { Link, useNavigate, useParams } from "../routing";
 import { useProjects } from "../data/ProjectsContext";
 import { labels } from "../ui";
+import { ProjectResume } from "../components/ProjectResume";
+import { ProjectReferences } from "../components/ProjectReferences";
 export function ProjectDetail() {
   const { id } = useParams(),
     nav = useNavigate();
@@ -74,6 +76,8 @@ export function ProjectDetail() {
         </button>
       )}
       <div className="detail-grid">
+        <ProjectResume project={p} onSave={save} />
+        <ProjectReferences project={p} onSave={save} />
         <article>
           <h2>Prochaine action</h2>
           <p className="important">{p.nextAction || "Non renseignée"}</p>

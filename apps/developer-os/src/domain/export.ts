@@ -5,6 +5,8 @@ import {
   SOURCE_TYPES,
   STATUSES,
   validateCanonicalSource,
+  normalizeProject,
+  validateReferenceUrl,
   type Project,
   type SourceType,
 } from "./project";
@@ -34,6 +36,10 @@ const CANONICAL_KEYS = [
   "isActive",
   "createdAt",
   "updatedAt",
+  "resumeText",
+  "resumeUpdatedAt",
+  "resumeHistory",
+  "references",
 ] as const;
 
 const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
@@ -194,7 +200,27 @@ function parseProject(
   if (Date.parse(updatedAt) < Date.parse(createdAt))
     throw new Error("updatedAt doit être postérieur ou égal à createdAt.");
 
-  return {
+  const resumeText = raw.resumeText === undefined ? "" : raw.resumeText;
+  const resumeUpdatedAt = raw.resumeUpdatedAt === undefined ? null : raw.resumeUpdatedAt;
+  const resumeHistory = raw.resumeHistory === undefined ? [] : raw.resumeHistory;
+  const references = raw.references === undefined ? [] : raw.references;
+  if (!isString(resumeText) || resumeText.length > PROJECT_LIMITS.resume) throw new Error("Un projet importé a une reprise invalide.");
+  if (resumeUpdatedAt !== null && (!isString(resumeUpdatedAt) || Number.isNaN(Date.parse(resumeUpdatedAt)))) throw new Error("La date de reprise importée est invalide.");
+  if (!Array.isArray(resumeHistory) || resumeHistory.length > PROJECT_LIMITS.resumeHistory) throw new Error("L’historique de reprise importé est invalide.");
+  const parsedHistory = resumeHistory.map((entry) => {
+    assertPlainObject(entry, "Entrée de reprise");
+    if (!isString(entry.id) || !isString(entry.text) || !entry.text.trim() || entry.text.length > PROJECT_LIMITS.resume || !isString(entry.createdAt) || Number.isNaN(Date.parse(entry.createdAt))) throw new Error("Une entrée de reprise importée est invalide.");
+    return { id: entry.id, text: entry.text.trim(), createdAt: entry.createdAt };
+  }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  if (!Array.isArray(references) || references.length > PROJECT_LIMITS.references) throw new Error("Les références importées sont invalides.");
+  const parsedReferences = references.map((reference) => {
+    assertPlainObject(reference, "Référence");
+    if (!isString(reference.id) || !isString(reference.label) || !reference.label.trim() || reference.label.length > PROJECT_LIMITS.referenceLabel || !isString(reference.url) || validateReferenceUrl(reference.url) || !isString(reference.createdAt) || Number.isNaN(Date.parse(reference.createdAt)) || !isString(reference.updatedAt) || Number.isNaN(Date.parse(reference.updatedAt))) throw new Error("Une référence importée est invalide ou non sécurisée.");
+    return { id: reference.id, label: reference.label.trim(), url: reference.url.trim(), createdAt: reference.createdAt, updatedAt: reference.updatedAt };
+  });
+
+
+  return normalizeProject({
     id,
     schemaVersion: SCHEMA_VERSION,
     name: name.trim(),
@@ -208,7 +234,11 @@ function parseProject(
     isActive,
     createdAt,
     updatedAt,
-  };
+    resumeText,
+    resumeUpdatedAt,
+    resumeHistory: parsedHistory,
+    references: parsedReferences,
+  });
 }
 
 export async function parseExportFile(file: File): Promise<ParseExportResult> {

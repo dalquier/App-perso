@@ -106,7 +106,7 @@ describe("Settings import backup", () => {
       await screen.findByRole("button", { name: "Confirmer" }),
     );
 
-    await waitFor(() => expect(replaceAll).toHaveBeenCalledWith([incoming]));
+    await waitFor(() => expect(replaceAll).toHaveBeenCalledWith([expect.objectContaining(incoming)]));
   });
 
   it("shows import warnings and requires explicit acknowledgement before replacement", async () => {

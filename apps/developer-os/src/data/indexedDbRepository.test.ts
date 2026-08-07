@@ -1,7 +1,8 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
-import { createProject, emptyDraft } from "../domain/project";
+import { createProject, emptyDraft, type Project } from "../domain/project";
 import { IndexedDbProjectRepository } from "./indexedDbRepository";
+import { openDB } from "idb";
 
 const names: string[] = [];
 
@@ -115,5 +116,19 @@ describe("IndexedDB repository", () => {
     });
     opened.close();
     expect(opened.version).toBe(2);
+  });
+
+  it("normalizes legacy projects without changing DB v2 or deleting Codex conversations", async () => {
+    const name = `test-${crypto.randomUUID()}`; names.push(name);
+    const db = await openDB(name, 2, { upgrade(database) { database.createObjectStore("projects", { keyPath: "id" }); database.createObjectStore("codexConversations", { keyPath: "id" }); } });
+    const legacy = createProject({ ...emptyDraft(), name: "Legacy" });
+    const oldProject = { ...legacy } as Project & Record<string, unknown>;
+    delete oldProject.resumeText; delete oldProject.resumeHistory; delete oldProject.references; delete oldProject.resumeUpdatedAt;
+    await db.put("projects", oldProject); await db.put("codexConversations", { id: "codex-1", updatedAt: legacy.updatedAt }); db.close();
+    const repo = new IndexedDbProjectRepository(name);
+    expect(await repo.get(legacy.id)).toMatchObject({ resumeText: "", resumeHistory: [], references: [] });
+    await repo.replaceAll([{ ...legacy, name: "Importé" }]);
+    const check = await openDB(name, 2);
+    expect(await check.get("codexConversations", "codex-1")).toBeTruthy(); check.close();
   });
 });
