@@ -11,6 +11,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 
 MAX_RAW_FILE_BYTES = 7 * 1024 * 1024
+MAX_BATCH_FILES = 20
+MAX_BATCH_RAW_BYTES = 5 * 1024 * 1024
 
 
 class DriveSyncError(RuntimeError):
@@ -68,6 +70,58 @@ class AppsScriptClient:
         return result
 
 
+def _is_unknown_action(exc: DriveSyncError) -> bool:
+    return "action inconnue" in str(exc).casefold()
+
+
+def _upload_payload(current: Path, path: str, record: dict) -> tuple[dict, int]:
+    source = current / Path(*PurePosixPath(path).parts)
+    size = source.stat().st_size
+    if size > MAX_RAW_FILE_BYTES:
+        raise DriveSyncError(f"Fichier trop volumineux pour Apps Script ({size} octets) : {path}")
+    return ({
+        "path": path,
+        "sha256": record["sha256"],
+        "mimeType": mimetypes.guess_type(path)[0] or "application/octet-stream",
+        "contentBase64": base64.b64encode(source.read_bytes()).decode("ascii"),
+    }, size)
+
+
+def _upload_batches(current: Path, changed: list[str], local: dict, client, completed: int, total: int, progress):
+    batch, batch_bytes = [], 0
+
+    def send(items):
+        nonlocal completed
+        if not items:
+            return
+        try:
+            client.call("uploadBatch", files=items)
+        except DriveSyncError as exc:
+            if not _is_unknown_action(exc):
+                raise
+            for item in items:
+                client.call("upload", **item)
+        for item in items:
+            completed += 1
+            if progress:
+                progress({"phase": "upload", "completed": completed, "total": total, "path": item["path"]})
+
+    for path in sorted(changed):
+        item, size = _upload_payload(current, path, local[path])
+        if size > MAX_BATCH_RAW_BYTES:
+            send(batch); batch, batch_bytes = [], 0
+            client.call("upload", **item)
+            completed += 1
+            if progress:
+                progress({"phase": "upload", "completed": completed, "total": total, "path": path})
+            continue
+        if batch and (len(batch) >= MAX_BATCH_FILES or batch_bytes + size > MAX_BATCH_RAW_BYTES):
+            send(batch); batch, batch_bytes = [], 0
+        batch.append(item); batch_bytes += size
+    send(batch)
+    return completed
+
+
 def sync_current(current: Path, client: AppsScriptClient, progress=None) -> dict:
     manifest_path = current / "MANIFEST.json"
     try:
@@ -81,25 +135,26 @@ def sync_current(current: Path, client: AppsScriptClient, progress=None) -> dict
     changed = [path for path, item in local.items() if remote.get(path, {}).get("sha256") != item.get("sha256")]
     deleted = sorted(set(remote) - set(local))
     total = len(changed) + len(deleted) + 1
-    completed = 0
-    for path in sorted(changed):
-        source = current / Path(*PurePosixPath(path).parts)
-        size = source.stat().st_size
-        if size > MAX_RAW_FILE_BYTES:
-            raise DriveSyncError(f"Fichier trop volumineux pour Apps Script ({size} octets) : {path}")
-        client.call(
-            "upload", path=path, sha256=local[path]["sha256"],
-            mimeType=mimetypes.guess_type(path)[0] or "application/octet-stream",
-            contentBase64=base64.b64encode(source.read_bytes()).decode("ascii"),
-        )
-        completed += 1
-        if progress: progress({"phase": "upload", "completed": completed, "total": total, "path": path})
-    for path in deleted:
-        client.call("delete", path=path)
-        completed += 1
-        if progress: progress({"phase": "delete", "completed": completed, "total": total, "path": path})
+    completed = _upload_batches(current, changed, local, client, 0, total, progress)
+    for offset in range(0, len(deleted), MAX_BATCH_FILES):
+        paths = deleted[offset:offset + MAX_BATCH_FILES]
+        try:
+            client.call("deleteBatch", paths=paths)
+        except DriveSyncError as exc:
+            if not _is_unknown_action(exc):
+                raise
+            for path in paths:
+                client.call("delete", path=path)
+        for path in paths:
+            completed += 1
+            if progress:
+                progress({"phase": "delete", "completed": completed, "total": total, "path": path})
     client.call("finalize", manifest=local_manifest)
-    if progress: progress({"phase": "complete", "completed": total, "total": total})
+    verified_manifest = client.call("manifest").get("manifest") or {}
+    if verified_manifest != local_manifest:
+        raise DriveSyncError("MANIFEST.json Drive ne correspond pas au miroir local")
+    if progress:
+        progress({"phase": "complete", "completed": total, "total": total})
     return {
         "status": "complete", "uploaded_files": len(changed), "deleted_files": len(deleted),
         "unchanged_files": len(local) - len(changed), "verified_files": len(local),
