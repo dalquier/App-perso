@@ -1,6 +1,20 @@
+import tempfile
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 
-from projectos_backup.ui import progress_copy, progress_percent, progress_ratio, should_emit_progress
+from projectos_backup.ui import (
+    backup_summary,
+    error_copy,
+    load_result,
+    progress_copy,
+    progress_percent,
+    progress_ratio,
+    progress_stages,
+    save_result,
+    should_emit_progress,
+    summary_copy,
+)
 
 
 class ProgressTests(unittest.TestCase):
@@ -35,6 +49,44 @@ class ProgressTests(unittest.TestCase):
         self.assertTrue(should_emit_progress(previous, {"phase": "delete", "completed": 0, "total": 5}, 10.05))
         self.assertTrue(should_emit_progress(previous, {"phase": "upload", "completed": 100, "total": 100}, 10.05))
         self.assertTrue(should_emit_progress(previous, {"phase": "upload", "completed": 10, "total": 100}, 10.13))
+
+    def test_progress_stages_distinguish_local_and_drive(self):
+        self.assertEqual(progress_stages({"phase": "mirror"}), ("En cours", "En attente"))
+        self.assertEqual(progress_stages({"phase": "upload"}), ("Terminé", "En cours"))
+
+    def test_summary_is_serialisable_and_readable(self):
+        local = SimpleNamespace(copied_files=3, resumed_files=2, deleted_files=1)
+        local.unchanged_files = 5
+        result = backup_summary(
+            local,
+            {"uploaded_files": 4, "deleted_files": 1, "verified_files": 9, "resumed_files": 2, "unchanged_files": 5},
+            local_seconds=1.25,
+            drive_seconds=2.75,
+        )
+        local_line, drive_line = summary_copy(result)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["drive"]["resumed"], 2)
+        self.assertEqual(result["local"]["unchanged"], 5)
+        self.assertEqual(result["drive"]["durationSeconds"], 2.8)
+        self.assertIn("3 copiés", local_line)
+        self.assertIn("9 vérifiés", drive_line)
+
+    def test_result_round_trip_and_invalid_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "last.json"
+            save_result(path, {"status": "complete", "local": {"copied": 1}})
+            self.assertEqual(load_result(path)["status"], "complete")
+            path.write_text("not-json", encoding="utf-8")
+            self.assertIsNone(load_result(path))
+
+    def test_error_copy_does_not_truncate_detail(self):
+        try:
+            raise RuntimeError("Google Drive a dépassé le délai de réponse")
+        except RuntimeError as exc:
+            headline, detail = error_copy(exc)
+        self.assertEqual(headline, "Google Drive a dépassé le délai de réponse")
+        self.assertIn("RuntimeError", detail)
+        self.assertIn("dépassé le délai", detail)
 
 
 if __name__ == "__main__":
