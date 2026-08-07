@@ -33,7 +33,8 @@ import {
 import { createLocalConversationProvider } from "./providers/conversationProvider.js";
 import { localStorageContextNotice } from "./platform/displayMode.js";
 import { scrollChatToBottom } from "./platform/viewport.js";
-import { detectSensitiveContent, SAFETY_MESSAGE } from "./safety/sensitiveGuard.js";
+import { SAFETY_MESSAGE } from "./safety/sensitiveGuard.js";
+import { gateProtocolText } from "./safety/textGate.js";
 import { createStore, defaultState } from "./storage/localStore.js";
 
 const provider = createLocalConversationProvider();
@@ -79,10 +80,106 @@ export function normalizeRuntimeState(nextState) {
   };
 }
 
+export function persistPreparedState(storeRef, nextState) {
+  if (storeRef.save(nextState)) return { ok: true, state: nextState };
+  return { ok: false, state: normalizeRuntimeState(storeRef.load()) };
+}
+
+export function prepareChatSubmission(currentState, rawContent, { providerId = "local-simulator" } = {}) {
+  const gate = gateProtocolText(rawContent, { required: true, maxLength: 1500 });
+  if (!gate.ok) return { ...gate, state: currentState };
+
+  const existing = currentState.conversations.find((conversation) => conversation.id === currentState.activeConversationId) || null;
+  let conversation = existing || createConversation();
+  conversation = addMessage(conversation, createMessage({ role: "user", content: gate.value, provenance: "user" }));
+  if (conversation.title === "Nouvelle conversation") conversation = renameConversation(conversation, titleFromMessage(gate.value));
+  const assistant = createMessage({ role: "assistant", content: "", status: MESSAGE_STATUS.generating, provenance: providerId });
+  conversation = addMessage(conversation, assistant);
+  const nextState = {
+    ...currentState,
+    conversations: [conversation, ...currentState.conversations.filter((item) => item.id !== conversation.id)],
+    activeConversationId: conversation.id,
+  };
+  return { ok: true, blocked: false, state: nextState, conversation, assistant };
+}
+
+export function prepareConversationRename(conversation, rawTitle) {
+  const gate = gateProtocolText(rawTitle, { required: true, maxLength: 120 });
+  if (!gate.ok) return { ...gate, conversation };
+  return { ok: true, blocked: false, conversation: renameConversation(conversation, gate.value) };
+}
+
+export function prepareLegacySessionAnswer(currentState, rawValue) {
+  if (!currentState.lastSession) throw new Error("Aucune séance legacy active.");
+  const gate = gateProtocolText(rawValue, { required: true, maxLength: 1000 });
+  if (!gate.ok) return { ...gate, state: currentState };
+  const lastSession = answerSession(currentState.lastSession, gate.value);
+  let sessionRecords = currentState.sessionRecords;
+  if (lastSession.completed && !sessionRecords.some((item) => item.sourceSessionId === lastSession.id)) {
+    sessionRecords = [...sessionRecords, createSessionRecord(lastSession)];
+  }
+  return { ok: true, blocked: false, state: { ...currentState, lastSession, sessionRecords } };
+}
+
+export function prepareProtocolAnswer(currentState, options) {
+  const result = answerProtocolStep(currentState, options);
+  if (!result.ok) return { ...result, state: currentState };
+  return result;
+}
+
+export function prepareProtocolCompletion(currentState, options) {
+  const result = completeProtocolRun(currentState, options);
+  if (result.blocked) return { ...result, state: currentState };
+  return result;
+}
+
+export function prepareMemoryProposal(currentState, sessionRecordId, { kind = "action" } = {}) {
+  const record = currentState.sessionRecords.find((item) => item.id === sessionRecordId);
+  if (!record) throw new Error("Enregistrement de séance introuvable.");
+  if (currentState.memoryEntries.some((entry) => entry.source?.sessionRecordId === record.id)) {
+    return { ok: true, idempotent: true, state: currentState };
+  }
+  const content = String(record.actionPlan || "").trim();
+  if (!content) throw new Error("Une action non vide est requise pour proposer cette mémoire.");
+  const entry = proposeMemory({
+    content,
+    sessionRecordId: record.id,
+    sourceSessionId: record.sourceSessionId,
+    kind,
+  });
+  return { ok: true, idempotent: false, entry, state: { ...currentState, memoryEntries: [...currentState.memoryEntries, entry] } };
+}
+
+export function prepareMemoryConfirmation(currentState, memoryId) {
+  const entry = currentState.memoryEntries.find((item) => item.id === memoryId);
+  if (!entry) return { ok: false, state: currentState };
+  const confirmed = confirmMemory(entry);
+  return {
+    ok: true,
+    state: { ...currentState, memoryEntries: currentState.memoryEntries.map((item) => item.id === memoryId ? confirmed : item) },
+  };
+}
+
+export function prepareMemoryCorrection(currentState, memoryId, rawContent) {
+  const entry = currentState.memoryEntries.find((item) => item.id === memoryId);
+  if (!entry) return { ok: false, state: currentState };
+  const result = applyMemoryCorrection(entry, rawContent);
+  if (result.blocked || result.rejected) return { ...result, ok: false, state: currentState };
+  return {
+    ok: true,
+    blocked: false,
+    state: { ...currentState, memoryEntries: currentState.memoryEntries.map((item) => item.id === memoryId ? result.entry : item) },
+  };
+}
+
 const activeConversation = () => state.conversations.find((c) => c.id === state.activeConversationId) || null;
 const activeProtocolRun = () => state.protocolRuns.find((run) => run.id === protocolUi.runId) || null;
 const draftProtocolRun = () => state.protocolRuns.find((run) => run.status === "draft") || null;
-const persist = () => store.save(state);
+const persist = () => {
+  const result = persistPreparedState(store, state);
+  state = result.ok ? result.state : { ...result.state, storageError: result.state.storageError || "La sauvegarde locale a été refusée. L’état courant a été rechargé." };
+  return result.ok;
+};
 
 const refresh = () => {
   render({ followChat: view === "chat" });
@@ -96,7 +193,7 @@ const setView = (nextView) => {
 
 function saveConversation(conversation, options = {}) {
   state = updateConversationById({ ...state, conversations: [conversation, ...state.conversations.filter((c) => c.id !== conversation.id)] }, conversation.id, () => conversation, options);
-  persist();
+  return persist();
 }
 
 function ensureConversation(mode = "free") {
@@ -254,7 +351,12 @@ async function generateReply(conversationId, assistantId) {
         status: chunk.done ? MESSAGE_STATUS.complete : MESSAGE_STATUS.partial,
         provenance: provider.id,
       }));
-      persist();
+      if (!persist()) {
+        controller.abort();
+        generations.delete(conversationId);
+        render({ followChat: activeConversation()?.id === conversationId && view === "chat" });
+        return;
+      }
       if (activeConversation()?.id === conversationId) render({ followChat: true });
     }
   } catch (error) {
@@ -313,7 +415,7 @@ app.addEventListener("click", async (event) => {
   const open = event.target.closest("[data-open-conversation]");
   if (open) {
     interruptOutgoingGeneration(open.dataset.openConversation);
-    state.activeConversationId = open.dataset.openConversation;
+    state = { ...state, activeConversationId: open.dataset.openConversation };
     persist();
     setView("chat");
   }
@@ -322,7 +424,11 @@ app.addEventListener("click", async (event) => {
   if (rename) {
     const conversation = state.conversations.find((c) => c.id === rename.dataset.renameConversation);
     const title = prompt("Nouveau titre", conversation?.title || "");
-    if (conversation && title) saveConversation(renameConversation(conversation, title));
+    if (conversation && title) {
+      const result = prepareConversationRename(conversation, title);
+      if (result.blocked) alert(SAFETY_MESSAGE);
+      else if (result.ok) saveConversation(result.conversation);
+    }
     setView("conversations");
   }
 
@@ -330,8 +436,8 @@ app.addEventListener("click", async (event) => {
   if (deletion && confirm("Supprimer définitivement cette conversation ?")) {
     generations.get(deletion.dataset.deleteConversation)?.abort();
     generations.delete(deletion.dataset.deleteConversation);
-    state = { ...state, conversations: state.conversations.filter((c) => c.id !== deletion.dataset.deleteConversation) };
-    state.activeConversationId = state.conversations[0]?.id || null;
+    const conversations = state.conversations.filter((c) => c.id !== deletion.dataset.deleteConversation);
+    state = { ...state, conversations, activeConversationId: conversations[0]?.id || null };
     persist();
     render();
   }
@@ -347,26 +453,37 @@ app.addEventListener("click", async (event) => {
   if (event.target.closest("[data-prev-step]")) {
     const steps = ["situation", "emotion", "thought", "action"];
     const index = steps.indexOf(state.lastSession?.step);
-    if (index > 0) state.lastSession = { ...state.lastSession, step: steps[index - 1] };
+    if (index > 0) state = { ...state, lastSession: { ...state.lastSession, step: steps[index - 1] } };
     persist();
     render();
   }
 
   const proposal = event.target.closest("[data-propose-session-memory]");
   if (proposal) {
-    const record = state.sessionRecords.find((item) => item.id === proposal.dataset.proposeSessionMemory);
-    if (record && !state.memoryEntries.some((entry) => entry.source?.sessionRecordId === record.id)) {
-      state.memoryEntries = [...state.memoryEntries, proposeMemory({ content: record.actionPlan, sessionRecordId: record.id, sourceSessionId: record.sourceSessionId, kind: "action" })];
-      persist();
+    try {
+      const result = prepareMemoryProposal(state, proposal.dataset.proposeSessionMemory);
+      if (result.ok && !result.idempotent) {
+        state = result.state;
+        persist();
+      }
+      setView("memory");
+    } catch (error) {
+      if (error?.blocked) alert(SAFETY_MESSAGE);
     }
-    setView("memory");
   }
 
   const confirmation = event.target.closest("[data-confirm-memory]");
   if (confirmation) {
-    state.memoryEntries = state.memoryEntries.map((entry) => entry.id === confirmation.dataset.confirmMemory ? confirmMemory(entry) : entry);
-    persist();
-    render();
+    try {
+      const result = prepareMemoryConfirmation(state, confirmation.dataset.confirmMemory);
+      if (result.ok) {
+        state = result.state;
+        persist();
+      }
+      render();
+    } catch (error) {
+      if (error?.blocked) alert(SAFETY_MESSAGE);
+    }
   }
 
   const edition = event.target.closest("[data-edit-memory]");
@@ -374,10 +491,10 @@ app.addEventListener("click", async (event) => {
     const entry = state.memoryEntries.find((item) => item.id === edition.dataset.editMemory);
     const content = prompt("Corriger cet élément", entry?.content || "");
     if (entry && content?.trim()) {
-      const result = applyMemoryCorrection(entry, content);
+      const result = prepareMemoryCorrection(state, entry.id, content);
       if (result.blocked) alert(SAFETY_MESSAGE);
-      else {
-        state.memoryEntries = state.memoryEntries.map((item) => item.id === entry.id ? result.entry : item);
+      else if (result.ok) {
+        state = result.state;
         persist();
         render();
       }
@@ -386,13 +503,13 @@ app.addEventListener("click", async (event) => {
 
   const memoryDeletion = event.target.closest("[data-delete-memory]");
   if (memoryDeletion && confirm("Supprimer définitivement cet élément de mémoire ?")) {
-    state.memoryEntries = removeMemory(state.memoryEntries, memoryDeletion.dataset.deleteMemory);
+    state = { ...state, memoryEntries: removeMemory(state.memoryEntries, memoryDeletion.dataset.deleteMemory) };
     persist();
     render();
   }
 
   if (event.target.closest("[data-start-session]")) {
-    state.lastSession = createSession();
+    state = { ...state, lastSession: createSession() };
     persist();
     setView("session");
   }
@@ -483,13 +600,18 @@ app.addEventListener("click", async (event) => {
     const run = activeProtocolRun();
     if (run) {
       try {
-        const control = completeProtocolRun(state, { runId: run.id });
+        const control = prepareProtocolCompletion(state, { runId: run.id });
         if (control.blocked) {
           showProtocolSafety(control.safetyMessage);
           return;
         }
         state = control.state;
-        persist();
+        if (!persist()) {
+          protocolUi.errorMessage = "La sauvegarde du résultat a été refusée.";
+          protocolUi.screen = "preview";
+          render();
+          return;
+        }
         protocolUi.screen = "result";
         render();
       } catch (error) {
@@ -532,8 +654,9 @@ app.addEventListener("change", (event) => {
       state = { ...defaultState(), settings: { ...defaultState().settings, saveLocally: false, theme: state.settings.theme } };
       resetProtocolUi();
     } else {
-      state = { ...state, settings: { ...state.settings, saveLocally: true } };
-      persist();
+      const nextState = { ...state, settings: { ...state.settings, saveLocally: true } };
+      const result = persistPreparedState(store, nextState);
+      state = result.ok ? result.state : { ...result.state, storageError: result.state.storageError || "La réactivation de la sauvegarde a été refusée." };
     }
     render();
   }
@@ -548,31 +671,27 @@ app.addEventListener("change", (event) => {
 app.addEventListener("submit", (event) => {
   event.preventDefault();
   if (event.target.id === "chat-form") {
-    const content = event.target.elements[0].value.trim();
-    if (!content) return;
-    let conversation = ensureConversation();
-    conversation = addMessage(conversation, createMessage({ role: "user", content, provenance: "user" }));
-    if (conversation.title === "Nouvelle conversation") conversation = renameConversation(conversation, titleFromMessage(content));
-    const blocked = detectSensitiveContent(content);
-    const assistant = blocked
-      ? createMessage({ role: "assistant", content: SAFETY_MESSAGE, status: MESSAGE_STATUS.complete, provenance: "safety-guard" })
-      : createMessage({ role: "assistant", content: "", status: MESSAGE_STATUS.generating, provenance: provider.id });
-    conversation = addMessage(conversation, assistant);
-    saveConversation(conversation, { makeActive: true });
+    const result = prepareChatSubmission(state, event.target.elements[0].value, { providerId: provider.id });
+    if (!result.ok) {
+      if (result.blocked) alert(SAFETY_MESSAGE);
+      return;
+    }
+    state = result.state;
+    if (!persist()) {
+      render();
+      return;
+    }
     render();
-    if (!blocked) generateReply(conversation.id, assistant.id);
+    generateReply(result.conversation.id, result.assistant.id);
   }
 
   if (event.target.id === "session-form") {
-    const value = event.target.elements[0].value;
-    if (detectSensitiveContent(value)) {
-      alert(SAFETY_MESSAGE);
+    const result = prepareLegacySessionAnswer(state, event.target.elements[0].value);
+    if (!result.ok) {
+      if (result.blocked) alert(SAFETY_MESSAGE);
       return;
     }
-    state.lastSession = answerSession(state.lastSession, value);
-    if (state.lastSession.completed && !state.sessionRecords.some((item) => item.sourceSessionId === state.lastSession.id)) {
-      state.sessionRecords = [...state.sessionRecords, createSessionRecord(state.lastSession)];
-    }
+    state = result.state;
     persist();
     render();
   }
@@ -583,7 +702,7 @@ app.addEventListener("submit", (event) => {
     if (!run || !definition) return;
     const step = definition.steps.find((item) => item.id === run.currentStepId);
     const value = event.target.elements.answer.value;
-    const control = answerProtocolStep(state, { runId: run.id, stepId: step.id, value });
+    const control = prepareProtocolAnswer(state, { runId: run.id, stepId: step.id, value });
     if (!control.ok) {
       if (control.blocked) {
         showProtocolSafety(control.safetyMessage);
@@ -598,7 +717,11 @@ app.addEventListener("submit", (event) => {
       return;
     }
     state = control.state;
-    persist();
+    if (!persist()) {
+      protocolUi.errorMessage = "La sauvegarde de la réponse a été refusée.";
+      render();
+      return;
+    }
     protocolUi.errorMessage = null;
     const updatedRun = state.protocolRuns.find((item) => item.id === run.id);
     const allReached = definition.steps.every((item) => Object.prototype.hasOwnProperty.call(updatedRun.answers || {}, item.id));
