@@ -3,7 +3,36 @@ const MAX_BATCH_FILES = 4;
 const MAX_BATCH_DECODED_BYTES = 1024 * 1024;
 const SESSION_PREFIX = 'PROJECTOS_SYNC_';
 
-function doGet() { return json_({ok: true, service: 'ProjectOS Backup'}); }
+function doGet(e) {
+  try {
+    const action = e && e.parameter ? e.parameter.action : '';
+    if (!action) return json_({ok: true, service: 'ProjectOS Backup'});
+    if (action !== 'manifest' && action !== 'syncStatus') throw new Error('Lecture inconnue');
+    const properties = PropertiesService.getScriptProperties();
+    const expected = properties.getProperty('AUTH_TOKEN');
+    const timestamp = String(e.parameter.timestamp || '');
+    const encodedPayload = e.parameter.payload || '{}';
+    const age = Math.abs(Date.now() / 1000 - Number(timestamp));
+    if (!expected || !/^\d{10}$/.test(timestamp) || age > 300) throw new Error('Accès refusé');
+    const message = action + '\n' + timestamp + '\n' + encodedPayload;
+    const expectedSignature = Utilities.computeHmacSha256Signature(message, expected, Utilities.Charset.UTF_8)
+      .map(b => ('0' + (b < 0 ? b + 256 : b).toString(16)).slice(-2)).join('');
+    if (!secureEquals_(String(e.parameter.signature || ''), expectedSignature)) throw new Error('Accès refusé');
+    const payload = JSON.parse(encodedPayload);
+    if (action === 'syncStatus') return json_(syncStatus_(properties, payload));
+    const rootId = properties.getProperty('ROOT_FOLDER_ID');
+    if (!rootId) throw new Error('ROOT_FOLDER_ID absent');
+    const current = childFolder_(DriveApp.getFolderById(rootId), 'Current');
+    return json_({ok: true, manifest: readManifest_(current)});
+  } catch (error) { return json_({ok: false, error: String(error.message || error)}); }
+}
+
+function secureEquals_(left, right) {
+  if (left.length !== right.length) return false;
+  let difference = 0;
+  for (let i = 0; i < left.length; i++) difference |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  return difference === 0;
+}
 
 function doPost(e) {
   try {
