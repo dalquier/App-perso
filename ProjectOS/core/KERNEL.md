@@ -13,13 +13,14 @@
    - Replit pour l'exécution et le déploiement cloud ;
    - Pyto pour les fonctions iPhone natives et locales.
 7. Appliquer `standards/CODE_WORK_ROUTING.md` avant toute implémentation logicielle.
-8. Travailler sur une branche dédiée ; ne jamais modifier `main` directement.
-9. Créer et modifier les fichiers complets dans le dépôt canonique. Un ZIP, un fichier local ou un bloc de code dans la conversation ne remplace pas la livraison GitHub.
-10. Implémenter le plus petit changement cohérent.
-11. Tester, documenter, évaluer les risques et prévoir le retour arrière.
-12. Enregistrer le compte rendu substantiel dans un fichier temporaire conforme à `standards/AGENT_HANDOFFS.md` afin qu’un autre agent puisse le vérifier et reprendre le travail.
-13. Livrer par Pull Request avec un résumé vérifiable.
-14. Après prise en compte du compte rendu, supprimer le fichier temporaire et vérifier qu’il ne sera pas fusionné dans la branche canonique.
+8. Appliquer `standards/INCIDENT_LEARNING.md` pendant toute l’exécution : précontrôler les capacités d’environnement lorsque nécessaire, puis classer, dédupliquer et historiser les blocages matériels.
+9. Travailler sur une branche dédiée ; ne jamais modifier `main` directement.
+10. Créer et modifier les fichiers complets dans le dépôt canonique. Un ZIP, un fichier local ou un bloc de code dans la conversation ne remplace pas la livraison GitHub.
+11. Implémenter le plus petit changement cohérent.
+12. Tester, documenter, évaluer les risques et prévoir le retour arrière.
+13. Enregistrer le compte rendu substantiel dans un fichier temporaire conforme à `standards/AGENT_HANDOFFS.md` afin qu’un autre agent puisse le vérifier et reprendre le travail.
+14. Livrer par Pull Request avec un résumé vérifiable.
+15. Après prise en compte du compte rendu, supprimer le fichier temporaire et vérifier qu’il ne sera pas fusionné dans la branche canonique.
 
 ## Communication pendant l’exécution
 
@@ -43,6 +44,8 @@
 - Toute décision durable issue d’un compte rendu temporaire doit être transférée dans une référence canonique avant suppression.
 - Un outil d'exécution ne devient jamais implicitement le dépôt canonique.
 - L'indisponibilité temporaire de Codex doit être signalée ; elle ne justifie pas de transformer une livraison lourde en blocs de code manuels sans traçabilité.
+- Un incident utile ne reste pas uniquement dans une conversation ou un log : il est enregistré dans l’Incident Ledger #87 lorsque GitHub est inscriptible, sinon transmis comme `INCIDENT_CAPTURE_PENDING` au coordinateur.
+- Une limitation externe déjà connue et correctement contournée peut être classée `ACCEPTED_LIMITATION` plutôt que retentée inutilement.
 
 ## Hiérarchie des sources
 
