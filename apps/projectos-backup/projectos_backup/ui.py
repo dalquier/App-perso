@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .core import BackupError, Source, run_backup
-from .drive_client import AppsScriptClient, has_pending_drive_sync, sync_current
+from .drive_client import AppsScriptClient, DriveSyncError, format_preflight_diagnostic, has_pending_drive_sync, preflight_drive, sync_current
 from .pyto_access import BackgroundExecution, PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
 from .state import ConfigStore, infer_source_label
 
@@ -20,7 +20,11 @@ PROGRESS_THROTTLE_SECONDS = 0.12
 DETERMINATE_PHASES = {"prepare", "mirror", "upload", "delete", "complete"}
 RESULT_FILE = "last_ui_result.json"
 LOCAL_PHASES = {"scan", "prepare", "mirror"}
-DRIVE_PHASES = {"drive_prepare", "upload", "delete", "publish", "complete"}
+DRIVE_PHASES = {
+    "drive_prepare", "drive_wake", "drive_auth", "drive_manifest", "drive_retry", "drive_ready",
+    "upload", "delete", "publish", "complete",
+}
+DRIVE_PREFLIGHT_PHASES = {"drive_wake", "drive_auth", "drive_manifest", "drive_retry", "drive_ready"}
 
 
 def _ui():
@@ -67,6 +71,11 @@ def progress_copy(event: dict) -> tuple[str, str, str, float]:
         "prepare": "Préparation iCloud",
         "mirror": "Mise à jour du miroir local",
         "drive_prepare": "Connexion à Google Drive",
+        "drive_wake": "Réveil du service Google",
+        "drive_auth": "Vérification de l’accès sécurisé",
+        "drive_manifest": "Lecture de l’index Drive",
+        "drive_retry": "Nouvelle tentative de connexion",
+        "drive_ready": "Google Drive prêt",
         "upload": "Envoi vers Google Drive",
         "delete": "Nettoyage du miroir Drive",
         "publish": "Publication du manifeste",
@@ -74,8 +83,12 @@ def progress_copy(event: dict) -> tuple[str, str, str, float]:
     }
     title = titles.get(phase, "Sauvegarde en cours")
     ratio = progress_ratio(completed, total) if phase in DETERMINATE_PHASES else 0.0
-    counter = f"{progress_percent(completed, total)} %   ·   {completed} / {total}" if total else "Préparation en cours"
-    filename = Path(path).name[:60] if path else "Les fichiers restent disponibles pendant l'opération."
+    if event.get("maxAttempts"):
+        counter = f"Tentative {event.get('attempt', 1)} / {event['maxAttempts']}"
+    else:
+        counter = f"{progress_percent(completed, total)} %   ·   {completed} / {total}" if total else "Préparation en cours"
+    message = event.get("message", "")
+    filename = message[:100] if message else (Path(path).name[:60] if path else "Les fichiers restent disponibles pendant l'opération.")
     return title, counter, filename, ratio
 
 
@@ -84,6 +97,8 @@ def progress_stages(event: dict) -> tuple[str, str]:
     phase = event.get("phase")
     if phase in LOCAL_PHASES:
         return "En cours", "En attente"
+    if phase in DRIVE_PREFLIGHT_PHASES:
+        return ("Terminé" if event.get("localComplete") else "En attente"), "Connexion"
     if phase in DRIVE_PHASES:
         return "Terminé", "En cours"
     return "En attente", "En attente"
@@ -215,27 +230,41 @@ class BackupApplication:
             self.progress_card.add_subview(view)
 
         self.table = self.ui.TableView(style=self.ui.TableViewStyle.INSET_GROUPED)
-        self.table.frame = (0, 316, 390, 318)
+        self.table.frame = (0, 316, 390, 238)
         self.table.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_HEIGHT]
         self.table.did_select_cell = self._selected
         self.table.did_delete_cell = self._deleted
 
         self.add_button = self.ui.Button(title="Ajouter un dossier")
-        self.add_button.frame = (20, 682, 350, 38)
+        self.add_button.frame = (20, 648, 350, 38)
         self.add_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
         self.add_button.action = self._add_source
         self.backup_button = self.ui.Button(title="Mettre à jour la sauvegarde")
-        self.backup_button.frame = (20, 730, 350, 54)
+        self.backup_button.frame = (20, 696, 350, 54)
         self.backup_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
         self.backup_button.action = self._backup
 
         self.detail_button = self.ui.Button(title="Afficher le détail")
-        self.detail_button.frame = (20, 638, 350, 36)
-        self.detail_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
+        self.detail_button.frame = (20, 608, 170, 32)
+        self.detail_button.flex = [self.ui.AutoResizing.FLEXIBLE_RIGHT_MARGIN, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
         self.detail_button.action = self._show_error_detail
         self.detail_button.hidden = True
 
-        for view in (self.header, self.progress_card, self.table, self.detail_button, self.add_button, self.backup_button):
+        self.copy_button = self.ui.Button(title="Copier le diagnostic")
+        self.copy_button.frame = (200, 608, 170, 32)
+        self.copy_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
+        self.copy_button.action = self._copy_error_detail
+        self.copy_button.hidden = True
+
+        self.test_drive_button = self.ui.Button(title="Tester Google Drive")
+        self.test_drive_button.frame = (20, 562, 350, 38)
+        self.test_drive_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
+        self.test_drive_button.action = self._test_drive
+
+        for view in (
+            self.header, self.progress_card, self.table, self.test_drive_button, self.detail_button,
+            self.copy_button, self.add_button, self.backup_button,
+        ):
             self.root.add_subview(view)
         self._apply_colors()
         self.refresh()
@@ -274,6 +303,21 @@ class BackupApplication:
         if self._last_error_detail:
             self.alert("Détail du diagnostic", self._last_error_detail)
 
+    def _copy_error_detail(self, sender=None) -> None:
+        if not self._last_error_detail:
+            return
+        try:
+            import pasteboard
+            pasteboard.set_string(self._last_error_detail)
+            self.message_label.text = "Diagnostic copié dans le presse-papiers."
+        except Exception:
+            self.alert("Diagnostic à copier", self._last_error_detail)
+
+    def _set_controls_enabled(self, enabled: bool) -> None:
+        self.backup_button.enabled = enabled
+        self.add_button.enabled = enabled
+        self.test_drive_button.enabled = enabled
+
     def _restore_last_result(self) -> None:
         result = load_result(self._result_path)
         if not result:
@@ -299,6 +343,7 @@ class BackupApplication:
             self.drive_stage.text = "○  Google Drive    À reprendre"
             self._last_error_detail = result.get("detail", "")
             self.detail_button.hidden = not bool(self._last_error_detail)
+            self.copy_button.hidden = not bool(self._last_error_detail)
 
     def _sources_with_repaired_labels(self):
         config = self.store.load()
@@ -390,8 +435,7 @@ class BackupApplication:
             return
         self._running = True
         self._last_progress = None
-        self.backup_button.enabled = False
-        self.add_button.enabled = False
+        self._set_controls_enabled(False)
         self.state_label.text = "EN COURS"
         self.message_label.text = "La sauvegarde peut continuer pendant un changement d'app court."
         self.phase_label.text = "Démarrage"
@@ -400,12 +444,71 @@ class BackupApplication:
         self.local_stage.text = "●  Miroir local    En cours"
         self.drive_stage.text = "○  Google Drive    En attente"
         self.detail_button.hidden = True
+        self.copy_button.hidden = True
         self._last_error_detail = ""
         self._set_progress_fill(0.0)
         self.refresh()
         self.background_execution = BackgroundExecution("ProjectOS Backup complet")
         self.background_execution.begin()
         threading.Thread(target=self._run_backup, daemon=True).start()
+
+    def _test_drive(self, sender=None) -> None:
+        if self._running:
+            return
+        self._running = True
+        self._last_progress = None
+        self._last_error_detail = ""
+        self.detail_button.hidden = True
+        self.copy_button.hidden = True
+        self._set_controls_enabled(False)
+        self.state_label.text = "TEST DE CONNEXION"
+        self.message_label.text = "Aucun fichier ne sera modifié."
+        self.local_stage.text = "○  Miroir local    Non lancé"
+        self.drive_stage.text = "●  Google Drive    Connexion"
+        self._set_progress_fill(0.0)
+        self.refresh()
+        self.background_execution = BackgroundExecution("Test Google Drive")
+        self.background_execution.begin()
+        threading.Thread(target=self._run_drive_test, daemon=True).start()
+
+    def _load_drive_client(self) -> AppsScriptClient:
+        relay = json.loads((self.store.directory / "drive.json").read_text(encoding="utf-8"))
+        return AppsScriptClient(relay["url"], relay["token"])
+
+    def _run_drive_test(self) -> None:
+        success = False
+        message = ""
+        try:
+            result = preflight_drive(
+                self._load_drive_client(), progress=self._show_progress, attempts=2, delays=(0, 2),
+                should_cancel=self.background_execution.expired.is_set,
+            )
+            success = True
+            message = "Connexion vérifiée · index disponible" if result["hasManifest"] else "Connexion vérifiée · première sauvegarde à initialiser"
+        except Exception as exc:
+            message = str(exc).strip() or exc.__class__.__name__
+            self._last_error_detail = format_preflight_diagnostic(exc)
+        finally:
+            self.background_execution.end()
+            import mainthread
+
+            def finish():
+                self._running = False
+                self.state_label.text = "DRIVE PRÊT" if success else "CONNEXION IMPOSSIBLE"
+                self.message_label.text = message
+                self.phase_label.text = "Connexion vérifiée" if success else "Vérification interrompue"
+                self.counter_label.text = "Service, jeton et index accessibles" if success else "Diagnostic disponible"
+                self.file_label.text = "Aucun fichier n’a été modifié."
+                self.local_stage.text = "○  Miroir local    Non lancé"
+                self.drive_stage.text = f"{'●' if success else '○'}  Google Drive    {'Prêt' if success else 'À vérifier'}"
+                self._set_progress_fill(1.0 if success else 0.0)
+                self.test_drive_button.title = "Tester Google Drive" if success else "Réessayer le test Drive"
+                self.detail_button.hidden = success
+                self.copy_button.hidden = success
+                self._set_controls_enabled(True)
+                self.refresh()
+
+            mainthread.run_async(finish)
 
     def _set_progress_fill(self, ratio: float) -> None:
         _, _, width, height = self.progress_track.frame
@@ -429,7 +532,7 @@ class BackupApplication:
             self.file_label.text = filename
             local_state, drive_state = progress_stages(event)
             self.local_stage.text = f"●  Miroir local    {local_state}"
-            drive_dot = "●" if drive_state in {"En cours", "Vérifié"} else "○"
+            drive_dot = "●" if drive_state in {"Connexion", "En cours", "Vérifié"} else "○"
             self.drive_stage.text = f"{drive_dot}  Google Drive    {drive_state}"
             self._set_progress_fill(ratio)
 
@@ -450,8 +553,7 @@ class BackupApplication:
             client = None
             relay_error = None
             try:
-                relay = json.loads((self.store.directory / "drive.json").read_text(encoding="utf-8"))
-                client = AppsScriptClient(relay["url"], relay["token"])
+                client = self._load_drive_client()
             except (OSError, json.JSONDecodeError, KeyError, ValueError) as exc:
                 relay_error = exc
             prior_drive = None
@@ -460,7 +562,10 @@ class BackupApplication:
                 local_complete = True
                 self._show_progress({"phase": "drive_prepare"})
                 drive_started = time.monotonic()
-                prior_drive = sync_current(current, client, progress=self._show_progress)
+                prior_drive = sync_current(
+                    current, client, progress=self._show_progress,
+                    should_cancel=self.background_execution.expired.is_set,
+                )
                 drive_seconds += time.monotonic() - drive_started
                 if self.background_execution.expired.is_set():
                     raise BackupError("Le miroir local est sécurisé ; relance pour poursuivre la mise à jour")
@@ -482,12 +587,12 @@ class BackupApplication:
                 raise BackupError("Exécution interrompue par iOS ; relance pour reprendre")
             if client is None:
                 raise BackupError("Miroir local terminé ; Google Drive non configuré : lance configure_drive.py") from relay_error
-            self._show_progress({"phase": "drive_prepare"})
             drive_started = time.monotonic()
             drive = sync_current(
                 current,
                 client,
                 progress=self._show_progress,
+                should_cancel=self.background_execution.expired.is_set,
             )
             drive_seconds += time.monotonic() - drive_started
             if prior_drive:
@@ -499,7 +604,10 @@ class BackupApplication:
             message = f"{local_line}\n{drive_line}"
             save_result(self._result_path, result)
         except Exception as exc:
-            message, self._last_error_detail = error_copy(exc)
+            if isinstance(exc, DriveSyncError):
+                message, self._last_error_detail = str(exc), format_preflight_diagnostic(exc)
+            else:
+                message, self._last_error_detail = error_copy(exc)
             result = {
                 "status": "interrupted",
                 "finishedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -529,10 +637,10 @@ class BackupApplication:
                     self.local_stage.text = f"●  Miroir local    {'Terminé' if local_complete else 'À reprendre'}"
                     self.drive_stage.text = "○  Google Drive    À reprendre"
                     self.detail_button.hidden = False
+                    self.copy_button.hidden = False
                 self._set_progress_fill(1.0 if success else 0.0)
                 self.backup_button.title = "Mettre à jour la sauvegarde" if success else "Réessayer la sauvegarde"
-                self.backup_button.enabled = True
-                self.add_button.enabled = True
+                self._set_controls_enabled(True)
                 self.refresh()
 
             mainthread.run_async(finish)
