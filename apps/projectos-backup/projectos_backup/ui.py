@@ -150,7 +150,6 @@ class BackupApplication:
         self.progress_card.background_color = card
         self.progress_track.background_color = self._color("SYSTEM_GRAY_5", "SYSTEM_BACKGROUND")
         self.progress_fill.background_color = self._color("SYSTEM_BLUE", "SYSTEM_BACKGROUND")
-        self.backup_button.background_color = self._color("SYSTEM_BLUE", "SYSTEM_BACKGROUND")
 
     def alert(self, title: str, message: str) -> str:
         alert = self.ui.Alert(title, message)
@@ -318,7 +317,8 @@ class BackupApplication:
             )
             success = True
             message = (
-                f"Local : {local.copied_files} copiés, {local.deleted_files} supprimés\n"
+                f"Local : {local.copied_files} copiés, {getattr(local, 'resumed_files', 0)} repris, "
+                f"{local.deleted_files} supprimés\n"
                 f"Drive : {drive['uploaded_files']} envoyés, {drive['deleted_files']} supprimés, "
                 f"{drive['verified_files']} vérifiés"
             )
