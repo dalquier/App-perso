@@ -9,7 +9,8 @@ from urllib.parse import parse_qs, urlsplit
 
 from projectos_backup.drive_client import (
     AppsScriptClient, DriveSyncError, MAX_BATCH_FILES, MAX_BATCH_RAW_BYTES, STATE_DIRECTORY, STATE_FILE,
-    drive_state_path, has_pending_drive_sync, manifest_files, normalize_apps_script_url, sync_current,
+    drive_state_path, format_preflight_diagnostic, has_pending_drive_sync, manifest_files,
+    normalize_apps_script_url, preflight_drive, sync_current,
 )
 
 
@@ -30,6 +31,10 @@ class FakeClient:
         self.lose_upload_response = lose_upload_response
         self.lost_once = False
         self.fail_action = fail_action
+
+    def public_read(self, timeout=None):
+        self.calls.append(("wake", {"timeout": timeout}))
+        return {"ok": True, "service": "ProjectOS Backup", "protocol": 2}
 
     def call(self, action, **payload):
         self.calls.append((action, payload))
@@ -66,7 +71,38 @@ class FakeClient:
         return {}
 
     def read(self, action, **payload):
+        payload.pop("timeout", None)
+        if action == "health":
+            self.calls.append((action, payload))
+            return {"ok": True, "service": "ProjectOS Backup", "protocol": 2, "rootReady": True}
         return self.call(action, **payload)
+
+
+class ScriptedPreflightClient:
+    def __init__(self, wake=None, health=None, manifests=None):
+        self.wake = list(wake or [{"ok": True, "service": "ProjectOS Backup", "protocol": 2}])
+        self.health = list(health or [{"ok": True, "protocol": 2, "rootReady": True}])
+        self.manifests = list(manifests or [None])
+        self.calls = []
+
+    @staticmethod
+    def _next(values):
+        value = values.pop(0) if len(values) > 1 else values[0]
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+    def public_read(self, timeout=None):
+        self.calls.append("wake")
+        return self._next(self.wake)
+
+    def read(self, action, **payload):
+        self.calls.append(action)
+        if action == "health":
+            return self._next(self.health)
+        if action == "manifest":
+            return {"ok": True, "manifest": self._next(self.manifests)}
+        raise AssertionError(f"unexpected read: {action}")
 
 
 def prepare(current, files, remote=None):
@@ -81,6 +117,81 @@ def prepare(current, files, remote=None):
 
 
 class DriveClientTests(unittest.TestCase):
+    def test_preflight_accepts_empty_first_backup_without_mutation(self):
+        client = ScriptedPreflightClient(manifests=[None])
+        events = []
+        result = preflight_drive(client, progress=events.append, sleep=lambda _: None)
+        self.assertEqual(result["status"], "ready")
+        self.assertFalse(result["hasManifest"])
+        self.assertEqual(client.calls, ["wake", "health", "manifest"])
+        self.assertEqual([event["phase"] for event in events], [
+            "drive_wake", "drive_auth", "drive_manifest", "drive_ready",
+        ])
+
+    def test_preflight_retries_transient_failure_with_backoff(self):
+        transient = DriveSyncError("timeout", code="network", stage="wake", retryable=True)
+        client = ScriptedPreflightClient(wake=[transient, {"ok": True, "service": "ProjectOS Backup", "protocol": 2}])
+        sleeps = []
+        result = preflight_drive(client, sleep=sleeps.append)
+        self.assertEqual(result["attempt"], 2)
+        self.assertEqual(sleeps, [2])
+        self.assertEqual(client.calls, ["wake", "wake", "health", "manifest"])
+
+    def test_preflight_auth_failure_is_not_retried(self):
+        denied = DriveSyncError("Accès refusé", code="auth", stage="health", retryable=False)
+        client = ScriptedPreflightClient(health=[denied])
+        with self.assertRaises(DriveSyncError) as raised:
+            preflight_drive(client, sleep=lambda _: self.fail("must not sleep"))
+        self.assertEqual(raised.exception.code, "auth")
+        self.assertEqual(client.calls, ["wake", "health"])
+
+    def test_preflight_rejects_malformed_protocol_without_retry(self):
+        client = ScriptedPreflightClient(wake=[{"ok": True, "service": "ProjectOS Backup", "protocol": "invalid"}])
+        with self.assertRaises(DriveSyncError) as raised:
+            preflight_drive(client, sleep=lambda _: self.fail("must not sleep"))
+        self.assertEqual(raised.exception.code, "protocol")
+        self.assertEqual(client.calls, ["wake"])
+
+    def test_preflight_rejects_invalid_manifest_without_mutation(self):
+        client = ScriptedPreflightClient(manifests=[{"status": "running"}])
+        with self.assertRaisesRegex(DriveSyncError, "incomplet"):
+            preflight_drive(client, sleep=lambda _: None)
+        self.assertEqual(client.calls, ["wake", "health", "manifest"])
+
+    def test_sync_never_mutates_drive_when_preflight_fails(self):
+        class OfflineClient(FakeClient):
+            def public_read(self, timeout=None):
+                self.calls.append(("wake", {}))
+                raise DriveSyncError("hors ligne", code="network", stage="wake", retryable=True)
+
+        with tempfile.TemporaryDirectory() as raw:
+            current = Path(raw) / "Current"
+            current.mkdir()
+            prepare(current, [("a", b"x")])
+            client = OfflineClient()
+            with mock.patch("projectos_backup.drive_client.time.sleep"):
+                with self.assertRaisesRegex(DriveSyncError, "hors ligne"):
+                    sync_current(current, client)
+            actions = [action for action, _ in client.calls]
+            self.assertEqual(actions, ["wake", "wake", "wake"])
+            self.assertFalse(set(actions) & {"beginSync", "uploadBatch", "deleteBatch", "finalizeSync"})
+
+    def test_apps_script_manifest_preflight_does_not_create_current(self):
+        code = (Path(__file__).parents[1] / "apps-script" / "Code.gs").read_text(encoding="utf-8")
+        do_get = code.split("function doGet(e)", 1)[1].split("function secureEquals_", 1)[0]
+        self.assertIn("findChildFolder_(root, 'Current')", do_get)
+        self.assertNotIn("childFolder_(root, 'Current')", do_get)
+
+    def test_diagnostic_masks_signed_url_and_contains_stage(self):
+        error = DriveSyncError(
+            "échec https://script.google.com/macros/s/id/exec?action=health&signature=secret",
+            code="network", stage="health", retryable=True, attempt=2,
+        )
+        diagnostic = format_preflight_diagnostic(error)
+        self.assertIn('"stage": "health"', diagnostic)
+        self.assertIn("[URL signée masquée]", diagnostic)
+        self.assertNotIn("signature=secret", diagnostic)
+
     def test_normalizes_google_copy_artifacts(self):
         raw = "  “https://script.google.com/macros/s/AKfy-test_123/exec/?authuser=0”  "
         self.assertEqual(normalize_apps_script_url(raw), "https://script.google.com/macros/s/AKfy-test_123/exec")
