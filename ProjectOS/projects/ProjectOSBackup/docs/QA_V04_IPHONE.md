@@ -10,6 +10,7 @@ Prérequis : `main` à jour dans Working Copy, dossier `apps/projectos-backup/` 
 
 | ID | Action iPhone | Résultat attendu | Preuve courte |
 |---|---|---|---|
+| Q0 | Appuyer sur `Tester Google Drive` | Réveil, accès signé et index deviennent verts ; aucun fichier n'est modifié | État `DRIVE PRÊT` |
 | Q1 | Lancer sans modifier les sources | Miroir local rapide ; aucun fichier inchangé renvoyé ; Drive vérifié | Synthèse finale et compteurs |
 | Q2 | Ajouter un petit fichier, relancer | Un ajout local puis un seul envoi confirmé | Fichier visible dans `Current` local et Drive |
 | Q3 | Modifier ce fichier, relancer | Une modification transférée ; contenu et SHA concordent | Synthèse + contenu Drive |
@@ -20,10 +21,12 @@ Prérequis : `main` à jour dans Working Copy, dossier `apps/projectos-backup/` 
 | Q8 | Test automatisé : simuler un timeout après application distante | État distant interrogé ; lot réduit ou repris ; aucune suppression prématurée | Test d'intégration vert |
 | Q9 | Fermer l'interface | Fermeture immédiate ; état conservé | Bouton `Fermer`, puis même état au lancement |
 | Q10 | Ouvrir l'app après succès | Dernière synthèse toujours consultable | Date, durées et compteurs visibles |
+| Q11 | Couper le réseau puis lancer `Tester Google Drive` | Trois tentatives visibles, puis diagnostic copiable sans jeton | État `CONNEXION IMPOSSIBLE` |
+| Q12 | Rétablir le réseau puis lancer la sauvegarde | Le prévol devient vert avant l'analyse locale et toute mutation Drive | Ordre des phases visible |
 
 ## Critère de validation
 
-La recette est réussie si Q1 à Q10 sont conformes et si `Current/MANIFEST.json` local et Drive décrivent les mêmes chemins, tailles et SHA-256. Un miroir local terminé avec Drive en attente est un état sûr, mais ne valide pas Q1 ni la sauvegarde complète.
+La recette est réussie si Q0 à Q12 sont conformes et si `Current/MANIFEST.json` local et Drive décrivent les mêmes chemins, tailles et SHA-256. Un miroir local terminé avec Drive en attente est un état sûr, mais ne valide pas Q1 ni la sauvegarde complète.
 
 Consigner pour la PR : version Pyto/iOS, SHA testé, URL de déploiement masquée, durée de la première synchronisation, durée d'une synchronisation sans changement, IDs réussis/échoués et captures utiles. Ne jamais joindre le jeton.
 
