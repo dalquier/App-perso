@@ -1,10 +1,16 @@
 import "fake-indexeddb/auto";
+import { openDB } from "idb";
 import { afterEach, describe, expect, it } from "vitest";
-import { createProject, emptyDraft } from "../domain/project";
+import { createProject, emptyDraft, type Project } from "../domain/project";
 import {
   DB_VERSION,
   IndexedDbProjectRepository,
 } from "./indexedDbRepository";
+import {
+  CODEX_CONVERSATIONS_STORE,
+  CONVERSATION_RUNS_STORE,
+  PROJECTS_STORE,
+} from "./indexedDbSchema";
 
 const names: string[] = [];
 
@@ -119,5 +125,62 @@ describe("IndexedDB repository", () => {
     });
     opened.close();
     expect(opened.version).toBe(nextVersion);
+  });
+
+  it("migrates legacy v2 projects to v3 and preserves Codex conversations and conversation runs across project replacement", async () => {
+    const name = `test-${crypto.randomUUID()}`;
+    names.push(name);
+    const legacyDb = await openDB(name, 2, {
+      upgrade(database) {
+        database.createObjectStore(PROJECTS_STORE, { keyPath: "id" });
+        database.createObjectStore(CODEX_CONVERSATIONS_STORE, { keyPath: "id" });
+      },
+    });
+    const legacy = createProject({ ...emptyDraft(), name: "Legacy" });
+    const oldProject = { ...legacy } as Project & Record<string, unknown>;
+    delete oldProject.resumeText;
+    delete oldProject.resumeUpdatedAt;
+    delete oldProject.resumeHistory;
+    delete oldProject.references;
+    await legacyDb.put(PROJECTS_STORE, oldProject);
+    await legacyDb.put(CODEX_CONVERSATIONS_STORE, {
+      id: "codex-1",
+      updatedAt: legacy.updatedAt,
+      status: "draft",
+    });
+    legacyDb.close();
+
+    const repo = new IndexedDbProjectRepository(name);
+    expect(await repo.get(legacy.id)).toMatchObject({
+      id: legacy.id,
+      resumeText: "",
+      resumeUpdatedAt: null,
+      resumeHistory: [],
+      references: [],
+    });
+
+    const migratedDb = await openDB(name, DB_VERSION);
+    expect(Array.from(migratedDb.objectStoreNames)).toEqual(
+      expect.arrayContaining([
+        PROJECTS_STORE,
+        CODEX_CONVERSATIONS_STORE,
+        CONVERSATION_RUNS_STORE,
+      ]),
+    );
+    expect(await migratedDb.get(CODEX_CONVERSATIONS_STORE, "codex-1")).toBeTruthy();
+    await migratedDb.put(CONVERSATION_RUNS_STORE, {
+      run_id: "run-1",
+      updated_at: "2026-08-07T10:00:00.000Z",
+    });
+    migratedDb.close();
+
+    await repo.replaceAll([
+      createProject({ ...emptyDraft(), name: "Replacement" }),
+    ]);
+
+    const verifiedDb = await openDB(name, DB_VERSION);
+    expect(await verifiedDb.get(CODEX_CONVERSATIONS_STORE, "codex-1")).toBeTruthy();
+    expect(await verifiedDb.get(CONVERSATION_RUNS_STORE, "run-1")).toBeTruthy();
+    verifiedDb.close();
   });
 });
