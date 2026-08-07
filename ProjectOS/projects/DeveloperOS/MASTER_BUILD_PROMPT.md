@@ -135,6 +135,8 @@ GitHub Pages n’héberge pas ce backend. La cible serveur est décidée et vali
 - CO-BUILD-01 — canal ChatGPT Plus manuel et persistance locale : PR #70 intégrée.
 - Commit d’intégration CO-BUILD-01 : `51178d642b6dcc2099a4e378f79f3b133f1bd3b1`.
 - BUILD-02R V3 : PR #86 intégrée.
+- CO-BUILD-02 Incrément A : PR #103 intégrée.
+- Commit d’intégration CO-BUILD-02A : `b22fd5002c4ead8ef73a8927c89f81b9d8b4ff23`.
 
 ### Infrastructure
 
@@ -142,6 +144,7 @@ GitHub Pages n’héberge pas ce backend. La cible serveur est décidée et vali
 - PAGES-01 : PR #89 intégrée.
 - PAGES-FIX : PR #92 intégrée.
 - Configuration PWA/Vite : sous-chemin `/App-perso/developer-os/`.
+- La CI DeveloperOS exécute désormais explicitement les tests serveur introduits par CO-BUILD-02A.
 
 ## 6. Conversation Orchestrator — décisions stables
 
@@ -182,37 +185,35 @@ Canal ChatGPT Plus manuel, persistance locale, repository des runs, import/expor
 
 Statut : **en cours**.
 
-Draft PR active : #83 — Incrément A backend OpenAI API.
+L’Incrément A est intégré via PR #103 sur le commit `b22fd5002c4ead8ef73a8927c89f81b9d8b4ff23`.
 
-Head vérifié lors de GOV-02 :
-
-`626e6d4396208f7a4dbf7d9c2e99373d0f8fb403`
-
-L’Incrément A prépare notamment :
+Il fournit notamment :
 
 - configuration serveur typée ;
 - limites bornées ;
 - validation des variables d’environnement ;
 - erreurs publiques assainies ;
-- contrats `ExecutionProvider` ;
-- provider fictif déterministe ;
-- tests serveur.
+- contrats `ExecutionProvider`, `ProviderRequest`, `ProviderResult`, `ProviderUsage` ;
+- `FakeExecutionProvider` déterministe sans réseau ;
+- tests serveur intégrés à `npm run check` et à DeveloperOS CI.
 
-Il n’intègre pas encore dans `main` :
+Le Build complet n’intègre pas encore :
 
 - serveur HTTP réel ;
 - authentification ;
-- stockage serveur réel ;
-- scheduler ;
-- SDK OpenAI réel ;
+- stockage serveur réel et migrations PostgreSQL ;
+- scheduler / orchestration serveur ;
+- provider OpenAI réel ;
 - UI API ;
 - CO-BUILD-03.
 
+La PR historique #83 est fermée sans fusion et supersédée par #103.
+
 ### CO-QA-02A
 
-Statut : **en cours déclaré**.
+Statut : **terminé**.
 
-Aucun fichier ou PR portant exactement ce nom n’a été trouvé lors de GOV-02. Le travail doit donc être traité comme validation opérationnelle en cours jusqu’à production d’une preuve durable.
+Le QA a identifié un défaut d’immutabilité imbriquée dans `ProviderResult.usageObserved`. PR #103 a reconstruit l’Incrément A depuis le `main` canonique, corrigé ce défaut, ajouté la preuve persistante correspondante et obtenu une CI GitHub complète verte, y compris Server tests, build et Mobile E2E.
 
 ### CO-BUILD-03
 
@@ -254,11 +255,12 @@ La CI principale couvre sur `main` :
 - tests unitaires ;
 - tests composants ;
 - tests repository ;
+- tests serveur ;
 - tests PWA ;
 - build ;
 - E2E mobiles Playwright.
 
-Lorsqu’un incrément introduit des tests serveur, la PR concernée doit intégrer explicitement leur exécution dans la chaîne de contrôle avant fusion. La présence de `test:server` dans une Draft PR ne signifie pas qu’il existe déjà dans `main`.
+Tout incrément serveur doit conserver cette chaîne de contrôle et ajouter les preuves spécifiques nécessaires à son périmètre sans supprimer les non-régressions existantes.
 
 ## 10. UX et sécurité permanentes
 
@@ -287,12 +289,10 @@ Lorsqu’un incrément introduit des tests serveur, la PR concernée doit intég
 
 ## 12. Prochaine action canonique
 
-À la date de GOV-02 :
-
-1. terminer `CO-QA-02A` ;
-2. appliquer à #83 les corrections éventuellement révélées ;
-3. décider l’acceptation de l’Incrément A ;
-4. préparer seulement ensuite l’incrément suivant de `CO-BUILD-02` ;
+1. préparer `CO-BUILD-02` Incrément B depuis le `main` vivant post PR #103 ;
+2. relire SPEC-00, ADR-003, l’Incrément A intégré et le code serveur réel ;
+3. borner précisément l’Incrément B avant toute implémentation : responsabilités, fichiers autorisés, dépendances, sécurité, preuves et QA ;
+4. implémenter ensuite l’Incrément B sur une branche dédiée et obtenir la CI complète sur le SHA candidat réel ;
 5. ne pas lancer CO-BUILD-03.
 
 ## 13. Source de vérité des statuts
