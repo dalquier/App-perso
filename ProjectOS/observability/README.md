@@ -29,7 +29,11 @@ Une seule source de données structurée alimente les vues ; aucune vue ne devie
 
 ### Dashboard Replit
 
-Une application Replit dédiée `Incident Dashboard` a été créée comme vue détaillée en lecture seule : overview, filtres, récurrence, chronologie et ProjectOS Learning. Elle doit rester un consommateur du Ledger et ne jamais écrire dans GitHub. La validation runtime Replit doit être obtenue avant de qualifier cette vue d’opérationnelle ou de la publier.
+L’application Replit dédiée `Incident Dashboard` fournit la vue détaillée en lecture seule : overview, filtres, récurrence, chronologie et ProjectOS Learning. Elle reste un consommateur du Ledger et n’écrit jamais dans GitHub.
+
+La recette runtime automatisée du 8 août 2026 est verte : 36 tests sur 36. Elle couvre notamment les sept filtres, les KPI filtrés, la dérivation du type depuis la signature, l’export CSV sans création de Blob/URL au rendu, le thème tri-état `Système / Clair / Sombre`, le suivi dynamique de `prefers-color-scheme`, la déduplication des requêtes GitHub, le cache de dernière donnée valide, le fallback stale explicite et le support d’un `GITHUB_TOKEN` optionnel.
+
+L’incident iPhone `QUALITY_CONTRACT.SAFARI_IOS_CSV_EXPORT_RUNTIME_ERROR` a été enregistré puis marqué `RESOLVED` dans le Ledger #87 après suppression du composant d’export à l’origine de l’overlay runtime. Une recette physique Safari iPhone reste nécessaire pour confirmer exhaustivement le partage/export dans le WebKit réel.
 
 ### Incident Analyzer
 
@@ -37,7 +41,7 @@ Une application Replit dédiée `Incident Dashboard` a été créée comme vue d
 
 ## Quality Gate
 
-`ProjectOS Quality` compile désormais tous les scripts ProjectOS et exécute conditionnellement les tests de l’agrégateur/Analyzer et du widget Pyto lorsqu’ils sont présents.
+`ProjectOS Quality` compile tous les scripts ProjectOS et exécute conditionnellement les tests de l’agrégateur/Analyzer et du widget Pyto lorsqu’ils sont présents.
 
 ## État des phases
 
@@ -45,7 +49,7 @@ Une application Replit dédiée `Incident Dashboard` a été créée comme vue d
 - Phase 2 — capture et Ledger GitHub #87 : **intégrée**.
 - Phase 3 — agrégateur et indicateurs : **intégrée**.
 - Phase 4A — widget Pyto : **intégrée, validation automatisée verte ; recette physique iPhone restante**.
-- Phase 4B — dashboard Replit : **application créée, validation runtime restante avant publication**.
+- Phase 4B — dashboard Replit : **opérationnel et validation automatisée verte ; recette physique Safari iPhone du partage/export restante**.
 - Phase 5 — Incident Analyzer et générateur de prompt ChatGPT/Codex : **intégrée et tests automatisés verts**.
 
 ## Confidentialité
