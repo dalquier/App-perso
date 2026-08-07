@@ -1,7 +1,10 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
 import { createProject, emptyDraft } from "../domain/project";
-import { IndexedDbProjectRepository } from "./indexedDbRepository";
+import {
+  DB_VERSION,
+  IndexedDbProjectRepository,
+} from "./indexedDbRepository";
 
 const names: string[] = [];
 
@@ -107,13 +110,14 @@ describe("IndexedDB repository", () => {
   it("closes obsolete connections on version change", async () => {
     const repo = make();
     await repo.list();
-    const req = indexedDB.open(names.at(-1)!, 2);
+    const nextVersion = DB_VERSION + 1;
+    const req = indexedDB.open(names.at(-1)!, nextVersion);
     const opened = await new Promise<IDBDatabase>((resolve, reject) => {
       req.onerror = () => reject(req.error);
       req.onupgradeneeded = () => undefined;
       req.onsuccess = () => resolve(req.result);
     });
     opened.close();
-    expect(opened.version).toBe(2);
+    expect(opened.version).toBe(nextVersion);
   });
 });

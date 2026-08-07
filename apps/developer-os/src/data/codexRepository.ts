@@ -1,8 +1,12 @@
 import { openDB, type IDBPDatabase } from "idb";
 import type { CodexConversation } from "../domain/codexConversation";
-import { DB_VERSION } from "./indexedDbRepository";
+import {
+  CODEX_CONVERSATIONS_STORE,
+  DB_VERSION,
+  ensureDeveloperOsStores,
+} from "./indexedDbSchema";
 
-const STORE = "codexConversations";
+const STORE = CODEX_CONVERSATIONS_STORE;
 
 type DeveloperOsDb = IDBPDatabase<unknown>;
 
@@ -26,15 +30,7 @@ export class IndexedDbCodexRepository implements CodexRepository {
   constructor(name = "developeros") {
     this.db = openDB(name, DB_VERSION, {
       upgrade(db) {
-        if (!db.objectStoreNames.contains("projects")) {
-          const projects = db.createObjectStore("projects", { keyPath: "id" });
-          projects.createIndex("updatedAt", "updatedAt");
-        }
-        if (!db.objectStoreNames.contains(STORE)) {
-          const store = db.createObjectStore(STORE, { keyPath: "id" });
-          store.createIndex("updatedAt", "updatedAt");
-          store.createIndex("status", "status");
-        }
+        ensureDeveloperOsStores(db);
       },
     });
   }

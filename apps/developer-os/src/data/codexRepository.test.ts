@@ -2,6 +2,7 @@ import { openDB } from "idb";
 import { describe, expect, it } from "vitest";
 import type { CodexConversation } from "../domain/codexConversation";
 import { IndexedDbCodexRepository } from "./codexRepository";
+import { DB_VERSION } from "./indexedDbRepository";
 
 const conversation: CodexConversation = {
   id: "conversation-test",
@@ -92,11 +93,12 @@ describe("IndexedDbCodexRepository", () => {
     const repository = new IndexedDbCodexRepository(name);
     await repository.list();
 
-    const upgraded = await openDB(name, 2);
+    const upgraded = await openDB(name, DB_VERSION);
     expect(await upgraded.get("projects", "project-preserved")).toMatchObject({
       id: "project-preserved",
     });
     expect(upgraded.objectStoreNames.contains("codexConversations")).toBe(true);
+    expect(upgraded.objectStoreNames.contains("conversation-runs")).toBe(true);
     const transaction = upgraded.transaction("codexConversations");
     expect(Array.from(transaction.store.indexNames)).toEqual(
       expect.arrayContaining(["updatedAt", "status"]),

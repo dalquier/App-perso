@@ -1,12 +1,18 @@
 import { openDB, type IDBPDatabase } from "idb";
 import type { Project } from "../domain/project";
 import {
+  DB_VERSION,
+  ensureDeveloperOsStores,
+  PROJECTS_STORE,
+} from "./indexedDbSchema";
+import {
   RepositoryUnavailableError,
   type ProjectRepository,
 } from "./repository";
 
-export const DB_VERSION = 2;
-const STORE = "projects";
+export { DB_VERSION } from "./indexedDbSchema";
+
+const STORE = PROJECTS_STORE;
 
 type DeveloperOsDb = IDBPDatabase<unknown>;
 
@@ -16,15 +22,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   constructor(name = "developeros") {
     this.db = openDB(name, DB_VERSION, {
       upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE)) {
-          const store = db.createObjectStore(STORE, { keyPath: "id" });
-          store.createIndex("updatedAt", "updatedAt");
-        }
-        if (!db.objectStoreNames.contains("codexConversations")) {
-          const conversations = db.createObjectStore("codexConversations", { keyPath: "id" });
-          conversations.createIndex("updatedAt", "updatedAt");
-          conversations.createIndex("status", "status");
-        }
+        ensureDeveloperOsStores(db);
       },
       blocked() {
         throw new RepositoryUnavailableError(
