@@ -151,11 +151,7 @@ def sync_current(current: Path, client: AppsScriptClient, progress=None) -> dict
                 progress({"phase": "delete", "completed": completed, "total": total, "path": path})
     client.call("finalize", manifest=local_manifest)
     verified_manifest = client.call("manifest").get("manifest") or {}
-    expected_count = local_manifest.get("fileCount", len(local))
-    if (
-        verified_manifest.get("runId") != local_manifest.get("runId")
-        or verified_manifest.get("fileCount") != expected_count
-    ):
+    if verified_manifest != local_manifest:
         raise DriveSyncError("MANIFEST.json Drive ne correspond pas au miroir local")
     if progress:
         progress({"phase": "complete", "completed": total, "total": total})
