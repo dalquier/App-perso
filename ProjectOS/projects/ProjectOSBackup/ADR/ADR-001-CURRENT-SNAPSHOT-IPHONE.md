@@ -2,7 +2,7 @@
 
 ## Statut
 
-Acceptée pour BUILD-01.
+Remplacée pour le transport et le format de sauvegarde par le miroir incrémental BUILD-02.2 et l'ADR-002. La décision d'utiliser Pyto et d'exclure `dalquier/Scriptable` reste applicable.
 
 ## Contexte
 
@@ -28,7 +28,8 @@ Les fichiers de code sont répartis entre GitHub, iCloud Drive et plusieurs appl
 - le BUILD-02 doit vérifier le remplacement du bundle dans Drive ;
 - la sauvegarde de `dalquier/App-perso` nécessite un flux cloud séparé.
 
+Les ZIP, le bundle global et le transfert de dossier par Raccourcis décrits ici sont historiques : la v0.4 maintient un miroir `Current` sans versions et utilise un relais Apps Script résilient.
+
 ## Retour arrière
 
-Supprimer l'application/configuration Pyto et conserver le dernier bundle Drive. Aucun fichier source n'est modifié par le système.
-
+Pour un ancien BUILD-01, supprimer l'application/configuration Pyto et conserver le dernier bundle Drive. Pour la v0.4, appliquer le retour arrière de l'ADR-002. Aucun fichier source n'est modifié par le système.
