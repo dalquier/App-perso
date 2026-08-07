@@ -42,6 +42,16 @@ class ProgressTests(unittest.TestCase):
         self.assertEqual(counter, "Préparation en cours")
         self.assertEqual(ratio, 0.0)
 
+    def test_preflight_progress_is_graphical_and_shows_attempt(self):
+        title, counter, filename, ratio = progress_copy({
+            "phase": "drive_retry", "attempt": 2, "maxAttempts": 3,
+            "message": "Le service se réveille",
+        })
+        self.assertEqual(title, "Nouvelle tentative de connexion")
+        self.assertEqual(counter, "Tentative 2 / 3")
+        self.assertEqual(filename, "Le service se réveille")
+        self.assertEqual(ratio, 0.0)
+
     def test_throttle_keeps_phase_percent_and_completion(self):
         previous = {"phase": "upload", "percent": 10, "time": 10.0}
         self.assertFalse(should_emit_progress(previous, {"phase": "upload", "completed": 10, "total": 100}, 10.05))
@@ -53,6 +63,8 @@ class ProgressTests(unittest.TestCase):
     def test_progress_stages_distinguish_local_and_drive(self):
         self.assertEqual(progress_stages({"phase": "mirror"}), ("En cours", "En attente"))
         self.assertEqual(progress_stages({"phase": "upload"}), ("Terminé", "En cours"))
+        self.assertEqual(progress_stages({"phase": "drive_wake"}), ("En attente", "Connexion"))
+        self.assertEqual(progress_stages({"phase": "drive_wake", "localComplete": True}), ("Terminé", "Connexion"))
 
     def test_summary_is_serialisable_and_readable(self):
         local = SimpleNamespace(copied_files=3, resumed_files=2, deleted_files=1)
