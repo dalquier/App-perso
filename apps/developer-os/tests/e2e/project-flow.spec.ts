@@ -150,7 +150,11 @@ test("mobile resume, secure reference and project import preserve Codex data", a
   await page.getByRole("button", { name: "Ajouter la référence" }).click();
   await page.evaluate(async () => { const request = indexedDB.open("developeros", 2); const db = await new Promise<IDBDatabase>((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); }); const tx = db.transaction("codexConversations", "readwrite"); tx.objectStore("codexConversations").put({ id: "e2e-codex", name: "Conversation conservée", updatedAt: new Date().toISOString() }); await new Promise<void>((resolve, reject) => { tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); }); db.close(); });
   await page.reload();
-  await expect(page.getByText("Relire la PR")).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Point de reprise courant" }),
+  ).toHaveValue("Relire la PR");
+  const history = page.getByRole("heading", { name: "Historique" }).locator("..");
+  await expect(history.getByText("Relire la PR", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Ouvrir" })).toHaveAttribute("rel", "noopener noreferrer");
   page.once("dialog", (dialog) => dialog.accept()); await page.getByRole("button", { name: "Supprimer" }).click();
   await expect(page.getByText("Référence supprimée.")).toBeVisible();
