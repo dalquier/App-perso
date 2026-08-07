@@ -1,4 +1,6 @@
 const MAX_DECODED_BYTES = 7 * 1024 * 1024;
+const MAX_BATCH_FILES = 20;
+const MAX_BATCH_DECODED_BYTES = 5 * 1024 * 1024;
 
 function doGet() { return json_({ok: true, service: 'ProjectOS Backup'}); }
 
@@ -16,7 +18,9 @@ function doPost(e) {
     lock.waitLock(30000);
     try {
       if (payload.action === 'upload') upload_(current, payload);
+      else if (payload.action === 'uploadBatch') uploadBatch_(current, payload.files);
       else if (payload.action === 'delete') delete_(current, payload.path);
+      else if (payload.action === 'deleteBatch') deleteBatch_(current, payload.paths);
       else if (payload.action === 'finalize') finalize_(current, payload.manifest);
       else throw new Error('Action inconnue');
     } finally { lock.releaseLock(); }
@@ -24,16 +28,40 @@ function doPost(e) {
   } catch (error) { return json_({ok: false, error: String(error.message || error)}); }
 }
 
+function uploadBatch_(current, files) {
+  if (!Array.isArray(files) || !files.length || files.length > MAX_BATCH_FILES) throw new Error('Lot upload invalide');
+  let total = 0;
+  const decoded = files.map(payload => {
+    const bytes = Utilities.base64Decode(payload.contentBase64 || '');
+    total += bytes.length;
+    if (bytes.length > MAX_DECODED_BYTES || total > MAX_BATCH_DECODED_BYTES) throw new Error('Lot upload trop volumineux');
+    if (sha256_(bytes) !== payload.sha256) throw new Error('SHA-256 incorrect: ' + payload.path);
+    resolve_(current, payload.path, false); // validates the path without mutating Drive
+    return {payload: payload, bytes: bytes};
+  });
+  decoded.forEach(item => uploadBytes_(current, item.payload, item.bytes));
+}
+
 function upload_(current, payload) {
-  const resolved = resolve_(current, payload.path, true);
   const bytes = Utilities.base64Decode(payload.contentBase64 || '');
   if (bytes.length > MAX_DECODED_BYTES) throw new Error('Fichier trop volumineux');
   if (sha256_(bytes) !== payload.sha256) throw new Error('SHA-256 incorrect: ' + payload.path);
+  uploadBytes_(current, payload, bytes);
+}
+
+function uploadBytes_(current, payload, bytes) {
+  const resolved = resolve_(current, payload.path, true);
   const temporaryName = '.projectos-' + Utilities.getUuid();
   const created = resolved.folder.createFile(Utilities.newBlob(bytes, payload.mimeType || 'application/octet-stream', temporaryName));
   const existing = resolved.folder.getFilesByName(resolved.name);
   while (existing.hasNext()) existing.next().setTrashed(true);
   created.setName(resolved.name);
+}
+
+function deleteBatch_(current, paths) {
+  if (!Array.isArray(paths) || !paths.length || paths.length > MAX_BATCH_FILES) throw new Error('Lot suppression invalide');
+  paths.forEach(path => resolve_(current, path, false)); // validate every path first
+  paths.forEach(path => delete_(current, path));
 }
 
 function delete_(current, path) {
