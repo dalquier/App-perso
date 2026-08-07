@@ -224,3 +224,28 @@ Aucune modification automatique de ProjectOS n’est déclenchée par les statis
 ## 15. Règle permanente
 
 **Un incident utile est un fait structuré avec cause, impact, gravité et récurrence ; ProjectOS apprend des causes racines et des tendances, pas du nombre brut de messages d’erreur.**
+
+## 16. Incident Sweep de clôture ProjectOS
+
+Avant toute réponse finale clôturant une tâche ProjectOS ayant utilisé un ou plusieurs outils, l’agent effectue un balayage explicite des événements observables de la tâche.
+
+Le sweep couvre au minimum les erreurs, avertissements bloquants, fallbacks, limitations et incohérences effectivement observés dans les outils utilisés pendant la tâche, notamment `ChatGPT`, `Codex`, `GitHub`, `Replit`, `Pyto`, `Google Drive` et autres connecteurs ou runtimes mobilisés.
+
+Le sweep ne constitue pas une surveillance globale ou en arrière-plan des outils non consultés. ProjectOS ne peut garantir que les événements qu’il a effectivement reçus, lus ou provoqués pendant l’exécution.
+
+Pour chaque événement observable, l’agent doit déterminer l’un des quatre résultats suivants :
+
+1. `CAPTURED` — incident matériel enregistré ou occurrence ajoutée dans #87 ;
+2. `KNOWN` — événement déjà couvert par un incident existant, sans nouvelle occurrence pertinente ;
+3. `NON_INCIDENT` — message sans impact matériel selon les critères de la section 7 ;
+4. `PENDING` — incident matériel identifié mais non encore enregistrable, à transmettre via `INCIDENT_CAPTURE_PENDING`.
+
+Règles du sweep :
+
+- rechercher la cause racine avant de compter les messages ;
+- ne pas transformer chaque warning ou retry transitoire en incident ;
+- lorsqu’un incident précédemment `RESOLVED` récidive avec la même cause, ajouter une nouvelle occurrence et réévaluer son statut ;
+- lorsqu’un symptôme identique provient d’une nouvelle cause racine, créer une signature distincte ;
+- une réponse finale ne doit pas déclarer une tâche ProjectOS propre ou sans incident tant qu’un événement matériel observable reste sans statut `CAPTURED`, `KNOWN`, `NON_INCIDENT` ou `PENDING`.
+
+Le but est de maximiser la couverture des incidents réellement observés pendant les conversations ProjectOS, sans prétendre collecter des erreurs invisibles provenant d’outils qui n’ont pas été interrogés.
