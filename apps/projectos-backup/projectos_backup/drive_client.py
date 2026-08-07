@@ -10,6 +10,9 @@ import json
 import mimetypes
 import os
 from pathlib import Path, PurePosixPath
+import re
+import time
+import urllib.error
 import urllib.request
 from urllib.parse import urlencode, urlsplit, urlunsplit
 
@@ -23,7 +26,16 @@ STATE_FILE = "STATE.json"
 
 
 class DriveSyncError(RuntimeError):
-    pass
+    """A safe Drive failure with machine-readable context."""
+
+    def __init__(self, message: str, *, code: str = "drive_error", stage: str = "drive", retryable: bool = False,
+                 attempt: int | None = None, detail: str = ""):
+        super().__init__(message)
+        self.code = code
+        self.stage = stage
+        self.retryable = retryable
+        self.attempt = attempt
+        self.detail = detail
 
 
 def _utc_now() -> str:
@@ -82,12 +94,40 @@ class AppsScriptClient:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
                 result = json.loads(response.read().decode("utf-8"))
         except Exception as exc:
-            raise DriveSyncError(f"Google Drive — {action} : {exc}") from exc
+            raise DriveSyncError(
+                f"Google Drive — {action} : {exc}", code="network", stage=action, retryable=True,
+                detail=type(exc).__name__,
+            ) from exc
         if not result.get("ok"):
-            raise DriveSyncError(f"Google Drive — {action} : {result.get('error', 'erreur inconnue')}")
+            error = result.get("error", "erreur inconnue")
+            code = "auth" if "Accès refusé" in error else "server"
+            retryable = code != "auth" and not any(value in error for value in ("ROOT_FOLDER_ID", "Lecture inconnue"))
+            raise DriveSyncError(
+                f"Google Drive — {action} : {error}", code=code, stage=action, retryable=retryable,
+            )
         return result
 
-    def read(self, action: str, **payload) -> dict:
+    def public_read(self, timeout: int | None = None) -> dict:
+        request = urllib.request.Request(self.url, method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=timeout or self.timeout) as response:
+                raw = response.read().decode("utf-8")
+                if not raw.strip():
+                    raise ValueError("réponse vide")
+                result = json.loads(raw)
+        except Exception as exc:
+            retryable = not isinstance(exc, urllib.error.HTTPError) or exc.code == 429 or exc.code >= 500
+            raise DriveSyncError(
+                f"Google Drive — réveil : {exc}", code="network", stage="wake", retryable=retryable,
+                detail=type(exc).__name__,
+            ) from exc
+        if not result.get("ok") or result.get("service") != "ProjectOS Backup":
+            raise DriveSyncError(
+                "Le relais Google Drive n'est pas reconnu", code="service", stage="wake", retryable=False,
+            )
+        return result
+
+    def read(self, action: str, timeout: int | None = None, **payload) -> dict:
         """Use a short GET for idempotent control-plane reads on iOS.
 
         Apps Script ContentService POST redirects can occasionally yield an
@@ -106,16 +146,121 @@ class AppsScriptClient:
         })
         request = urllib.request.Request(f"{self.url}?{query}", method="GET")
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            with urllib.request.urlopen(request, timeout=timeout or self.timeout) as response:
                 raw = response.read().decode("utf-8")
                 if not raw.strip():
                     raise ValueError("réponse vide")
                 result = json.loads(raw)
         except Exception as exc:
-            raise DriveSyncError(f"Google Drive — {action} : {exc}") from exc
+            retryable = not isinstance(exc, urllib.error.HTTPError) or exc.code == 429 or exc.code >= 500
+            raise DriveSyncError(
+                f"Google Drive — {action} : {exc}", code="network", stage=action, retryable=retryable,
+                detail=type(exc).__name__,
+            ) from exc
         if not result.get("ok"):
-            raise DriveSyncError(f"Google Drive — {action} : {result.get('error', 'erreur inconnue')}")
+            error = result.get("error", "erreur inconnue")
+            code = "auth" if "Accès refusé" in error else "server"
+            retryable = code != "auth" and not any(value in error for value in ("ROOT_FOLDER_ID", "Lecture inconnue"))
+            raise DriveSyncError(
+                f"Google Drive — {action} : {error}", code=code, stage=action, retryable=retryable,
+            )
         return result
+
+
+def _validate_remote_manifest(manifest: object) -> dict:
+    if manifest is None:
+        return {}
+    if not isinstance(manifest, dict):
+        raise DriveSyncError("Index Google Drive invalide", code="manifest_invalid", stage="manifest")
+    if manifest.get("status") != "complete" or not manifest.get("runId") or not isinstance(manifest.get("sources"), list):
+        raise DriveSyncError("Index Google Drive incomplet", code="manifest_invalid", stage="manifest")
+    return manifest
+
+
+def _protocol_at_least_two(value, stage: str) -> None:
+    try:
+        valid = int(value) >= 2
+    except (TypeError, ValueError):
+        valid = False
+    if not valid:
+        raise DriveSyncError(
+            "Apps Script doit être redéployé avec le prévol Drive", code="protocol", stage=stage,
+        )
+
+
+def preflight_drive(
+    client: AppsScriptClient, progress=None, attempts: int = 3, delays=(0, 2, 5), sleep=None,
+    timeouts=(5, 7, 12), should_cancel=None,
+) -> dict:
+    """Wake and verify the relay without mutating Drive, retrying transient failures."""
+    attempts = max(1, int(attempts))
+    sleep = sleep or time.sleep
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            if should_cancel and should_cancel():
+                raise DriveSyncError("Prévol interrompu par iOS", code="cancelled", stage="preflight")
+            if progress:
+                progress({"phase": "drive_wake", "attempt": attempt, "maxAttempts": attempts})
+            wake = client.public_read(timeout=timeouts[0])
+            _protocol_at_least_two(wake.get("protocol"), "wake")
+            if progress:
+                progress({"phase": "drive_auth", "attempt": attempt, "maxAttempts": attempts})
+            health = client.read("health", timeout=timeouts[1])
+            _protocol_at_least_two(health.get("protocol"), "auth")
+            if health.get("rootReady") is not True:
+                raise DriveSyncError("Accès au dossier Drive non confirmé", code="root", stage="auth")
+            if progress:
+                progress({"phase": "drive_manifest", "attempt": attempt, "maxAttempts": attempts})
+            manifest = _validate_remote_manifest(client.read("manifest", timeout=timeouts[2]).get("manifest"))
+            result = {
+                "status": "ready", "attempt": attempt, "maxAttempts": attempts,
+                "hasManifest": bool(manifest), "manifest": manifest, "checkedAt": _utc_now(),
+            }
+            if progress:
+                progress({
+                    "phase": "drive_ready", "attempt": attempt, "maxAttempts": attempts,
+                    "message": "Index distant disponible" if manifest else "Première sauvegarde à initialiser",
+                })
+            return result
+        except DriveSyncError as exc:
+            exc.attempt = attempt
+            last_error = exc
+            if not exc.retryable or attempt >= attempts:
+                break
+            delay = delays[attempt] if attempt < len(delays) else delays[-1]
+            if progress:
+                progress({
+                    "phase": "drive_retry", "attempt": attempt + 1, "maxAttempts": attempts,
+                    "delay": delay, "message": str(exc),
+                })
+            if should_cancel:
+                waited = 0.0
+                while waited < delay:
+                    if should_cancel():
+                        raise DriveSyncError("Prévol interrompu par iOS", code="cancelled", stage="preflight")
+                    step = min(0.25, delay - waited)
+                    sleep(step)
+                    waited += step
+            else:
+                sleep(delay)
+    raise last_error or DriveSyncError("Prévol Google Drive impossible", stage="preflight")
+
+
+def format_preflight_diagnostic(exc: Exception) -> str:
+    """Return a compact diagnostic that never exposes credentials or signed URLs."""
+    message = re.sub(r"https://[^\s?]+\?[^\s]+", "[URL signée masquée]", str(exc))
+    return json.dumps({
+        "projectOSBackupDiagnostic": 2,
+        "checkedAt": _utc_now(),
+        "status": "error",
+        "code": getattr(exc, "code", "unexpected"),
+        "stage": getattr(exc, "stage", "unknown"),
+        "attempt": getattr(exc, "attempt", None),
+        "retryable": bool(getattr(exc, "retryable", False)),
+        "errorType": type(exc).__name__,
+        "message": message,
+    }, ensure_ascii=False, indent=2)
 
 
 def _plan_digest(sync_id: str, uploads: list[dict], deletes: list[str]) -> str:
@@ -235,7 +380,7 @@ def has_pending_drive_sync(current: Path) -> bool:
     )
 
 
-def sync_current(current: Path, client: AppsScriptClient, progress=None) -> dict:
+def sync_current(current: Path, client: AppsScriptClient, progress=None, should_cancel=None) -> dict:
     manifest_path = current / "MANIFEST.json"
     state_path = drive_state_path(current)
     try:
@@ -248,9 +393,14 @@ def sync_current(current: Path, client: AppsScriptClient, progress=None) -> dict
     sync_id = str(local_manifest["runId"])
     uploaded = deleted_count = resumed = 0
     try:
-        if progress:
-            progress({"phase": "drive_prepare", "completed": 0, "total": 0})
-        remote_manifest = client.read("manifest").get("manifest") or {}
+        def preflight_progress(event):
+            event["localComplete"] = True
+            if progress:
+                progress(event)
+
+        remote_manifest = preflight_drive(
+            client, progress=preflight_progress if progress else None, should_cancel=should_cancel,
+        )["manifest"]
         local, remote = manifest_files(local_manifest), manifest_files(remote_manifest)
         changed = sorted(path for path, item in local.items() if remote.get(path, {}).get("sha256") != item.get("sha256"))
         deleted = sorted(set(remote) - set(local))
