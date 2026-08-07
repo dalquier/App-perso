@@ -47,7 +47,12 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 
 ## Observabilité
 
-- `observability/README.md` : architecture des vues d’incidents et phases de construction.
+- `observability/README.md` : architecture, composants et état des phases d’observabilité incidents.
+- `observability/AGGREGATOR_CONTRACT.md` : contrat JSON partagé entre agrégateur, widget, dashboard et Analyzer.
+- `observability/ANALYZER.md` : fonctionnement et garde-fous de la synthèse/prompt à la demande.
+- `observability/pyto/` : widget iPhone/Pyto de comptage synthétique des incidents.
+- `scripts/incident_aggregator.py` : lecture/déduplication/agrégation déterministe du Ledger.
+- `scripts/incident_analyzer.py` : filtres, synthèse et génération du prompt d’audit ChatGPT/Codex.
 - GitHub issue `#87 — ProjectOS — Incident Ledger` : journal append-only des occurrences d’incidents expurgées.
 
 ## Guides
