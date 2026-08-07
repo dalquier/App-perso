@@ -5,7 +5,7 @@
 - ID : `projectos-backup`
 - Nom : ProjectOS Backup
 - Alias : Projet 2, sauvegarde ProjectOS, backup de code
-- Statut : BUILD-02.2 construit — déploiement Apps Script et recette iPhone requis
+- Statut : BUILD-02.3 intégré — redéploiement Apps Script et recette iPhone v0.3 requis
 
 ## Objectif
 
@@ -43,9 +43,9 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 
 1. Pyto gère la liste dynamique des dossiers et leurs bookmarks de sécurité iOS.
 2. Le moteur scanne toutes les sources et demande à iOS de charger les éléments iCloud.
-3. Seuls les fichiers nouveaux ou modifiés sont préparés dans `Transaction`.
+3. Seuls les fichiers nouveaux ou modifiés sont lus ; les fichiers validés d’une exécution interrompue sont repris depuis `Resume/`.
 4. Après validation globale, les changements et suppressions sont appliqués avec rollback.
-5. Pyto transmet les seuls changements à un relais Apps Script, qui maintient le miroir Google Drive.
+5. Pyto transmet les changements par lots à un relais Apps Script, puis relit et compare le manifeste Drive complet.
 6. Un mécanisme cloud distinct capture la dernière branche `main` de `dalquier/App-perso`.
 
 ## Contraintes
@@ -63,7 +63,7 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 - BUILD-01 : moteur Pyto et interface de sources dynamiques — construit.
 - BUILD-01.1 : miroir incrémental, rollback et préchargement iCloud — en revue.
 - BUILD-02.1 : test court de copie du dossier `Current` vers Google Drive par Raccourcis — prêt à exécuter.
-- BUILD-02.2 : miroir incrémental vers Google Drive et automatisation personnelle par Raccourcis — conditionné par le test BUILD-02.1.
+- BUILD-02.2 : miroir incrémental vers Google Drive et automatisation personnelle par Raccourcis — intégré.\n- BUILD-02.3 : interface native v0.3, mode local rapide, cache de reprise et lots Drive — intégré ; recette iPhone requise.
 - BUILD-03 : capture cloud de `dalquier/App-perso`, restauration guidée et recette de crise.
 
 ## Définition de terminé
