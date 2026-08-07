@@ -1,0 +1,80 @@
+name: ProjectOS Incident Analysis
+
+on:
+  workflow_dispatch:
+    inputs:
+      last_days:
+        description: "Période analysée en jours"
+        required: true
+        default: "30"
+        type: string
+      project:
+        description: "Projet exact (optionnel)"
+        required: false
+        default: ""
+        type: string
+      severity:
+        description: "Gravités séparées par virgules, ex. S1,S2,S3 (optionnel)"
+        required: false
+        default: ""
+        type: string
+      status:
+        description: "Statuts séparés par virgules (optionnel)"
+        required: false
+        default: ""
+        type: string
+      target:
+        description: "Cible du prompt"
+        required: true
+        default: chatgpt
+        type: choice
+        options:
+          - chatgpt
+          - codex
+          - both
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      INPUT_LAST_DAYS: ${{ inputs.last_days }}
+      INPUT_PROJECT: ${{ inputs.project }}
+      INPUT_SEVERITY: ${{ inputs.severity }}
+      INPUT_STATUS: ${{ inputs.status }}
+      INPUT_TARGET: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate incident synthesis and prompt
+        run: |
+          args=(
+            --last-days "$INPUT_LAST_DAYS"
+            --target "$INPUT_TARGET"
+            --summary-json incident-summary.json
+            --prompt-output incident-analysis-prompt.txt
+          )
+          if test -n "$INPUT_PROJECT"; then args+=(--project "$INPUT_PROJECT"); fi
+          if test -n "$INPUT_SEVERITY"; then args+=(--severity "$INPUT_SEVERITY"); fi
+          if test -n "$INPUT_STATUS"; then args+=(--status "$INPUT_STATUS"); fi
+          python ProjectOS/scripts/incident_analyzer.py "${args[@]}"
+      - name: Validate generated artifacts
+        run: |
+          python -m json.tool incident-summary.json >/dev/null
+          test -s incident-analysis-prompt.txt
+          grep -q "MISSION" incident-analysis-prompt.txt
+          grep -q "NO_ACTION" incident-analysis-prompt.txt
+      - name: Upload analysis package
+        uses: actions/upload-artifact@v4
+        with:
+          name: projectos-incident-analysis
+          path: |
+            incident-summary.json
+            incident-analysis-prompt.txt
+          if-no-files-found: error
+          retention-days: 30
