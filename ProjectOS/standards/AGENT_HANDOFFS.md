@@ -23,10 +23,38 @@ Il contient au minimum :
 - fichiers créés ou modifiés ;
 - tests exécutés et résultats ;
 - limites, risques et points ouverts ;
+- incidents détectés et leur état d’enregistrement dans le Ledger #87 ;
 - prochaine action ;
 - branche, commit et Pull Request lorsqu’ils existent.
 
 Le fichier doit être autonome et ne contenir aucun secret ni donnée personnelle inutile.
+
+## Incident capture pending
+
+Appliquer `ProjectOS/standards/INCIDENT_LEARNING.md` à tout blocage matériel.
+
+Lorsque l’environnement producteur ne peut pas écrire dans GitHub, le handoff contient pour chaque incident non encore enregistré :
+
+```text
+INCIDENT_CAPTURE_PENDING
+incident_id: INC-...
+signature: TYPE.SUBTYPE
+severity: S1|S2|S3|S4
+status: OPEN|MITIGATED|RESOLVED|ACCEPTED_LIMITATION
+project: ...
+tool: ...
+stage: ...
+occurred_at: ...
+source: ...
+symptom: ...
+root_cause: ...
+impact: ...
+workaround: ...
+projectos_coverage: NONE|PARTIAL|FULL
+candidate_projectos_change: ...
+```
+
+Le coordinateur déduplique ensuite la signature et ajoute l’occurrence au `ProjectOS — Incident Ledger` #87. La suppression du handoff n’est autorisée qu’après transfert de tout incident pending utile.
 
 ## Modes de livraison
 
@@ -74,15 +102,15 @@ Si Codex a déjà produit un diff :
 - copier le patch ou la commande `git apply` ;
 - appliquer la livraison sur une branche dédiée dans Working Copy, ChatGPT ou un autre environnement autorisé ;
 - ouvrir la Pull Request ;
-- qualifier l’événement d’incident de publication.
+- qualifier l’événement d’incident de publication et l’enregistrer selon `INCIDENT_LEARNING.md`.
 
 ## Reprise par le coordinateur
 
-Le coordinateur lit le handoff, vérifie le diff et les tests, contrôle la branche et la Pull Request, transfère les décisions durables dans les références canoniques et supprime les éléments temporaires avant fusion.
+Le coordinateur lit le handoff, vérifie le diff et les tests, contrôle la branche et la Pull Request, transfère les décisions durables dans les références canoniques, transfère les incidents `INCIDENT_CAPTURE_PENDING` dans le Ledger #87, puis supprime les éléments temporaires avant fusion.
 
 ## Sécurité
 
-- Aucun secret, jeton ou identifiant sensible dans le prompt, le dépôt ou le handoff.
+- Aucun secret, jeton ou identifiant sensible dans le prompt, le dépôt, le Ledger ou le handoff.
 - Aucun fichier temporaire ne doit être fusionné dans `main`.
 - La connexion GitHub native de Codex est privilégiée.
 - GitHub reste la source de vérité.
