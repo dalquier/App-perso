@@ -26,7 +26,10 @@ let integration;
 beforeAll(async () => {
   const storage = memoryStorage();
   globalThis.localStorage = storage;
-  globalThis.navigator = { userAgent: "Desktop" };
+  Object.defineProperty(globalThis, "navigator", {
+    value: { userAgent: "Desktop" },
+    configurable: true,
+  });
   globalThis.window = {
     navigator: globalThis.navigator,
     addEventListener: vi.fn(),
