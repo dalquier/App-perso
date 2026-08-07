@@ -2,6 +2,10 @@ const MAX_DECODED_BYTES = 7 * 1024 * 1024;
 const MAX_BATCH_FILES = 4;
 const MAX_BATCH_DECODED_BYTES = 1024 * 1024;
 const SESSION_PREFIX = 'PROJECTOS_SYNC_';
+const MANIFEST_CACHE_META = 'PROJECTOS_MANIFEST_CACHE_META';
+const MANIFEST_CACHE_PREFIX = 'PROJECTOS_MANIFEST_CACHE_';
+const MANIFEST_CACHE_CHUNK = 8000;
+const MANIFEST_CACHE_MAX_CHUNKS = 55;
 
 function doGet(e) {
   try {
@@ -23,7 +27,11 @@ function doGet(e) {
     const rootId = properties.getProperty('ROOT_FOLDER_ID');
     if (!rootId) throw new Error('ROOT_FOLDER_ID absent');
     const current = childFolder_(DriveApp.getFolderById(rootId), 'Current');
-    return json_({ok: true, manifest: readManifest_(current)});
+    const cached = readManifestCache_(properties);
+    if (cached.hit) return json_({ok: true, manifest: cached.manifest, cached: true});
+    const manifest = readManifest_(current);
+    writeManifestCache_(properties, manifest);
+    return json_({ok: true, manifest: manifest, cached: false});
   } catch (error) { return json_({ok: false, error: String(error.message || error)}); }
 }
 
@@ -191,6 +199,7 @@ function finalizeSync_(current, properties, payload) {
     }
   });
   finalize_(current, payload.manifest);
+  writeManifestCache_(properties, payload.manifest);
   cleanupSession_(properties, payload.syncId, uploads, deletes);
   return {status: 'complete'};
 }
@@ -273,6 +282,55 @@ function readManifest_(current) {
   if (!files.hasNext()) return null;
   try { return JSON.parse(files.next().getBlob().getDataAsString('UTF-8')); }
   catch (error) { throw new Error('MANIFEST.json Drive invalide'); }
+}
+
+function readManifestCache_(properties) {
+  const rawMeta = properties.getProperty(MANIFEST_CACHE_META);
+  if (!rawMeta) return {hit: false};
+  try {
+    const meta = JSON.parse(rawMeta);
+    if (!Number.isInteger(meta.chunks) || meta.chunks < 1 || meta.chunks > MANIFEST_CACHE_MAX_CHUNKS) {
+      return {hit: false};
+    }
+    let text = '';
+    for (let index = 0; index < meta.chunks; index++) {
+      const chunk = properties.getProperty(MANIFEST_CACHE_PREFIX + index);
+      if (chunk === null) return {hit: false};
+      text += chunk;
+    }
+    if (text.length !== meta.length || sha256Text_(text) !== meta.sha256) return {hit: false};
+    return {hit: true, manifest: JSON.parse(text)};
+  } catch (error) { return {hit: false}; }
+}
+
+function writeManifestCache_(properties, manifest) {
+  const text = JSON.stringify(manifest);
+  const chunks = Math.max(1, Math.ceil(text.length / MANIFEST_CACHE_CHUNK));
+  if (chunks > MANIFEST_CACHE_MAX_CHUNKS) return;
+  const previous = properties.getProperty(MANIFEST_CACHE_META);
+  let previousChunks = 0;
+  try { previousChunks = Number(JSON.parse(previous || '{}').chunks) || 0; } catch (error) {}
+  const values = {};
+  for (let index = 0; index < chunks; index++) {
+    values[MANIFEST_CACHE_PREFIX + index] = text.slice(
+      index * MANIFEST_CACHE_CHUNK, (index + 1) * MANIFEST_CACHE_CHUNK
+    );
+  }
+  properties.setProperties(values, false);
+  for (let index = chunks; index < previousChunks; index++) {
+    properties.deleteProperty(MANIFEST_CACHE_PREFIX + index);
+  }
+  properties.setProperty(MANIFEST_CACHE_META, JSON.stringify({
+    chunks: chunks,
+    length: text.length,
+    sha256: sha256Text_(text),
+    updatedAt: new Date().toISOString()
+  }));
+}
+
+function sha256Text_(text) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8)
+    .map(b => ('0' + (b < 0 ? b + 256 : b).toString(16)).slice(-2)).join('');
 }
 
 function resolve_(root, path, createFolders) {
