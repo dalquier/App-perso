@@ -42,6 +42,16 @@ function secureEquals_(left, right) {
   return difference === 0;
 }
 
+function warmManifestCache() {
+  const properties = PropertiesService.getScriptProperties();
+  const rootId = properties.getProperty('ROOT_FOLDER_ID');
+  if (!rootId) throw new Error('ROOT_FOLDER_ID absent');
+  const current = childFolder_(DriveApp.getFolderById(rootId), 'Current');
+  const manifest = readManifest_(current);
+  writeManifestCache_(properties, manifest);
+  return {ok: true, cached: true, fileCount: manifest ? manifest.fileCount || 0 : 0};
+}
+
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents || '{}');
