@@ -28,6 +28,7 @@ Permettre à Damien de restaurer les derniers fichiers utiles de tous ses projet
 - configuration dynamique : ajout, suspension et retrait de dossiers ;
 - exclusions paramétrables par dossier, nom de fichier et extension ; aucune extension exclue par défaut ;
 - miroir incrémental `Current`, transaction de rollback et SHA-256 ;
+- tampon iCloud résilient des conversations intégrales et pièces jointes avant archivage Drive append-only ;
 - restauration directe, dossier par dossier.
 
 ### Exclus
@@ -50,6 +51,7 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 6. Chaque lot confirmé est enregistré ; après délai dépassé ou suspension iOS, Pyto interroge la session et reprend uniquement les opérations manquantes.
 7. Les suppressions et le manifeste Drive final ne sont publiés qu'après confirmation de tous les envois ; le manifeste complet est ensuite relu et comparé au miroir local.
 8. Un mécanisme cloud distinct capture la dernière branche `main` de `dalquier/App-perso`.
+9. Les paquets de conversations suivent `Inbox → Pending → Uploading → Verified` et ne quittent le tampon qu’après preuve distante ; la copie vérifiée est conservée 30 jours.
 
 ## Contraintes
 
@@ -72,6 +74,7 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 - BUILD-02.4 : v0.4 — session Drive persistante, petits lots adaptatifs, reprise après timeout/suspension et synthèse finale — en construction.
 - BUILD-03 : capture cloud de `dalquier/App-perso`, restauration guidée et recette de crise.
 - BUILD-03.1 : connecteurs GitHub, archive Codex/ChatGPT et audit Replit selon `docs/SOURCE_CONNECTORS.md`.
+- BUILD-03.1a : tampon iCloud et protocole Drive append-only des conversations — construit, recette iPhone requise.
 
 ## Définition de terminé
 

@@ -14,7 +14,7 @@ Le mécanisme recommandé est un workflow GitHub Actions manuel et planifié qui
 
 Le code produit par Codex n'est sauvegardé que lorsqu'il est publié dans une branche ou une Pull Request GitHub. Un fichier laissé uniquement dans un sandbox Codex reste temporaire.
 
-Les conversations et fichiers joints relèvent du pipeline d'archive conversationnelle : Codex est capturé systématiquement selon le consentement permanent ProjectOS ; ChatGPT uniquement lorsque Damien choisit de l'enregistrer. La transcription intégrale et les fichiers accessibles vont dans Google Drive ; l'index et la synthèse vont dans GitHub. Les liens temporaires doivent être téléchargés immédiatement lorsqu'ils sont encore accessibles.
+Les conversations et fichiers joints relèvent du pipeline d'archive conversationnelle : Codex est capturé systématiquement selon le consentement permanent ProjectOS ; ChatGPT uniquement lorsque Damien choisit de l'enregistrer. La transcription intégrale et les fichiers accessibles passent d’abord par le tampon iCloud `ConversationBuffer`, puis vont dans `ConversationArchives` sur Google Drive après contrôle SHA-256. L'index et la synthèse vont dans GitHub. Les liens temporaires doivent être téléchargés immédiatement lorsqu'ils sont encore accessibles. Le tampon conserve indéfiniment toute archive non confirmée et 30 jours les archives confirmées.
 
 L'export de données ChatGPT reste une sauvegarde de contrôle périodique, pas le mécanisme incrémental principal.
 
@@ -28,7 +28,7 @@ Le futur connecteur Replit est donc un contrôle d'écart et un export des donn�
 
 1. stabiliser l'application iPhone, la progression globale et les filtres ;
 2. ajouter le connecteur GitHub cloud et sa restauration ;
-3. relier l'état de l'archive Codex/ChatGPT à l'application ;
+3. relier l'état de l'archive Codex/ChatGPT à l'application — tampon et état intégrés ; automatisation de remise du paquet restant à connecter ;
 4. ajouter l'audit Replit des fichiers non versionnés et des données persistantes ;
 5. construire une vue « Couverture » indiquant pour chaque source le dernier succès, la fraîcheur, les éléments protégés et l'action corrective.
 

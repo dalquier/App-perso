@@ -107,6 +107,7 @@ class ProgressTests(unittest.TestCase):
         self.assertEqual(progress_stages({"phase": "mirror"}), ("En cours", "En attente"))
         self.assertEqual(progress_stages({"phase": "upload"}), ("Terminé", "En cours"))
         self.assertEqual(progress_stages({"phase": "drive_wake"}), ("En attente", "Connexion"))
+        self.assertEqual(progress_stages({"phase": "archive_upload"}), ("En attente", "Archives"))
         self.assertEqual(progress_stages({"phase": "drive_wake", "localComplete": True}), ("Terminé", "Connexion"))
 
     def test_summary_is_serialisable_and_readable(self):

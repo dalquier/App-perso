@@ -22,11 +22,14 @@ Prérequis : `main` à jour dans Working Copy, dossier `apps/projectos-backup/` 
 | Q9 | Fermer l'interface | Fermeture immédiate ; état conservé | Bouton `Fermer`, puis même état au lancement |
 | Q10 | Ouvrir l'app après succès | Dernière synthèse toujours consultable | Date, durées et compteurs visibles |
 | Q11 | Couper le réseau puis lancer `Tester Google Drive` | Trois tentatives visibles, puis diagnostic copiable sans jeton | État `CONNEXION IMPOSSIBLE` |
-| Q12 | Rétablir le réseau puis lancer la sauvegarde | Le prévol devient vert avant l'analyse locale et toute mutation Drive | Ordre des phases visible |
+| Q12 | Rétablir le réseau puis lancer la sauvegarde | Après sécurisation locale, un prévol frais devient vert immédiatement avant toute mutation Drive | Ordre des phases visible |
+| Q13 | Déposer un paquet avec transcription et pièce jointe dans `ConversationBuffer/Inbox` | Capture atomique, envoi dans `ConversationArchives/<archiveId>`, manifeste publié en dernier | État `Verified` local et `BUFFER_MANIFEST.json` distant |
+| Q14 | Couper le réseau pendant Q13 puis relancer | Le paquet reste dans `Uploading` et seuls les fichiers sans reçu sont repris | Compteur `repris`, aucun doublon Drive |
+| Q15 | Laisser une archive non vérifiée plus de 30 jours | Elle n'est jamais purgée ; seules les archives vérifiées depuis 30 jours sont éligibles | Dossier toujours présent hors `Verified` |
 
 ## Critère de validation
 
-La recette est réussie si Q0 à Q12 sont conformes et si `Current/MANIFEST.json` local et Drive décrivent les mêmes chemins, tailles et SHA-256. Un miroir local terminé avec Drive en attente est un état sûr, mais ne valide pas Q1 ni la sauvegarde complète.
+La recette est réussie si Q0 à Q15 sont conformes et si `Current/MANIFEST.json` local et Drive décrivent les mêmes chemins, tailles et SHA-256. Un miroir local terminé avec Drive en attente est un état sûr, mais ne valide pas Q1 ni la sauvegarde complète.
 
 Consigner pour la PR : version Pyto/iOS, SHA testé, URL de déploiement masquée, durée de la première synchronisation, durée d'une synchronisation sans changement, IDs réussis/échoués et captures utiles. Ne jamais joindre le jeton.
 

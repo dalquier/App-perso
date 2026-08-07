@@ -216,6 +216,7 @@ def preflight_drive(
             result = {
                 "status": "ready", "attempt": attempt, "maxAttempts": attempts,
                 "hasManifest": bool(manifest), "manifest": manifest, "checkedAt": _utc_now(),
+                "protocol": int(health["protocol"]),
             }
             if progress:
                 progress({

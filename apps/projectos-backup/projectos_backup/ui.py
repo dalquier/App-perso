@@ -10,6 +10,8 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .archive_sync import sync_conversation_buffer
+from .conversation_buffer import buffer_root, import_inbox, initialize_buffer, queue_summary
 from .core import BackupError, FilterRules, Source, run_backup
 from .drive_client import AppsScriptClient, DriveSyncError, format_preflight_diagnostic, has_pending_drive_sync, preflight_drive, sync_current
 from .pyto_access import BackgroundExecution, PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
@@ -17,14 +19,16 @@ from .state import ConfigStore, DEFAULT_FILTERS, infer_source_label
 
 
 PROGRESS_THROTTLE_SECONDS = 0.12
-DETERMINATE_PHASES = {"scan", "prepare", "mirror", "upload_prepare", "upload", "delete", "complete"}
+DETERMINATE_PHASES = {"archive_queue", "archive_prepare", "archive_upload", "scan", "prepare", "mirror", "upload_prepare", "upload", "delete", "complete"}
 RESULT_FILE = "last_ui_result.json"
 LOCAL_PHASES = {"scan", "prepare", "mirror"}
 DRIVE_PHASES = {
+    "archive_queue", "archive_prepare", "archive_upload", "archive_verify",
     "drive_prepare", "drive_wake", "drive_auth", "drive_manifest", "drive_retry", "drive_ready",
     "upload_prepare", "upload", "delete", "publish", "complete",
 }
 DRIVE_PREFLIGHT_PHASES = {"drive_wake", "drive_auth", "drive_manifest", "drive_retry", "drive_ready"}
+ARCHIVE_PHASES = {"archive_queue", "archive_prepare", "archive_upload", "archive_verify"}
 
 
 def _ui():
@@ -57,15 +61,19 @@ def overall_progress(event: dict, standalone_drive: bool = False) -> float:
             "drive_wake": 0.18, "drive_auth": 0.45, "drive_manifest": 0.72,
             "drive_retry": 0.12, "drive_ready": 1.0,
         }.get(phase, ratio)
+    if phase == "archive_queue": return 0.59 + 0.01 * ratio
+    if phase == "archive_prepare": return 0.60 + 0.02 * ratio
+    if phase == "archive_upload": return 0.62 + 0.05 * ratio
+    if phase == "archive_verify": return 0.68
     if phase == "scan": return 0.10 * ratio
     if phase == "prepare": return 0.10
     if phase == "mirror": return 0.10 + 0.48 * ratio
-    if phase in {"drive_prepare", "drive_wake"}: return 0.60
-    if phase == "drive_auth": return 0.63
-    if phase in {"drive_manifest", "drive_retry"}: return 0.66
-    if phase == "drive_ready": return 0.69
-    if phase == "upload_prepare": return 0.69 + 0.07 * ratio
-    if phase in {"upload", "delete"}: return 0.76 + 0.20 * ratio
+    if phase in {"drive_prepare", "drive_wake"}: return 0.69
+    if phase == "drive_auth": return 0.71
+    if phase in {"drive_manifest", "drive_retry"}: return 0.73
+    if phase == "drive_ready": return 0.75
+    if phase == "upload_prepare": return 0.75 + 0.05 * ratio
+    if phase in {"upload", "delete"}: return 0.80 + 0.17 * ratio
     if phase == "publish": return 0.98
     if phase == "complete": return 1.0
     return 0.0
@@ -116,6 +124,10 @@ def progress_copy(event: dict) -> tuple[str, str, str, float]:
     path = event.get("path", "")
     titles = {
         "scan": f"Analyse de {label}" if label else "Analyse des sources",
+        "archive_queue": "Archives de conversations en attente",
+        "archive_prepare": "Préparation des archives",
+        "archive_upload": "Envoi des archives vers Drive",
+        "archive_verify": "Vérification des archives",
         "prepare": "Préparation iCloud",
         "mirror": "Mise à jour du miroir local",
         "drive_prepare": "Connexion à Google Drive",
@@ -152,6 +164,8 @@ def progress_stages(event: dict) -> tuple[str, str]:
         return "Terminé", "En attente"
     if phase in LOCAL_PHASES:
         return "En cours", "En attente"
+    if phase in ARCHIVE_PHASES:
+        return ("Terminé" if event.get("localComplete") else "En attente"), "Archives"
     if phase in DRIVE_PREFLIGHT_PHASES:
         return ("Terminé" if event.get("localComplete") else "En attente"), "Connexion"
     if phase in DRIVE_PHASES:
@@ -174,7 +188,7 @@ def responsive_layout(width: float, height: float) -> dict[str, tuple[int, int, 
     }
 
 
-def backup_summary(local, drive: dict, local_seconds: float = 0.0, drive_seconds: float = 0.0) -> dict:
+def backup_summary(local, drive: dict, local_seconds: float = 0.0, drive_seconds: float = 0.0, archives=None) -> dict:
     """Build the serialisable, user-facing summary kept across launches."""
     return {
         "status": "complete",
@@ -194,6 +208,7 @@ def backup_summary(local, drive: dict, local_seconds: float = 0.0, drive_seconds
             "unchanged": int(drive.get("unchanged_files", 0)),
             "durationSeconds": round(max(0.0, drive_seconds), 1),
         },
+        "archives": archives or {"verified": 0, "pending": 0, "uploaded": 0, "resumed": 0, "errors": []},
     }
 
 
@@ -211,6 +226,9 @@ def summary_copy(summary: dict) -> tuple[str, str]:
         f"{drive.get('resumed', 0)} repris  ·  {drive.get('deleted', 0)} supprimés  ·  "
         f"{drive.get('verified', 0)} vérifiés"
     )
+    archives = summary.get("archives", {})
+    if archives.get("verified") or archives.get("pending"):
+        drive_line += f"  ·  Archives {archives.get('verified', 0)} vérifiées / {archives.get('pending', 0)} en attente"
     return local_line, drive_line
 
 
@@ -539,6 +557,21 @@ class BackupApplication:
         filters.detail_text_label.text = filter_summary(config.get("filters", {}))
         filters.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
         cells.append(filters)
+        archives = self.ui.TableViewCell(text="Archives Codex")
+        try:
+            destination_name = config.get("destinationBookmark")
+            if destination_name:
+                archive_root = initialize_buffer(buffer_root(resolve_folder(destination_name)))
+                summary = queue_summary(archive_root)
+                archives.detail_text_label.text = (
+                    f"{summary['pendingTotal']} en attente · {summary['Verified']} vérifiées · conservation 30 j"
+                )
+            else:
+                archives.detail_text_label.text = "Disponible après choix de la destination"
+        except (OSError, PytoUnavailable):
+            archives.detail_text_label.text = "État indisponible"
+        archives.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
+        cells.append(archives)
         self._visible_sources = self._sources_with_repaired_labels()
         for source in self._visible_sources:
             cell = self.ui.TableViewCell(text=source.label)
@@ -558,14 +591,20 @@ class BackupApplication:
         if index == 1:
             self._show_filter_settings()
             return
-        source = self._visible_sources[index - 2]
+        if index == 2:
+            self.alert(
+                "Archives Codex",
+                "Déposez chaque export complet dans ConversationBuffer/Inbox. Il restera dans iCloud jusqu’à sa vérification sur Drive, puis 30 jours.",
+            )
+            return
+        source = self._visible_sources[index - 3]
         self.store.toggle_source(source.source_id)
         self.refresh()
 
     def _deleted(self, section, index: int) -> None:
-        if self._running or index < 2:
+        if self._running or index < 3:
             return
-        source = self._visible_sources[index - 2]
+        source = self._visible_sources[index - 3]
         removed = self.store.remove_source(source.source_id)
         delete_bookmark(removed.bookmark_name)
         self.refresh()
@@ -733,6 +772,8 @@ class BackupApplication:
                 raise BackupError("Choisis d'abord la destination du miroir local")
             destination = resolve_folder(destination_name)
             current = Path(destination) / "Current"
+            archive_root = initialize_buffer(buffer_root(destination))
+            import_inbox(archive_root)
             client = None
             relay_error = None
             try:
@@ -741,6 +782,7 @@ class BackupApplication:
                 relay_error = exc
             prior_drive = None
             drive_seconds = 0.0
+            archive_result = {"verified": 0, "pending": queue_summary(archive_root)["pendingTotal"], "uploaded": 0, "resumed": 0, "errors": []}
             if client and has_pending_drive_sync(current):
                 local_complete = True
                 self._show_progress({"phase": "drive_prepare"})
@@ -771,6 +813,13 @@ class BackupApplication:
                 raise BackupError("Exécution interrompue par iOS ; relance pour reprendre")
             if client is None:
                 raise BackupError("Miroir local terminé ; Google Drive non configuré : lance configure_drive.py") from relay_error
+            archive_started = time.monotonic()
+            archive_result = sync_conversation_buffer(
+                archive_root, client,
+                progress=lambda event: self._show_progress({**event, "localComplete": True}),
+                should_cancel=self.background_execution.expired.is_set,
+            )
+            drive_seconds += time.monotonic() - archive_started
             drive_started = time.monotonic()
             drive = sync_current(
                 current,
@@ -783,7 +832,10 @@ class BackupApplication:
                 for key in ("uploaded_files", "deleted_files", "resumed_files"):
                     drive[key] = int(drive.get(key, 0)) + int(prior_drive.get(key, 0))
             success = True
-            result = backup_summary(local, drive, local_seconds=local_seconds, drive_seconds=drive_seconds)
+            result = backup_summary(
+                local, drive, local_seconds=local_seconds, drive_seconds=drive_seconds,
+                archives=archive_result,
+            )
             local_line, drive_line = summary_copy(result)
             message = f"{local_line}\n{drive_line}"
             save_result(self._result_path, result)
@@ -807,9 +859,16 @@ class BackupApplication:
             def finish():
                 self._running = False
                 self._operation = None
-                self.state_label.text = "SAUVEGARDE VÉRIFIÉE" if success else "ACTION NÉCESSAIRE"
+                archive_pending = int((result or {}).get("archives", {}).get("pending", 0)) if success else 0
+                self.state_label.text = (
+                    "VÉRIFIÉE · ARCHIVES EN ATTENTE" if success and archive_pending
+                    else "SAUVEGARDE VÉRIFIÉE" if success else "ACTION NÉCESSAIRE"
+                )
                 self.message_label.text = message
-                self.phase_label.text = "Sauvegarde complète" if success else "Sauvegarde interrompue"
+                self.phase_label.text = (
+                    "Code vérifié · archives conservées dans iCloud" if success and archive_pending
+                    else "Sauvegarde complète" if success else "Sauvegarde interrompue"
+                )
                 if success:
                     local_line, drive_line = summary_copy(result or {})
                     self.counter_label.text = drive_line

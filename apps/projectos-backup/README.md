@@ -21,6 +21,10 @@ Le bouton `Mettre à jour la sauvegarde` sécurise d'abord le miroir local, puis
 
 L’application demande une extension d’exécution à iOS lorsque l’utilisateur change d’app. Cette extension est temporaire et décidée par iOS : elle ne garantit pas une exécution illimitée en arrière-plan. Une interruption conserve le miroir valide, le cache `Resume/` et la file Drive persistante. Le lancement suivant réutilise le travail local validé et reprend uniquement les opérations Drive non confirmées. Les fichiers partiels ne sont jamais repris.
 
+## Tampon des conversations
+
+La destination contient aussi `ConversationBuffer/Inbox`. Un paquet Codex ou ChatGPT complet déposé dans ce dossier doit contenir `conversation.jsonl` ou `conversation.md` et ses pièces jointes. Au prochain lancement, l’application le capture atomiquement, vérifie tous ses SHA-256 et l’envoie vers `ConversationArchives/<archiveId>` sur Drive. Un transfert interrompu reprend les reçus confirmés sans renvoyer deux fois les mêmes fichiers. Rien n’est supprimé du tampon avant preuve distante ; après vérification, la copie iCloud reste 30 jours. Les archives sont append-only et ne sont pas mélangées au miroir `Current`.
+
 ## Installation Pyto
 
 Copier `apps/projectos-backup/` dans le dossier Pyto de l’iPhone puis lancer `run.py`. La configuration existante est conservée.
@@ -43,7 +47,7 @@ Au premier succès, les anciens ZIP de BUILD-01 sont supprimés après staging r
 
 ## Tests
 
-`python -m unittest discover apps/projectos-backup/tests`
+`PYTHONPATH=apps/projectos-backup python -m unittest discover -s apps/projectos-backup/tests`
 
 `python -m compileall apps/projectos-backup`
 
