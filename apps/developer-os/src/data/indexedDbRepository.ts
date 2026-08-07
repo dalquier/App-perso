@@ -1,14 +1,18 @@
 import { openDB, type IDBPDatabase } from "idb";
 import type { Project } from "../domain/project";
 import {
+  DB_VERSION,
+  ensureDeveloperOsStores,
+  PROJECTS_STORE,
+} from "./indexedDbSchema";
+import {
   RepositoryUnavailableError,
   type ProjectRepository,
 } from "./repository";
 
-export const DB_VERSION = 3;
-const STORE = "projects";
-const CODEX_CONVERSATIONS_STORE = "codexConversations";
-const RUNS_STORE = "conversation-runs";
+export { DB_VERSION } from "./indexedDbSchema";
+
+const STORE = PROJECTS_STORE;
 
 type DeveloperOsDb = IDBPDatabase<unknown>;
 
@@ -18,24 +22,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   constructor(name = "developeros") {
     this.db = openDB(name, DB_VERSION, {
       upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE)) {
-          const store = db.createObjectStore(STORE, { keyPath: "id" });
-          store.createIndex("updatedAt", "updatedAt");
-        }
-        if (!db.objectStoreNames.contains(CODEX_CONVERSATIONS_STORE)) {
-          const conversations = db.createObjectStore(
-            CODEX_CONVERSATIONS_STORE,
-            { keyPath: "id" },
-          );
-          conversations.createIndex("updatedAt", "updatedAt");
-          conversations.createIndex("status", "status");
-        }
-        if (!db.objectStoreNames.contains(RUNS_STORE)) {
-          const runs = db.createObjectStore(RUNS_STORE, {
-            keyPath: "run_id",
-          });
-          runs.createIndex("updated_at", "updated_at");
-        }
+        ensureDeveloperOsStores(db);
       },
       blocked() {
         throw new RepositoryUnavailableError(
