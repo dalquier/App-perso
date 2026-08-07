@@ -62,9 +62,43 @@ class MirrorTests(unittest.TestCase):
             root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('good')
             run_backup([Source('one','Source',str(source))],dest)
             (dest/'Current'/'Source'/'a').write_text('evil')
-            result=run_backup([Source('one','Source',str(source))],dest)
+            result=run_backup([Source('one','Source',str(source))],dest,deep_verify=True)
             self.assertEqual(result.copied_files,1)
             self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'good')
+
+    def test_fast_path_reuses_hash_without_reading_mirror(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('stable')
+            run_backup([Source('one','Source',str(source))],dest)
+            with patch.object(core,'sha256_file',side_effect=AssertionError('mirror rehashed')):
+                result=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual((result.copied_files,result.unchanged_files),(0,1))
+
+    def test_prepare_file_only_for_changed_candidates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir()
+            unchanged=source/'a'; changed=source/'b'; unchanged.write_text('a'); changed.write_text('b')
+            run_backup([Source('one','Source',str(source))],dest)
+            changed.write_text('changed-size')
+            requested=[]
+            result=run_backup(
+                [Source('one','Source',str(source))],
+                dest,
+                prepare_file=lambda path: requested.append(path.name) or True,
+            )
+            self.assertEqual(requested,['b'])
+            self.assertEqual((result.copied_files,result.unchanged_files,result.requested_downloads),(1,1,1))
+
+    def test_deep_verify_repairs_same_size_corruption(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('good')
+            run_backup([Source('one','Source',str(source))],dest)
+            mirror=dest/'Current'/'Source'/'a'; mirror.write_text('evil')
+            fast=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual((fast.copied_files,fast.unchanged_files),(0,1))
+            repaired=run_backup([Source('one','Source',str(source))],dest,deep_verify=True)
+            self.assertEqual(repaired.copied_files,1)
+            self.assertEqual(mirror.read_text(),'good')
 
     def test_interrupted_publish_is_recovered(self):
         with tempfile.TemporaryDirectory() as tmp:
