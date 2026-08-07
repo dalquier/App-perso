@@ -5,7 +5,7 @@
 - ID stable : `equilibre`
 - Nom produit : Équilibre
 - Alias historiques : TCC Budy, TCC Buddy, TCC_Budy, compagnon TCC
-- Statut : BUILD-01, BUILD-02 et BUILD-03 intégrés ; V4 / BUILD-04 construite sur `equilibre/build-04-main-integration`, non intégrée à `main`, QA iPhone requise
+- Statut : BUILD-01, BUILD-02 et BUILD-03 intégrés ; V4 / BUILD-04 candidate finale validée automatiquement, intégration `main` en cours
 - Propriétaire : Damien
 
 ## Vision
@@ -63,11 +63,11 @@ Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; 
 - BUILD-01 : intégré, socle PWA et séance historique de compatibilité.
 - BUILD-02 : intégré, conversations persistantes locales ; recette iPhone historique validée.
 - BUILD-03 : intégré par la PR #53 ; séances structurées et mémoire locale explicitement proposée, confirmable, corrigeable et supprimable.
-- V4 / BUILD-04 : reconstruite sémantiquement sur la `main` au SHA `3c1d372d81b3007caf34f05aaedb0df1a49e2ed0`. La branche candidate ajoute deux protocoles versionnés, le stockage v4, les gates de sécurité transverses, le cache `equilibre-shell-v5` et un lancement Replit reproductible. Elle reste non intégrée tant que sa Draft PR n'est pas fusionnée.
+- V4 / BUILD-04 : reconstruite sémantiquement sur la `main` vivante. La candidate finale ajoute deux protocoles versionnés, le stockage v4, les gates de sécurité transverses, le cache `equilibre-shell-v6`, un Run Replit natif via `.replit`, un serveur statique Node dédié et un smoke CI qui exécute exactement `./start-equilibre.sh`. La QA iPhone physique reste à rattacher au SHA intégré.
 
 ## Prochain jalon
 
-Exécuter la recette iPhone physique sur le SHA final de la Draft PR BUILD-04, rattacher les preuves au même SHA, puis appliquer le Merge Gate ProjectOS sans fusion automatique.
+Intégrer la candidate finale dans `main`, importer `main` dans un Replit neuf, vérifier le Run direct sans Workflow ni Artifact, puis exécuter la recette iPhone physique sur le SHA final.
 
 ## Définition de terminé de la reprise
 
@@ -84,6 +84,6 @@ Exécuter la recette iPhone physique sur le SHA final de la Draft PR BUILD-04, r
 - dépôt `dalquier/App-perso` public : interdiction stricte de versionner données réelles, secrets, historiques ou exports ;
 - exigences cliniques et réglementaires à préciser avant diffusion à des tiers ;
 - chiffrement et synchronisation sensible restent à cadrer avant toute diffusion ou stockage distant ;
-- recette iPhone physique BUILD-04 non observée sur le SHA candidat final ;
+- recette iPhone physique BUILD-04 non observée sur le SHA final intégré ;
 - scénarios sensibles à valider par des tests dédiés ;
 - migration sélective du prototype Pyto à réaliser sans duplication inutile.
