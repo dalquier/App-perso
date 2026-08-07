@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const appRoot = resolve(import.meta.dirname, "..");
-const repoRoot = resolve(appRoot, "../..");
 const readApp = (path) => readFileSync(resolve(appRoot, path), "utf8");
 
 describe("V4 compact UX polish", () => {
@@ -19,7 +18,7 @@ describe("V4 compact UX polish", () => {
     expect(source).toContain('document.createElement("details")');
     expect(source).toContain('"À savoir avant de commencer"');
     expect(source).toContain('querySelectorAll(":scope > section")');
-    expect(source).toContain('details.classList.add("protocol-info-card")');
+    expect(source).toContain('limits.classList.add("protocol-info-card")');
     expect(source).not.toMatch(/\.open\s*=|setAttribute\(["']open/);
   });
 
