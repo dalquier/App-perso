@@ -1,9 +1,26 @@
 import { expect, test } from "@playwright/test";
 
+test("hash routes survive refresh and browser Back/Forward under the Pages subpath", async ({
+  page,
+}) => {
+  await page.goto("./#/settings/");
+  await expect(page.getByRole("heading", { name: "Paramètres" })).toBeVisible();
+  await expect(page).toHaveURL(/\/App-perso\/developer-os\/#\/settings\/$/);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Paramètres" })).toBeVisible();
+
+  await page.getByRole("link", { name: /DeveloperOS/ }).click();
+  await expect(page.getByRole("heading", { name: "Mes projets" })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Paramètres" })).toBeVisible();
+  await page.goForward();
+  await expect(page.getByRole("heading", { name: "Mes projets" })).toBeVisible();
+});
+
 test("mobile project lifecycle persists after reload and navigates back", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await expect(page.getByText("Votre cockpit est prêt")).toBeVisible();
   await page
     .getByRole("link", { name: "Créer un projet", exact: true })
@@ -54,7 +71,7 @@ test("offline production PWA serves cached app and preserves IndexedDB", async (
   page,
   context,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await expect
     .poll(async () =>
       page.evaluate(() => navigator.serviceWorker.controller?.state ?? "none"),
@@ -74,7 +91,7 @@ test("offline production PWA serves cached app and preserves IndexedDB", async (
     page.getByRole("heading", { name: "Offline Project" }),
   ).toBeVisible();
   await context.setOffline(true);
-  await page.goto("/");
+  await page.goto("./");
   await expect(page.getByText("Offline Project")).toBeVisible();
   await page.reload();
   await expect(page.getByText("Offline Project")).toBeVisible();
@@ -84,7 +101,7 @@ test("offline production PWA serves cached app and preserves IndexedDB", async (
 test("long settings view scrolls and JSON import errors are handled", async ({
   page,
 }) => {
-  await page.goto("/settings");
+  await page.goto("./#/settings");
   await expect(page.getByRole("heading", { name: "Paramètres" })).toBeVisible();
   await page.locator("input[type=file]").setInputFiles({
     name: "bad.json",
@@ -99,7 +116,7 @@ test("long settings view scrolls and JSON import errors are handled", async ({
 test("archive appears in archives, restores inactive and persists after reload", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await page.getByRole("link", { name: "Nouvelle création rapide" }).click();
   await page.getByLabel(/Nom/).fill("Archivable");
   await page.getByRole("combobox", { name: "État", exact: true }).selectOption("active");
