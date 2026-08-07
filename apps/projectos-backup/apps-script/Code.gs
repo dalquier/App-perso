@@ -10,8 +10,8 @@ const MANIFEST_CACHE_MAX_CHUNKS = 55;
 function doGet(e) {
   try {
     const action = e && e.parameter ? e.parameter.action : '';
-    if (!action) return json_({ok: true, service: 'ProjectOS Backup'});
-    if (action !== 'manifest' && action !== 'syncStatus') throw new Error('Lecture inconnue');
+    if (!action) return json_({ok: true, service: 'ProjectOS Backup', protocol: 2});
+    if (action !== 'health' && action !== 'manifest' && action !== 'syncStatus') throw new Error('Lecture inconnue');
     const properties = PropertiesService.getScriptProperties();
     const expected = properties.getProperty('AUTH_TOKEN');
     const timestamp = String(e.parameter.timestamp || '');
@@ -26,7 +26,14 @@ function doGet(e) {
     if (action === 'syncStatus') return json_(syncStatus_(properties, payload));
     const rootId = properties.getProperty('ROOT_FOLDER_ID');
     if (!rootId) throw new Error('ROOT_FOLDER_ID absent');
-    const current = childFolder_(DriveApp.getFolderById(rootId), 'Current');
+    const root = DriveApp.getFolderById(rootId);
+    if (action === 'health') return json_({
+      ok: true, service: 'ProjectOS Backup', protocol: 2, rootReady: root.getId() === rootId
+    });
+    const current = findChildFolder_(root, 'Current');
+    if (!current) {
+      return json_({ok: true, manifest: null, cached: false});
+    }
     const cached = readManifestCache_(properties);
     if (cached.hit) return json_({ok: true, manifest: cached.manifest, cached: true});
     const manifest = readManifest_(current);
@@ -360,6 +367,11 @@ function resolve_(root, path, createFolders) {
 function childFolder_(parent, name) {
   const matches = parent.getFoldersByName(name);
   return matches.hasNext() ? matches.next() : parent.createFolder(name);
+}
+
+function findChildFolder_(parent, name) {
+  const matches = parent.getFoldersByName(name);
+  return matches.hasNext() ? matches.next() : null;
 }
 
 function removeEmpty_(root) {
