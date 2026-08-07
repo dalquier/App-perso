@@ -232,6 +232,7 @@ def run_backup(
     prepare_file: PrepareFile | None = None,
     progress: ProgressCallback | None = None,
     should_cancel: CancellationCheck | None = None,
+    deep_verify: bool = False,
 ) -> BackupResult:
     """Make ``Current`` an exact mirror. Deletions occur only after a full readable scan."""
     destination = Path(destination).expanduser()
@@ -270,16 +271,12 @@ def run_backup(
             scanned.append((source, root, files))
 
         total_files = sum(len(files) for _, _, files in scanned)
+        # Phase 2: metadata is the fast path. Only candidates that need
+        # reading ask iCloud to materialize their contents. deep_verify also
+        # hashes the mirror and repairs silent corruption.
         prepared = 0
-        for source, _, files in scanned:
-            for path, relative in files:
-                cancel_if_needed()
-                if prepare_file is not None and prepare_file(path):
-                    requested += 1
-                prepared += 1
-                report("prepare", prepared, total_files, label=source.label, path=relative)
 
-        # Phase 2: read/hash only new or changed files into the transaction.
+        # Read/hash only new or changed files into the transaction.
         copied = unchanged = 0
         processed = 0
         for source, root, files in scanned:
@@ -292,16 +289,26 @@ def run_backup(
                 key = f"{source.source_id}:{relative}"
                 old = previous_files.get(key, ({}, {}))[1]
                 mirror = current / folder / relative
-                same = (
+                metadata_same = (
                     old.get("size") == stat.st_size
                     and old.get("mtimeNs") == stat.st_mtime_ns
                     and mirror.is_file()
                     and mirror.stat().st_size == stat.st_size
-                    and sha256_file(mirror) == old.get("sha256")
+                    and bool(old.get("sha256"))
                 )
+                same = metadata_same
+                if same and deep_verify:
+                    same = sha256_file(mirror) == old["sha256"]
                 if same:
                     digest = old["sha256"]; unchanged += 1
                 else:
+                    if prepare_file is not None and prepare_file(path):
+                        requested += 1
+                    prepared += 1
+                    report("prepare", prepared, total_files, label=source.label, path=relative)
+                    # iCloud may materialize or replace the file here.
+                    try: stat = path.stat()
+                    except OSError as exc: raise SourceAccessError(f"Fichier iCloud indisponible : {path}") from exc
                     size, digest = _copy_and_hash(
                         path,
                         staged / folder / relative,
