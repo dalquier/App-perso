@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "incident_id": "INC-PLAYWRIGHT-BROWSER",
+  "signature": "ENVIRONMENT.PLAYWRIGHT_BROWSER_UNAVAILABLE",
+  "severity": "S3",
+  "status": "MITIGATED",
+  "project": "developeros",
+  "tool": "Codex",
+  "stage": "e2e",
+  "occurred_at": "2026-08-07T00:00:00Z",
+  "source": {
+    "type": "pull_request",
+    "repository": "dalquier/App-perso",
+    "number": 0,
+    "task": null,
+    "commit_sha": null
+  },
+  "symptom": "Chromium Playwright indisponible dans l’environnement d’exécution.",
+  "root_cause": "UNKNOWN_OR_EXTERNAL_ENVIRONMENT_LIMITATION",
+  "impact": [
+    "E2E non exécutés dans cet environnement",
+    "capture d’écran indisponible dans cet environnement"
+  ],
+  "workaround": "Exécuter les E2E dans GitHub Actions ou un environnement disposant de Chromium.",
+  "projectos_coverage": "PARTIAL",
+  "candidate_projectos_change": "Execution Capability Preflight",
+  "privacy": {
+    "sanitized": true,
+    "contains_secrets": false,
+    "contains_personal_data": false
+  }
+}
