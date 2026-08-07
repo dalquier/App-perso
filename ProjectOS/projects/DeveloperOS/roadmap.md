@@ -40,9 +40,11 @@ Statut : **en cours**.
 
 - Incrément A publié en Draft PR #83.
 - Head vérifié de la PR lors de GOV-02 : `626e6d4396208f7a4dbf7d9c2e99373d0f8fb403`.
+- Par rapport au `main` vérifié par GOV-02, ce head est **divergent** : 13 commits propres à la branche et 35 commits de retard, avec merge-base `f3bdbb1d694059ca656294b993f09a68a7b66516`.
 - L’incrément A prépare la configuration serveur, les limites, les contrats d’exécution, un provider fictif déterministe et les tests serveur.
 - L’incrément A n’ajoute pas encore de serveur HTTP, d’authentification, de stockage serveur réel, de scheduler, de SDK OpenAI effectif ni d’UI API.
 - Tant que #83 n’est pas intégrée, aucun de ces éléments n’appartient à `main`.
+- Avant toute décision d’intégration de #83, appliquer le Freshness Gate : réconcilier la branche avec le `main` vivant, puis obtenir une nouvelle preuve CI sur le SHA réellement candidat à la fusion.
 
 ### CO-QA-02A
 
@@ -51,6 +53,7 @@ Statut : **en cours déclaré, non intégré**.
 - GOV-02 ne trouve ni fichier canonique ni Pull Request portant exactement l’identifiant `CO-QA-02A`.
 - Ce travail doit donc être traité comme une validation opérationnelle en cours, pas comme une livraison GitHub acquise.
 - Son résultat doit être consigné avant d’engager l’incrément suivant de CO-BUILD-02 lorsqu’il constitue un gate d’acceptation.
+- Une validation de l’ancien SHA #83 ne remplace pas la CI d’intégration à refaire après réconciliation avec `main`.
 
 ## 4. Séquencement Conversation Orchestrator
 
@@ -87,7 +90,7 @@ Les preuves sont distinctes :
 - **recette iPhone** : vérifie les parcours manuels, PWA, clavier, retour, persistance et reprise ;
 - **QA backend** : vérifie séparément authentification, secrets, réseau, persistance serveur, rétention et erreurs.
 
-Un workflow ou une PR verte ne remplace pas une recette physique lorsque celle-ci fait partie du critère d’acceptation.
+Un workflow ou une PR verte ne remplace pas une recette physique lorsque celle-ci fait partie du critère d’acceptation. De même, une CI verte sur un SHA devenu obsolète ne constitue pas la preuve d’intégration d’un SHA réconcilié ultérieurement.
 
 ## 7. Infrastructure parallèle
 
@@ -98,6 +101,7 @@ Un workflow ou une PR verte ne remplace pas une recette physique lorsque celle-c
 ## 8. Prochaine action canonique
 
 1. terminer `CO-QA-02A` et consigner son verdict ;
-2. corriger ou compléter l’Incrément A si le QA révèle un défaut ;
-3. seulement ensuite préparer l’incrément suivant de `CO-BUILD-02` ;
-4. ne pas démarrer `CO-BUILD-03` avant clôture de CO-BUILD-02.
+2. réconcilier la Draft PR #83 avec le `main` vivant en tenant compte du verdict QA ;
+3. obtenir une nouvelle preuve CI sur le SHA réconcilié ;
+4. seulement ensuite décider l’intégration de l’Incrément A et préparer l’incrément suivant de `CO-BUILD-02` ;
+5. ne pas démarrer `CO-BUILD-03` avant clôture de CO-BUILD-02.
