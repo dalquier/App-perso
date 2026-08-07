@@ -3,7 +3,7 @@ from __future__ import annotations
 import getpass
 import json
 import os
-from projectos_backup.drive_client import AppsScriptClient
+from projectos_backup.drive_client import AppsScriptClient, preflight_drive
 from projectos_backup.state import ConfigStore
 
 def main():
@@ -11,7 +11,7 @@ def main():
     url = input("URL Apps Script terminée par /exec : ").strip()
     token = getpass.getpass("Jeton secret (24 caractères minimum) : ").strip()
     client = AppsScriptClient(url, token)
-    client.call("manifest")
+    preflight_drive(client)
     store.directory.mkdir(parents=True, exist_ok=True)
     path = store.directory / "drive.json"
     temporary = path.with_suffix(".json.part")
