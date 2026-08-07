@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import threading
 from pathlib import Path
 
-from .core import BackupError, Source, run_backup
-from .pyto_access import BackgroundExecution, PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
-from .state import ConfigStore, infer_source_label
+from projectos_backup.core import BackupError, Source, run_backup
+from projectos_backup.drive_client import AppsScriptClient, sync_current
+from projectos_backup.pyto_access import BackgroundExecution, PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
+from projectos_backup.state import ConfigStore, infer_source_label
 
 
 def _ui():
@@ -16,6 +18,13 @@ def _ui():
     except ImportError as exc:
         raise PytoUnavailable("L'interface doit être lancée dans Pyto") from exc
     return ui
+
+
+def progress_bar(completed: int, total: int, width: int = 18) -> str:
+    """Return a compact progress bar suitable for a native Pyto label."""
+    ratio = min(1.0, max(0.0, completed / total)) if total else 0.0
+    filled = int(ratio * width)
+    return "█" * filled + "░" * (width - filled)
 
 
 class BackupApplication:
@@ -27,19 +36,19 @@ class BackupApplication:
         self.root.size = (390, 820)
         self.root.background_color = self.ui.SystemColors.SYSTEM_BACKGROUND
         self.status = self.ui.Label("Prêt")
-        self.status.frame = (20, 14, 350, 44)
-        self.status.number_of_lines = 2
+        self.status.frame = (20, 10, 350, 96)
+        self.status.number_of_lines = 5
         self.table = self.ui.TableView(style=self.ui.TableViewStyle.INSET_GROUPED)
-        self.table.frame = (0, 64, 390, 600)
+        self.table.frame = (0, 112, 390, 552)
         self.table.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_HEIGHT]
         self.table.did_select_cell = self._selected
         self.table.did_delete_cell = self._deleted
         self.add_button = self.ui.Button(title="＋ Ajouter un dossier")
-        self.add_button.frame = (20, 678, 170, 50)
+        self.add_button.frame = (20, 678, 132, 50)
         self.add_button.flex = [self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
         self.add_button.action = self._add_source
-        self.backup_button = self.ui.Button(title="Sauvegarder maintenant")
-        self.backup_button.frame = (200, 678, 170, 50)
+        self.backup_button = self.ui.Button(title="Mettre à jour la sauvegarde")
+        self.backup_button.frame = (160, 678, 210, 50)
         self.backup_button.flex = [self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
         self.backup_button.action = self._backup
         for view in (self.status, self.table, self.add_button, self.backup_button):
@@ -134,9 +143,13 @@ class BackupApplication:
     def _backup(self, sender=None) -> None:
         self.backup_button.enabled = False
         self.status.text = "Démarrage du miroir…"
-        self.background_execution = BackgroundExecution()
+        self.background_execution = BackgroundExecution("ProjectOS Backup complet")
         self.background_execution.begin()
         threading.Thread(target=self._run_backup, daemon=True).start()
+
+    def _set_status(self, text: str) -> None:
+        import mainthread
+        mainthread.run_async(lambda: setattr(self.status, "text", text))
 
     def _show_progress(self, event: dict) -> None:
         phase = event.get("phase")
@@ -144,22 +157,29 @@ class BackupApplication:
         total = event.get("total", 0)
         label = event.get("label", "")
         path = event.get("path", "")
+        percent = int(completed * 100 / total) if total else 0
+        bar = progress_bar(completed, total)
         if phase == "scan":
             text = f"Analyse de {label}…"
         elif phase == "prepare":
-            percent = int(completed * 100 / total) if total else 0
-            text = f"Chargement iCloud : {completed}/{total} ({percent}%)"
+            text = f"Chargement iCloud  {percent}%\n{bar}  {completed}/{total}"
         elif phase == "mirror":
-            percent = int(completed * 100 / total) if total else 0
-            text = f"Miroir : {completed}/{total} ({percent}%)"
+            text = f"Miroir local  {percent}%\n{bar}  {completed}/{total}"
+        elif phase == "drive_prepare":
+            text = "Connexion à Google Drive…"
+        elif phase == "upload":
+            text = f"Envoi vers Drive  {percent}%\n{bar}  {completed}/{total}"
+        elif phase == "delete":
+            text = f"Nettoyage Drive  {percent}%\n{bar}  {completed}/{total}"
         elif phase == "publish":
             text = "Publication sécurisée du miroir…"
+        elif phase == "complete":
+            text = f"Finalisation Drive  100%\n{progress_bar(1, 1)}"
         else:
             return
-        if path and phase in {"prepare", "mirror"}:
+        if path and phase in {"prepare", "mirror", "upload", "delete"}:
             text += "\n" + Path(path).name[:42]
-        import mainthread
-        mainthread.run_async(lambda: setattr(self.status, "text", text))
+        self._set_status(text)
 
     def _run_backup(self) -> None:
         message = ""
@@ -173,15 +193,31 @@ class BackupApplication:
             for item in self.store.sources():
                 if item.enabled:
                     sources.append(Source(item.source_id, item.label, resolve_folder(item.bookmark_name)))
-            result = run_backup(
+            local = run_backup(
                 sources,
                 destination,
                 prepare_file=request_icloud_download,
                 progress=self._show_progress,
                 should_cancel=self.background_execution.expired.is_set,
             )
-            message = (f"Miroir vérifié : {result.copied_files} copiés, "
-                       f"{result.deleted_files} supprimés, {result.unchanged_files} inchangés")
+            if self.background_execution.expired.is_set():
+                raise BackupError("Exécution interrompue par iOS ; relance la sauvegarde")
+            self._show_progress({"phase": "drive_prepare"})
+            try:
+                relay = json.loads((self.store.directory / "drive.json").read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise BackupError("Google Drive non configuré : lance configure_drive.py") from exc
+            drive = sync_current(
+                Path(destination) / "Current",
+                AppsScriptClient(relay["url"], relay["token"]),
+                progress=self._show_progress,
+            )
+            message = (
+                "Sauvegarde vérifiée\n"
+                f"Local : {local.copied_files} copiés, {local.deleted_files} supprimés\n"
+                f"Drive : {drive['uploaded_files']} envoyés, {drive['deleted_files']} supprimés, "
+                f"{drive['verified_files']} vérifiés"
+            )
         except Exception as exc:
             message = f"Échec : {exc}"
         finally:
