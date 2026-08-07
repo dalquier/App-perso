@@ -15,6 +15,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 - Avant chaque prompt opérationnel remis à Damien, annoncer l’outil le plus adapté, la raison du choix, le coût relatif, l’alternative moins coûteuse et la condition observable de bascule. Cette annonce reste distincte du prompt.
 - Toute tâche susceptible de produire une modification ou un artefact doit appliquer `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` avant la première modification. La capacité de livraison est un prérequis, et la récupération effective doit être prouvée avant de déclarer la tâche terminée.
 - Dans Codex Cloud, distinguer le sandbox terminal du mécanisme natif de publication GitHub : l’absence de `origin`, d’upstream, de `GH_TOKEN` ou d’authentification `gh` dans le terminal n’est pas bloquante lorsque l’environnement Codex est explicitement relié au dépôt et à la branche de base attendus.
+- Toute tâche Codex destinée à GitHub applique en plus `standards/CODEX_GITHUB_RELIABILITY.md` : fraîcheur de la base et de la PR, réservation des ressources logiques mutables, preuve du SHA distant, preuve CI attachée au SHA exact relu et Merge Gate avant toute fusion.
 - La mémoire conversationnelle est régie par `standards/CONVERSATION_MEMORY.md` et l’archive intégrale par `standards/CONVERSATION_ARCHIVE_PIPELINE.md`. Un consentement permanent spécifique à Codex est actif depuis le 5 août 2026 : toute conversation ProjectOS exécutée avec Codex est enregistrée automatiquement, avec index et synthèse dans GitHub, puis transcription visible et fichiers accessibles directement dans Google Drive, jusqu’à révocation explicite.
 - Pendant l’amorçage et après celui-ci, les messages intermédiaires suivent le format `Avancement`, `Réalisé`, `En cours`, `Reste à faire`, `Temps restant estimé` et, lorsque nécessaire, `Point d’attention`.
 - Les mises à jour de progression décrivent uniquement des faits opérationnels, résultats vérifiés, fichiers ou états utiles et prochaines étapes concrètes. Elles n’exposent jamais les raisonnements internes, secrets, données sensibles ou journaux techniques exhaustifs.
@@ -33,7 +34,7 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 6. Charger `ProjectOS/standards/PROGRESS_COMMUNICATION.md` pour toute demande ProjectOS.
 7. Charger `ProjectOS/standards/TOOLCHAIN_POLICY.md` pour toute demande liée à un projet logiciel.
 8. Charger `ProjectOS/standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` pour toute tâche susceptible de produire une modification, une branche, une Pull Request ou un artefact.
-9. Charger `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` pour toute tâche exécutée dans Codex Cloud ou publiée par l’interface native Codex.
+9. Charger `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` et `ProjectOS/standards/CODEX_GITHUB_RELIABILITY.md` pour toute tâche exécutée dans Codex Cloud, publiée depuis Codex ou destinée à relire, valider ou fusionner un résultat Codex dans GitHub.
 10. Charger `ProjectOS/standards/CONVERSATION_MEMORY.md` et `ProjectOS/standards/CONVERSATION_ARCHIVE_PIPELINE.md` pour toute nouvelle conversation ProjectOS.
 11. Identifier le projet, l’objectif réel et le résultat attendu.
 12. Résoudre le projet dans `PROJECT_REGISTRY.md`.
@@ -41,8 +42,8 @@ Point d’entrée unique et stable de ProjectOS. Les instructions du projet Chat
 14. Charger les ADR applicables et uniquement la documentation nécessaire.
 15. Charger les standards transverses pertinents : qualité, outils, code, documentation et tests.
 16. Avant de remettre un prompt opérationnel à Damien, appliquer le bloc de recommandation défini dans `standards/CREDIT_OPTIMIZATION.md`.
-17. Avant toute première modification, exécuter le Delivery Preflight : dépôt, référence de base, branche cible, SHA source, canal de livraison, compatibilité des fichiers, plan de récupération et preuve externe attendue.
-18. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés.
+17. Avant toute première modification, exécuter le Delivery Preflight : dépôt, référence de base, branche cible, SHA source, canal de livraison, compatibilité des fichiers, plan de récupération et preuve externe attendue. Pour un flux Codex ↔ GitHub, compléter ce précontrôle par le Reliability Preflight : SHA vivant de base, SHA de tête de PR éventuel, contexte de lancement, ressources mutables réservées et preuves SHA/CI/fusion attendues.
+18. Vérifier l’état vivant des dépôts, branches, Pull Requests, fichiers et exécutions concernés. Pour un flux Codex ↔ GitHub, appliquer le Freshness Gate avant la première modification puis à nouveau juste avant publication.
 19. Consulter Google Drive uniquement pour les ressources explicitement référencées ou nécessaires.
 20. Dans la première réponse, présenter uniquement un état rapide des vérifications effectuées : source et branche, références obligatoires chargées, projet identifié ou niveau transverse, anomalies éventuelles et disponibilité pour poursuivre. Ne pas détailler le processus de chargement.
 21. Appliquer le régime de consentement défini dans `standards/CONVERSATION_MEMORY.md` :
@@ -86,7 +87,7 @@ Toujours charger :
 - `standards/PROGRESS_COMMUNICATION.md` pour toute demande ProjectOS ;
 - `standards/TOOLCHAIN_POLICY.md` pour un projet logiciel ;
 - `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` pour toute tâche produisant une modification ou un artefact ;
-- `standards/CODEX_NATIVE_PUBLISHING.md` pour une tâche Codex Cloud ;
+- `standards/CODEX_NATIVE_PUBLISHING.md` et `standards/CODEX_GITHUB_RELIABILITY.md` pour une tâche Codex Cloud, une publication Codex ou une décision de revue/fusion portant sur un résultat Codex ;
 - `standards/CONVERSATION_MEMORY.md` et `standards/CONVERSATION_ARCHIVE_PIPELINE.md` au démarrage d’une nouvelle conversation ProjectOS ;
 - le manifeste du projet concerné, lorsqu’il existe.
 
@@ -108,9 +109,12 @@ Avant d’agir :
 - vérifier les versions et dates lorsqu’elles sont disponibles ;
 - détecter les documents `legacy`, archivés ou dépréciés ;
 - distinguer faits vérifiés, hypothèses et informations manquantes ;
-- vérifier que le canal de livraison annoncé reste disponible et adapté au diff prévu.
+- vérifier que le canal de livraison annoncé reste disponible et adapté au diff prévu ;
+- pour un flux Codex ↔ GitHub, vérifier séparément le SHA vivant de la base, le SHA de la branche/PR cible et les ressources logiques mutables partagées.
 
 Si une référence est modifiée pendant la conversation, recharger sa dernière version avant toute décision dépendante.
+
+Un workflow vert n’est jamais une preuve générale : pour une décision de livraison ou de fusion Codex, le SHA relu, le SHA de tête de la PR et le SHA testé par la CI doivent être identiques, selon `standards/CODEX_GITHUB_RELIABILITY.md`.
 
 ## 7. Sortie d’amorçage
 
@@ -122,6 +126,7 @@ L’amorçage doit aboutir à un état de travail comprenant :
 - références chargées ;
 - état GitHub vérifié selon le mécanisme réel de la plateforme ;
 - mode de livraison et preuve externe attendue définis avant toute modification ;
+- pour un flux Codex ↔ GitHub, état de fraîcheur, ressources logiques réservées et relation entre SHA de base, SHA de PR et preuve CI explicités ;
 - risques et contradictions signalés ;
 - anomalies, inconnues ou contradictions signalées en une ligne, ou mention `aucune anomalie détectée` ;
 - disponibilité pour traiter la demande ;
