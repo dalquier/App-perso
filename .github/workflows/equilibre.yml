@@ -4,10 +4,14 @@ on:
   pull_request:
     paths:
       - "apps/equilibre/**"
+      - "start-equilibre.sh"
+      - ".replit"
       - ".github/workflows/equilibre.yml"
   push:
     paths:
       - "apps/equilibre/**"
+      - "start-equilibre.sh"
+      - ".replit"
       - ".github/workflows/equilibre.yml"
 
 jobs:
@@ -26,3 +30,23 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Replit direct-run smoke
+        run: |
+          cd ../..
+          PORT=5190 ./start-equilibre.sh > /tmp/equilibre-replit.log 2>&1 &
+          pid=$!
+          cleanup() { kill "$pid" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:5190/ > /tmp/equilibre-index.html; then
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat /tmp/equilibre-replit.log
+              exit 1
+            fi
+            sleep 1
+          done
+          curl --fail --silent --head http://127.0.0.1:5190/ | grep -qi "content-type: text/html"
+          curl --fail --silent http://127.0.0.1:5190/ | grep -q "Équilibre"
+          grep -q "EQUILIBRE_READY" /tmp/equilibre-replit.log
