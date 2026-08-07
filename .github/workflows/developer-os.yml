@@ -7,21 +7,24 @@ on:
       - "apps/developer-os/**"
       - ".github/workflows/developer-os.yml"
   push:
-    branches:
-      - "codex/renommer-la-tache-en-developeros-build-01-project-core-5sskd7"
-      - "developeros/build-01-project-core"
-      - "codex/construire-build-01-project-core"
+    branches: [main]
     paths:
       - "apps/developer-os/**"
       - ".github/workflows/developer-os.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: developer-os-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   developer-os:
     name: DeveloperOS app checks
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: apps/developer-os
