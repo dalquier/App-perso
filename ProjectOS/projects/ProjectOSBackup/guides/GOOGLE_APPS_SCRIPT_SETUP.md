@@ -21,9 +21,12 @@ Après avoir copié la nouvelle version dans Pyto :
 1. remplacer `Code.gs` dans le projet Apps Script existant ;
 2. créer une nouvelle version du déploiement Web existant ;
 3. conserver l'URL `/exec`, `ROOT_FOLDER_ID` et `AUTH_TOKEN` ;
-4. lancer le test de configuration, puis la recette `ProjectOS/projects/ProjectOSBackup/docs/QA_V04_IPHONE.md`.
+4. ouvrir l'URL `/exec` dans Safari et vérifier `protocol: 2` dans la réponse JSON ;
+5. lancer `configure_drive.py`, puis le bouton `Tester Google Drive` et la recette `ProjectOS/projects/ProjectOSBackup/docs/QA_V04_IPHONE.md`.
 
 Ne créez pas un second déploiement si l'ancien peut être modifié : conserver l'URL évite de reconfigurer Pyto.
+
+Le prévol effectue uniquement des lectures : réveil public, contrôle signé `health`, puis lecture signée de `MANIFEST.json`. Il accepte l'absence de manifeste lors de la toute première sauvegarde. Après trois échecs temporaires, la sauvegarde reste arrêtée avant toute copie ou suppression et l'interface propose un diagnostic expurgé.
 
 ## Exécution
 
