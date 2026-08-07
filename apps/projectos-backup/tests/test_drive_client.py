@@ -1,11 +1,14 @@
 import hashlib
+import hmac
 import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
+from urllib.parse import parse_qs, urlsplit
 
 from projectos_backup.drive_client import (
-    DriveSyncError, MAX_BATCH_FILES, MAX_BATCH_RAW_BYTES, STATE_DIRECTORY, STATE_FILE,
+    AppsScriptClient, DriveSyncError, MAX_BATCH_FILES, MAX_BATCH_RAW_BYTES, STATE_DIRECTORY, STATE_FILE,
     drive_state_path, has_pending_drive_sync, manifest_files, normalize_apps_script_url, sync_current,
 )
 
@@ -62,6 +65,9 @@ class FakeClient:
             return {"status": "complete"}
         return {}
 
+    def read(self, action, **payload):
+        return self.call(action, **payload)
+
 
 def prepare(current, files, remote=None):
     records = []
@@ -85,6 +91,42 @@ class DriveClientTests(unittest.TestCase):
 
     def test_manifest_files_prefixes_source_folder(self):
         self.assertEqual(list(manifest_files(manifest([{"path": "a.py"}]))), ["Pyto/a.py"])
+
+    def test_control_read_uses_authenticated_get(self):
+        class Response:
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self): return b'{"ok":true,"manifest":null}'
+
+        client = AppsScriptClient(
+            "https://script.google.com/macros/s/AKfy-test_123/exec",
+            "x" * 24,
+        )
+        with mock.patch("urllib.request.urlopen", return_value=Response()) as opened:
+            result = client.read("manifest")
+        request = opened.call_args.args[0]
+        query = parse_qs(urlsplit(request.full_url).query)
+        self.assertEqual(request.method, "GET")
+        self.assertEqual(query["action"], ["manifest"])
+        self.assertNotIn("token", query)
+        message = f"manifest\n{query['timestamp'][0]}\n{query['payload'][0]}".encode("utf-8")
+        expected = hmac.new(("x" * 24).encode("utf-8"), message, hashlib.sha256).hexdigest()
+        self.assertEqual(query["signature"], [expected])
+        self.assertIsNone(result["manifest"])
+
+    def test_control_read_rejects_empty_response(self):
+        class Response:
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self): return b""
+
+        client = AppsScriptClient(
+            "https://script.google.com/macros/s/AKfy-test_123/exec",
+            "x" * 24,
+        )
+        with mock.patch("urllib.request.urlopen", return_value=Response()):
+            with self.assertRaisesRegex(DriveSyncError, "réponse vide"):
+                client.read("manifest")
 
     def test_small_batches_finalize_and_verify(self):
         with tempfile.TemporaryDirectory() as raw:
