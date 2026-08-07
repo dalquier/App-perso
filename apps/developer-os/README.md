@@ -1,8 +1,40 @@
-# DeveloperOS — BUILD-01 Project Core
+# DeveloperOS
 
-PWA mobile-first et local-first pour piloter des projets personnels sur iPhone. Les données restent dans IndexedDB ; aucun compte, backend, secret ou service distant n'est requis.
+PWA mobile-first et local-first pour piloter des projets personnels sur iPhone. GitHub est la source de vérité du code et de la documentation ; les données utilisateur restent dans IndexedDB et dans les exports privés.
 
-## Installation et commandes
+## État actuel de `main`
+
+Au 7 août 2026, DeveloperOS contient notamment :
+
+- BUILD-01 — Project Core ;
+- le module Conversations Codex issu de la PR #58 ;
+- CO-BUILD-00 — contrats et fondations Conversation Orchestrator ;
+- CO-BUILD-01 — canal ChatGPT Plus manuel et persistance locale, intégré par la PR #70 ;
+- BUILD-02R V3 — reprise horodatée et références HTTPS, intégré par la PR #86 ;
+- CI-V2, intégré par la PR #78 ;
+- GitHub Pages, intégré par les PR #89 et #92.
+
+CO-BUILD-02 est en cours dans la Draft PR #83. Tant que cette PR n’est pas fusionnée, son backend préparatoire et ses tests serveur ne font pas partie de `main`.
+
+## URL de déploiement
+
+La cible canonique de la PWA est :
+
+`https://dalquier.github.io/App-perso/developer-os/`
+
+Le client est construit pour le sous-chemin :
+
+`/App-perso/developer-os/`
+
+La configuration Vite, le manifeste PWA, le service worker et le workflow Pages doivent conserver ce sous-chemin.
+
+Le workflow de déploiement est :
+
+`.github/workflows/developer-os-pages.yml`.
+
+Replit n’est plus une dépendance de déploiement DeveloperOS. Il peut être utilisé ponctuellement comme environnement de reproduction ou de diagnostic, mais GitHub reste la source canonique et GitHub Pages la cible de publication du client.
+
+## Installation et commandes locales
 
 Prérequis stricts : Node.js `20.20.2` et npm `11.4.2`, versions identiques à la CI DeveloperOS.
 
@@ -21,76 +53,126 @@ npm run build
 npm run playwright:install
 npm run test:e2e
 npm run preview
-npm audit --audit-level=low
-npm audit --omit=dev --audit-level=low
 ```
 
-Les PNG iPhone/PWA sont générés depuis la source SVG textuelle versionnée `public/icons/icon-512.svg` par `npm run icons:generate`; les fichiers `public/icons/apple-touch-icon-180.png`, `public/icons/icon-192.png` et `public/icons/icon-512.png` sont ignorés par Git et ne doivent pas être publiés par Codex. `npm run dev`, `npm run build` et `npm run test:pwa` régénèrent ces PNG avant utilisation. Le build statique est produit dans `dist/`. Les E2E utilisent le build de production via `npm run preview -- --port 4173` et les projets Chromium iPhone SE / iPhone 13 définis dans `playwright.config.ts`.
+Les PNG iPhone/PWA sont générés depuis la source SVG versionnée par `npm run icons:generate`. Ils sont régénérés avant les opérations qui en dépendent et ne constituent pas des sources binaires canoniques à maintenir manuellement.
 
 ## Architecture
 
+### PWA principale
+
+- React + TypeScript + Vite ;
+- mobile-first ;
+- local-first ;
+- installable ;
+- fonctionnement hors connexion après chargement initial ;
+- service worker Workbox ;
+- routage compatible GitHub Pages ;
+- export/import JSON versionné.
+
+### IndexedDB
+
+La base `developeros` utilise le schéma **version 3** avec trois stores canoniques :
+
+- `projects` ;
+- `codexConversations` ;
+- `conversation-runs`.
+
+Toute migration future doit préserver les données existantes et les trois stores, sauf décision de migration explicitement documentée et testée.
+
 ### Module Conversations Codex
 
-Les routes `/codex`, `/codex/new`, `/codex/:id` et `/codex/:id/edit` gèrent un historique dédié, entièrement local. IndexedDB `developeros` utilise désormais le schéma 3 avec les stores `projects`, `codexConversations` et `conversation-runs`; BUILD-02R enrichit uniquement les records `Project` et son import/remplacement reste limité à `projects`, sans détruire les conversations ni les runs. L’export JSON versionné et l’import par **fusion** ne suppriment aucune conversation implicitement.
+Les routes Codex permettent de gérer un historique local de prompts, de copier un prompt puis d’ouvrir Codex explicitement. L’application ne colle et n’envoie rien automatiquement dans Codex.
 
-« Lancer dans Codex » enregistre d’abord l’entrée, copie le prompt, puis ouvre `https://chatgpt.com/codex/`. Il ne colle ni n’envoie rien automatiquement : sur iPhone, l’utilisateur colle et valide dans Codex, revient ensuite associer l’URL HTTPS exacte sur `chatgpt.com`, puis peut la rouvrir explicitement. Si Clipboard échoue, le prompt enregistré reste visible dans une zone sélectionnable avec une nouvelle action de copie.
+Les prompts, URLs et associations de projets restent dans le navigateur et dans les exports privés de l’utilisateur. L’import par fusion ne supprime pas implicitement les conversations existantes.
 
-Les prompts, URLs et associations de projets restent exclusivement dans le navigateur et dans les exports privés de l’utilisateur. Recette iPhone : créer un brouillon hors connexion, recharger, lancer depuis un geste direct, vérifier la confirmation de copie et l’ouverture Safari, coller manuellement, associer le lien au retour, rouvrir par le bouton explicite, puis tester recherche, états, archivage, export et import fusionné. Safari peut purger IndexedDB : conserver des exports réguliers.
+### Conversation Orchestrator
 
-- `src/domain/` : modèle Project versionné, limites de champs, validation de dates, sources canoniques et import/export JSON.
-- `src/data/` : interface repository et implémentation IndexedDB (`idb`), avec transaction pour l'unicité du projet actif et gestion minimale `onblocked` / `onversionchange`.
-- `src/routing.tsx` : routeur local léger basé sur l'historique navigateur, sans backend ni dépendance de routage serveur.
-- `src/pages/`, `src/components/` : React, contrôles HTML natifs accessibles, liste, fiche, création, modification, archives, restauration et réglages.
-- `scripts/generate-icons.mjs` : génération reproductible des icônes PNG 180/192/512 depuis le SVG versionné, avant dev/build/tests PWA.
-- `vite-plugin-pwa` : manifeste installable, icônes PNG générées et SVG source complémentaire, service worker Workbox, navigation fallback et nettoyage des caches obsolètes.
+La décision d’architecture est définie dans :
 
-Une CSP meta BUILD-01 limite scripts, styles, connexions, objets, base URI et frames à l'origine locale. `style-src 'unsafe-inline'` est conservé uniquement pour compatibilité du build statique et de l'attribut style éventuellement produit par l'environnement navigateur ; aucune ressource distante n'est nécessaire.
+`ProjectOS/projects/DeveloperOS/ADR/ADR-003-CONVERSATION-ORCHESTRATOR-DUAL-EXECUTION.md`.
 
-## Modèle de données et validations
+Le contrat V1 est défini dans :
 
-Le schéma et les exports ont la version `1`. Un projet contient exclusivement les clés canoniques `id`, `schemaVersion`, `name`, `aliases`, `status`, `priority`, `nextAction`, `canonicalSourceType`, `canonicalSource`, `lastKnownState`, `isActive`, `createdAt`, `updatedAt`.
+`ProjectOS/projects/DeveloperOS/docs/CONVERSATION_ORCHESTRATOR_SPEC.md`.
 
-Contraintes appliquées : nom obligatoire et limité, alias bornés, textes longs bornés, `updatedAt >= createdAt`, un seul projet actif, projet archivé non actif, source canonique textuelle validée par type, import JSON limité à 512 Ko, clés dangereuses `__proto__`, `prototype`, `constructor` rejetées, champs inconnus ordinaires ignorés avec avertissement de prévalidation. BUILD-01 ne propose aucune suppression définitive de projet individuel : l'archivage est réversible depuis **Réglages → Projets archivés** ; la réinitialisation globale reste protégée par confirmation.
+Deux canaux existent :
 
-## Import destructif et sauvegarde préalable
+- `chatgpt_plus_manual` ;
+- `openai_api`.
 
-L'import par remplacement suit cette séquence : lecture et validation complète du fichier, génération d'un export JSON valide des données courantes, proposition explicite de téléchargement `developeros-backup-before-import-YYYY-MM-DD.json`, attente d'une confirmation utilisateur claire, puis remplacement IndexedDB dans une transaction. Annuler l'import ou échouer avant confirmation ne mute pas les données locales. Si la transaction échoue avant commit, l'ancien contenu reste intact.
+Le premier reste manuel et assisté par copier-coller. Le second nécessite un backend séparé du client GitHub Pages ; aucun secret OpenAI ne doit être exposé dans la PWA, IndexedDB, GitHub ou les exports.
+
+## BUILD-02R
+
+BUILD-02R enrichit les projets avec :
+
+- un point de reprise horodaté ;
+- un historique borné ;
+- des références HTTPS sécurisées.
+
+Son import/remplacement reste limité au store `projects` et ne détruit ni `codexConversations` ni `conversation-runs`.
+
+## CI DeveloperOS
+
+Workflow : `.github/workflows/developer-os.yml`.
+
+Sur `main`, la chaîne de contrôle couvre :
+
+- installation verrouillée ;
+- lint ;
+- TypeScript ;
+- tests unitaires ;
+- tests composants ;
+- tests repository ;
+- tests PWA ;
+- build de production ;
+- E2E mobiles Playwright.
+
+Lorsqu’une branche introduit de nouveaux tests serveur, elle doit les raccorder explicitement à la CI avant fusion. La Draft PR #83 ajoute actuellement cette couverture sur son propre SHA ; cela ne décrit pas encore `main`.
 
 ## UX iPhone
 
-Les vues sont défilables et utilisent le viewport dynamique, les safe areas iOS, des cibles tactiles de 44 px minimum, des champs à 16 px et une barre d'actions visible. Les états et priorités utilisent de vrais `select` natifs. La sortie d'un formulaire modifié demande confirmation.
+Les vues doivent rester :
 
-## Validation réalisée
+- défilables ;
+- compatibles safe areas ;
+- utilisables avec le clavier ouvert ;
+- accessibles avec des cibles tactiles suffisantes ;
+- toujours quittables par un retour ou une fermeture visible ;
+- dépourvues de faux contrôles ou clics inertes.
 
-Les preuves détaillées figurent dans `docs/BUILD-01-VERIFICATION.md`.
+## Sécurité et données
 
-La validation finale de la PR #28 a confirmé :
+- aucun secret dans le client ou le dépôt public ;
+- aucun `.env` réel versionné ;
+- aucune donnée utilisateur réelle dans GitHub ;
+- aucune automatisation de lecture ou scraping de ChatGPT ;
+- URLs externes validées et ouvertes explicitement ;
+- exports utilisateur conservés hors du dépôt public.
 
-- CI GitHub DeveloperOS entièrement verte, y compris lint, TypeScript, tests unitaires, composants, repository, PWA, build et E2E mobiles Playwright ;
-- preview HTTPS reproductible dans Replit depuis la branche GitHub canonique ;
-- installation réelle de la PWA depuis Safari sur iPhone ;
-- lancement et modification hors connexion après premier chargement ;
-- persistance IndexedDB après fermeture et relance ;
-- archivage d'un projet actif, accès aux archives et restauration en pause sans réactivation ;
-- export JSON puis import avec sauvegarde préalable, annulation sans mutation et remplacement confirmé.
+## Gouvernance et roadmap
 
-## Recette iPhone complémentaire recommandée
+Références principales :
 
-Les contrôles suivants restent utiles en non-régression mais ne bloquent pas BUILD-01 :
+- `ProjectOS/projects/DeveloperOS/PROJECT_MANIFEST.md` ;
+- `ProjectOS/projects/DeveloperOS/MASTER_BUILD_PROMPT.md` ;
+- `ProjectOS/projects/DeveloperOS/roadmap.md` ;
+- `ProjectOS/projects/DeveloperOS/ADR/ADR-004-GITHUB-PAGES-DEPLOYMENT.md`.
 
-- audit approfondi VoiceOver et texte agrandi à 200 % ;
-- paysage et clavier physique iOS ;
-- scénarios IndexedDB multi-onglets, quota et pression de stockage Safari ;
-- vérification sur d'autres versions matérielles et logicielles d'iPhone.
+Le séquencement Conversation Orchestrator courant est :
 
-## Replit Starter (sous-dossier uniquement)
+`CO-BUILD-00 → CO-BUILD-01 → QA manuel → CO-BUILD-02 par incréments + QA → CO-BUILD-03 → QA finale`.
 
-Importer `dalquier/App-perso`, sans agent IA ni secret. Répertoire de travail : `apps/developer-os/`. Installation : `npm ci`. Installation E2E : `npm run playwright:install` (nécessite accès au CDN Playwright et paquets Linux). Exécution : `npm run dev -- --port 3000`. Build : `npm run build`. Déploiement statique : `dist/`. Replit reste un environnement reproductible, jamais la source du code ou des données.
+CO-BUILD-03 est futur et ne doit pas démarrer avant la clôture de CO-BUILD-02 et de ses QA bloquants.
 
-## Limites restantes
+## Limites connues
 
-IndexedDB peut être purgé par Safari/iOS ; un export régulier reste recommandé. Aucun appel réseau ne vérifie les sources canoniques. BUILD-01 n'inclut volontairement ni backend, ni authentification, ni synchronisation distante, ni OpenAI. L'avertissement GitHub Actions relatif à la future migration du runtime Node des actions est non bloquant et devra être traité lors d'une maintenance de la CI.
+- Safari/iOS peut purger IndexedDB ; conserver des exports privés utiles.
+- GitHub Pages héberge uniquement le client statique et ne fournit pas le runtime serveur futur de CO-BUILD-02.
+- Un workflow Pages intégré ne remplace pas un smoke test réel de l’URL publiée.
+- Le backend OpenAI de CO-BUILD-02 reste en construction et n’appartient pas encore à `main`.
 
 ## Retour arrière
 
-Exporter avant une évolution. Revenir au commit/tag précédent pour le code. Toute version de schéma future doit sauvegarder et migrer explicitement sans effacement silencieux.
+Exporter les données locales avant une évolution de schéma. Pour le code, revenir au dernier commit stable. Toute modification de l’hébergement ou de la séparation client/backend doit être documentée dans une ADR avant de remplacer la cible GitHub Pages actuelle.
