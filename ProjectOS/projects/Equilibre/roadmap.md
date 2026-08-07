@@ -40,11 +40,19 @@ Statut : intégré et validé. Le chat persistant, le streaming local, la repris
 
 ## Jalon E — BUILD-03, séances et mémoire contrôlée
 
-Livrer la séance structurée, le résumé, les plans d’action et la mémoire proposée/confirmée/corrigeable.
+Statut : intégré par la PR #53. Séances structurées, résumés, plans d'action et mémoire locale proposée/confirmée/corrigeable/supprimable sont présents dans `main`.
 
-## Jalon F — Protocoles, sécurité et voix
+## Jalon F — V4 / BUILD-04, protocoles versionnés, stockage v4 et sécurité
 
-Intégrer progressivement les protocoles TCC, les scénarios sensibles, la dictée, la lecture vocale puis la voix temps réel si les critères de sécurité sont satisfaits.
+Statut : candidate construite sur `equilibre/build-04-main-integration`, non intégrée à `main`.
+
+La candidate contient exactement deux protocoles actifs, une navigation principale à cinq destinations avec `Protocoles`, le stockage v4 et ses migrations/garanties anti-résurrection, des gates de sécurité avant mutation, la mémoire uniquement explicite, le cache PWA `equilibre-shell-v5` et une configuration Replit recréable depuis la racine du monorepo.
+
+Les tests automatisés, le build, le smoke test et la CI doivent être rattachés au SHA final de la Draft PR. La recette physique iPhone reste requise avant décision de fusion.
+
+## Jalon G — Capacités ultérieures
+
+La dictée, la lecture vocale puis la voix temps réel restent hors BUILD-04 et ne seront envisagées qu'après critères de sécurité dédiés.
 
 ## Règle de passage
 

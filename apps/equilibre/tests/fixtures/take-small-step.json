@@ -1,0 +1,15 @@
+{
+  "fixtureId": "fixture-projet-comete-action-001",
+  "fictional": true,
+  "protocolId": "equilibre.protocol.take-small-step",
+  "protocolVersion": "1.0.0",
+  "answers": {
+    "focus": "Préparer la note de lancement du projet fictif Comète.",
+    "minimum_result": "Avoir écrit les trois titres principaux.",
+    "small_step": "Ouvrir le fichier fictif Comète et écrire trois titres.",
+    "first_move": "Poser le téléphone fictif sur le bureau et ouvrir l’ordinateur.",
+    "start_cue": "Après la pause de 14 h.",
+    "fallback_step": "Ouvrir seulement le fichier et écrire un titre."
+  },
+  "expectedAction": "Ouvrir le fichier fictif Comète et écrire trois titres."
+}
