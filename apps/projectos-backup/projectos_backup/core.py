@@ -53,6 +53,7 @@ class BackupResult:
     unchanged_files: int
     file_count: int
     requested_downloads: int
+    resumed_files: int = 0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -194,6 +195,32 @@ def _write_json(path: Path, payload: dict) -> None:
     os.replace(temporary, path)
 
 
+def _resume_key(source_id: str, relative: str) -> str:
+    return f"{source_id}:{relative}"
+
+
+def _resume_cache_path(resume_root: Path, key: str) -> Path:
+    """Return a stable path without trusting source-controlled path components."""
+    return resume_root / "files" / hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+
+def _load_resume(resume_root: Path) -> dict:
+    state = _load_manifest(resume_root / "STATE.json")
+    return state if isinstance(state.get("files"), dict) else {"schemaVersion": SCHEMA_VERSION, "files": {}}
+
+
+def _save_resume(resume_root: Path, state: dict) -> None:
+    resume_root.mkdir(parents=True, exist_ok=True)
+    _write_json(resume_root / "STATE.json", state)
+
+
+def _discard_resume_entry(resume_root: Path, state: dict, key: str) -> None:
+    entry = state["files"].pop(key, None)
+    if entry:
+        _resume_cache_path(resume_root, key).unlink(missing_ok=True)
+        _save_resume(resume_root, state)
+
+
 def _recover_transactions(destination: Path) -> None:
     """Rollback a publication interrupted by iOS terminating Pyto."""
     transaction_root = destination / "Transaction"
@@ -232,6 +259,7 @@ def run_backup(
     prepare_file: PrepareFile | None = None,
     progress: ProgressCallback | None = None,
     should_cancel: CancellationCheck | None = None,
+    deep_verify: bool = False,
 ) -> BackupResult:
     """Make ``Current`` an exact mirror. Deletions occur only after a full readable scan."""
     destination = Path(destination).expanduser()
@@ -240,6 +268,13 @@ def run_backup(
     _recover_transactions(destination)
     current = destination / "Current"
     current.mkdir(exist_ok=True)
+    resume_root = destination / "Resume"
+    resume = _load_resume(resume_root)
+    # A process killed during a copy can leave bytes on disk, but the entry is
+    # published only after the final rename. Unpublished partials are never used.
+    if resume_root.exists():
+        for partial in resume_root.rglob("*.part"):
+            partial.unlink(missing_ok=True)
     previous = _load_manifest(current / "MANIFEST.json")
     previous_files = {f"{s['sourceId']}:{f['path']}": (s, f) for s in previous.get("sources", []) for f in s.get("files", [])}
     folders = _source_folders(resolved, previous)
@@ -270,17 +305,13 @@ def run_backup(
             scanned.append((source, root, files))
 
         total_files = sum(len(files) for _, _, files in scanned)
+        # Phase 2: metadata is the fast path. Only candidates that need
+        # reading ask iCloud to materialize their contents. deep_verify also
+        # hashes the mirror and repairs silent corruption.
         prepared = 0
-        for source, _, files in scanned:
-            for path, relative in files:
-                cancel_if_needed()
-                if prepare_file is not None and prepare_file(path):
-                    requested += 1
-                prepared += 1
-                report("prepare", prepared, total_files, label=source.label, path=relative)
 
-        # Phase 2: read/hash only new or changed files into the transaction.
-        copied = unchanged = 0
+        # Read/hash only new or changed files into the transaction.
+        copied = unchanged = resumed = 0
         processed = 0
         for source, root, files in scanned:
             records = []
@@ -292,26 +323,73 @@ def run_backup(
                 key = f"{source.source_id}:{relative}"
                 old = previous_files.get(key, ({}, {}))[1]
                 mirror = current / folder / relative
-                same = (
+                metadata_same = (
                     old.get("size") == stat.st_size
                     and old.get("mtimeNs") == stat.st_mtime_ns
                     and mirror.is_file()
                     and mirror.stat().st_size == stat.st_size
-                    and sha256_file(mirror) == old.get("sha256")
+                    and bool(old.get("sha256"))
                 )
+                same = metadata_same
+                if same and deep_verify:
+                    same = sha256_file(mirror) == old["sha256"]
                 if same:
                     digest = old["sha256"]; unchanged += 1
                 else:
-                    size, digest = _copy_and_hash(
-                        path,
-                        staged / folder / relative,
-                        should_cancel=should_cancel,
+                    resume_key = _resume_key(source.source_id, relative)
+                    cached = resume["files"].get(resume_key, {})
+                    cache_path = _resume_cache_path(resume_root, resume_key)
+                    resumable = (
+                        cached.get("sourceId") == source.source_id
+                        and cached.get("path") == relative
+                        and cached.get("size") == stat.st_size
+                        and cached.get("mtimeNs") == stat.st_mtime_ns
+                        and bool(cached.get("sha256"))
+                        and cache_path.is_file()
+                        and cache_path.stat().st_size == stat.st_size
                     )
-                    if size != stat.st_size: raise SourceAccessError(f"Fichier modifié pendant la lecture : {path}")
+                    prepared += 1
+                    report("prepare", prepared, 0, label=source.label, path=relative, resumed=resumable)
+                    if resumable:
+                        target = staged / folder / relative
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(cache_path, target)
+                        size, digest = stat.st_size, cached["sha256"]
+                        resumed += 1
+                    else:
+                        if cached:
+                            _discard_resume_entry(resume_root, resume, resume_key)
+                        if prepare_file is not None and prepare_file(path):
+                            requested += 1
+                        # iCloud may materialize or replace the file here.
+                        try: stat = path.stat()
+                        except OSError as exc: raise SourceAccessError(f"Fichier iCloud indisponible : {path}") from exc
+                        cache_path.parent.mkdir(parents=True, exist_ok=True)
+                        partial = cache_path.with_name(cache_path.name + ".part")
+                        partial.unlink(missing_ok=True)
+                        try:
+                            size, digest = _copy_and_hash(path, partial, should_cancel=should_cancel)
+                            if size != stat.st_size:
+                                raise SourceAccessError(f"Fichier modifié pendant la lecture : {path}")
+                            os.replace(partial, cache_path)
+                        except Exception:
+                            partial.unlink(missing_ok=True)
+                            raise
+                        resume["files"][resume_key] = {
+                            "sourceId": source.source_id,
+                            "path": relative,
+                            "size": stat.st_size,
+                            "mtimeNs": stat.st_mtime_ns,
+                            "sha256": digest,
+                        }
+                        _save_resume(resume_root, resume)
+                        target = staged / folder / relative
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(cache_path, target)
                     copied += 1
                 records.append({"path": relative, "size": stat.st_size, "mtimeNs": stat.st_mtime_ns, "sha256": digest})
                 processed += 1
-                report("mirror", processed, total_files, label=source.label, path=relative)
+                report("mirror", processed, total_files, label=source.label, path=relative, resumed=(not same and resumable))
             inventory.append({"sourceId": source.source_id, "label": source.label, "folder": folder, "fileCount": len(records), "files": records})
 
         desired = {f"{s['sourceId']}:{f['path']}" for s in inventory for f in s["files"]}
@@ -359,8 +437,9 @@ def run_backup(
             raise BackupError(f"Publication annulée, sauvegarde précédente restaurée : {exc}") from exc
         _remove_empty(current)
         shutil.rmtree(transaction, ignore_errors=True)
+        shutil.rmtree(resume_root, ignore_errors=True)
         report("complete", total_files, total_files)
-        return BackupResult("complete", run_id, str(current), str(current / "MANIFEST.json"), copied, len(obsolete), unchanged, sum(s["fileCount"] for s in inventory), requested)
+        return BackupResult("complete", run_id, str(current), str(current / "MANIFEST.json"), copied, len(obsolete), unchanged, sum(s["fileCount"] for s in inventory), requested, resumed)
     except Exception:
         shutil.rmtree(transaction, ignore_errors=True)
         raise

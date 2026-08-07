@@ -62,9 +62,46 @@ class MirrorTests(unittest.TestCase):
             root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('good')
             run_backup([Source('one','Source',str(source))],dest)
             (dest/'Current'/'Source'/'a').write_text('evil')
-            result=run_backup([Source('one','Source',str(source))],dest)
+            result=run_backup([Source('one','Source',str(source))],dest,deep_verify=True)
             self.assertEqual(result.copied_files,1)
             self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'good')
+
+    def test_fast_path_reuses_hash_without_reading_mirror(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('stable')
+            run_backup([Source('one','Source',str(source))],dest)
+            with patch.object(core,'sha256_file',side_effect=AssertionError('mirror rehashed')):
+                result=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual((result.copied_files,result.unchanged_files),(0,1))
+
+    def test_prepare_file_only_for_changed_candidates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir()
+            unchanged=source/'a'; changed=source/'b'; unchanged.write_text('a'); changed.write_text('b')
+            run_backup([Source('one','Source',str(source))],dest)
+            changed.write_text('changed-size')
+            requested=[]; events=[]
+            result=run_backup(
+                [Source('one','Source',str(source))],
+                dest,
+                prepare_file=lambda path: requested.append(path.name) or True,
+                progress=events.append,
+            )
+            self.assertEqual(requested,['b'])
+            prepare_events=[event for event in events if event['phase']=='prepare']
+            self.assertEqual([(event['completed'],event['total']) for event in prepare_events],[(1,0)])
+            self.assertEqual((result.copied_files,result.unchanged_files,result.requested_downloads),(1,1,1))
+
+    def test_deep_verify_repairs_same_size_corruption(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('good')
+            run_backup([Source('one','Source',str(source))],dest)
+            mirror=dest/'Current'/'Source'/'a'; mirror.write_text('evil')
+            fast=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual((fast.copied_files,fast.unchanged_files),(0,1))
+            repaired=run_backup([Source('one','Source',str(source))],dest,deep_verify=True)
+            self.assertEqual(repaired.copied_files,1)
+            self.assertEqual(mirror.read_text(),'good')
 
     def test_interrupted_publish_is_recovered(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -82,6 +119,63 @@ class MirrorTests(unittest.TestCase):
             with self.assertRaises(BackupError):
                 run_backup([Source('one','Source',str(source))],dest,should_cancel=lambda: True)
             self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'old')
+
+    def test_interruption_resumes_completed_file_without_reading_source_again(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir()
+            (source/'a').write_text('already cached'); (source/'b').write_text('interrupt here')
+            original=core._copy_and_hash
+            def interrupt_second(path,target,should_cancel=None):
+                if path.name == 'b': raise BackupError('interrupted')
+                return original(path,target,should_cancel)
+            with patch.object(core,'_copy_and_hash',side_effect=interrupt_second):
+                with self.assertRaises(BackupError): run_backup([Source('one','Source',str(source))],dest)
+            self.assertTrue((dest/'Resume'/'STATE.json').is_file())
+            calls=[]
+            def record_copy(path,target,should_cancel=None):
+                calls.append(path.name); return original(path,target,should_cancel)
+            events=[]
+            with patch.object(core,'_copy_and_hash',side_effect=record_copy):
+                result=run_backup([Source('one','Source',str(source))],dest,progress=events.append)
+            self.assertEqual(calls,['b'])
+            self.assertEqual(result.resumed_files,1)
+            self.assertTrue(any(e.get('resumed') is True for e in events if e['phase']=='mirror'))
+
+    def test_partial_resume_file_is_never_reused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); item=source/'a'; item.write_text('complete')
+            resume=dest/'Resume'; key=core._resume_key('one','a'); cache=core._resume_cache_path(resume,key)
+            cache.parent.mkdir(parents=True); (cache.with_name(cache.name+'.part')).write_text('part')
+            core._save_resume(resume,{'schemaVersion':core.SCHEMA_VERSION,'files':{key:{'sourceId':'one','path':'a','size':item.stat().st_size,'mtimeNs':item.stat().st_mtime_ns,'sha256':'invalid'}}})
+            with patch.object(core,'_copy_and_hash',wraps=core._copy_and_hash) as copier:
+                result=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual(copier.call_count,1)
+            self.assertEqual(result.resumed_files,0)
+            self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'complete')
+
+    def test_changed_metadata_invalidates_resume_cache(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); item=source/'a'; item.write_text('old'); (source/'b').write_text('b')
+            with patch.object(core,'_save_resume',wraps=core._save_resume) as saver:
+                with self.assertRaises(BackupError):
+                    run_backup([Source('one','Source',str(source))],dest,should_cancel=lambda: saver.call_count > 0)
+            item.write_text('new content with different size')
+            with patch.object(core,'_copy_and_hash',wraps=core._copy_and_hash) as copier:
+                result=run_backup([Source('one','Source',str(source))],dest)
+            self.assertIn('a',[call.args[0].name for call in copier.call_args_list])
+            self.assertEqual(result.resumed_files,0)
+            self.assertEqual((dest/'Current'/'Source'/'a').read_text(),'new content with different size')
+
+    def test_resume_cache_is_removed_only_after_success(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir(); (source/'a').write_text('a'); (source/'b').write_text('b')
+            with patch.object(core,'_save_resume',wraps=core._save_resume) as saver:
+                with self.assertRaises(BackupError):
+                    run_backup([Source('one','Source',str(source))],dest,should_cancel=lambda: saver.call_count > 0)
+            self.assertTrue((dest/'Resume'/'STATE.json').is_file())
+            result=run_backup([Source('one','Source',str(source))],dest)
+            self.assertEqual(result.resumed_files,1)
+            self.assertFalse((dest/'Resume').exists())
 
     def test_broken_progress_display_does_not_break_backup(self):
         with tempfile.TemporaryDirectory() as tmp:
