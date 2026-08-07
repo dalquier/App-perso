@@ -86,7 +86,7 @@ describe("BUILD-04C2 — séance legacy", () => {
     const result = integration.prepareLegacySessionAnswer(initial, "je veux mourir");
     expect(result.blocked).toBe(true);
     expect(result.state).toBe(initial);
-    expect(initial.lastSession.answers).toEqual({});
+    expect(initial.lastSession.answers).toEqual({ situation: "", emotion: "", thought: "", action: "" });
     expect(initial.sessionRecords).toEqual([]);
   });
 });
