@@ -27,6 +27,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/TOOLS_AND_STORAGE.md` : rôle des applications et stockages.
 - `standards/CODE_WORK_ROUTING.md` : routage obligatoire des développements substantiels vers Codex et GitHub.
 - `standards/CODEX_NATIVE_PUBLISHING.md` : fonctionnement des sandboxes Codex Cloud et publication native des branches et Pull Requests.
+- `standards/CODEX_GITHUB_RELIABILITY.md` : garde-fous de fraîcheur, ressources logiques, preuves de SHA/CI et Merge Gate pour les flux Codex ↔ GitHub.
 - `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` : précontrôle obligatoire du canal de livraison, preuves externes et récupération des artefacts.
 - `standards/CODING_STANDARDS.md` : règles communes de conception et de code.
 - `standards/DOCUMENTATION.md` : exigences de documentation et traçabilité.
