@@ -17,12 +17,12 @@ from .state import ConfigStore, infer_source_label
 
 
 PROGRESS_THROTTLE_SECONDS = 0.12
-DETERMINATE_PHASES = {"prepare", "mirror", "upload", "delete", "complete"}
+DETERMINATE_PHASES = {"prepare", "mirror", "upload_prepare", "upload", "delete", "complete"}
 RESULT_FILE = "last_ui_result.json"
 LOCAL_PHASES = {"scan", "prepare", "mirror"}
 DRIVE_PHASES = {
     "drive_prepare", "drive_wake", "drive_auth", "drive_manifest", "drive_retry", "drive_ready",
-    "upload", "delete", "publish", "complete",
+    "upload_prepare", "upload", "delete", "publish", "complete",
 }
 DRIVE_PREFLIGHT_PHASES = {"drive_wake", "drive_auth", "drive_manifest", "drive_retry", "drive_ready"}
 
@@ -76,6 +76,7 @@ def progress_copy(event: dict) -> tuple[str, str, str, float]:
         "drive_manifest": "Lecture de l’index Drive",
         "drive_retry": "Nouvelle tentative de connexion",
         "drive_ready": "Google Drive prêt",
+        "upload_prepare": "Préparation des envois",
         "upload": "Envoi vers Google Drive",
         "delete": "Nettoyage du miroir Drive",
         "publish": "Publication du manifeste",
