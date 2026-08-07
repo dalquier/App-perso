@@ -100,8 +100,11 @@ class DriveClientTests(unittest.TestCase):
     def test_manifest_mismatch_fails_after_finalize(self):
         with tempfile.TemporaryDirectory() as raw:
             current = Path(raw)
-            _, client = prepare(current, [("a", b"x")])
-            client.verified = manifest([{"path": "a", "sha256": hashlib.sha256(b"x").hexdigest()}], "wrong")
+            local, client = prepare(current, [("a", b"x")])
+            client.verified = json.loads(json.dumps(local))
+            client.verified["sources"][0]["files"][0]["sha256"] = "incorrect"
+            self.assertEqual(client.verified["runId"], local["runId"])
+            self.assertEqual(client.verified["fileCount"], local["fileCount"])
             with self.assertRaisesRegex(DriveSyncError, "ne correspond pas"):
                 sync_current(current, client)
             self.assertEqual([a for a, _ in client.calls][-2:], ["finalize", "manifest"])
