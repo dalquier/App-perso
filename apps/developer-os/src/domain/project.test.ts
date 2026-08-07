@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyDraft, validateCanonicalSource, validateDraft } from "./project";
+import { addReference, addResume, createProject, emptyDraft, validateCanonicalSource, validateDraft, validateReferenceUrl } from "./project";
 
 describe("project validation", () => {
   it("prefills the canonical GitHub repository for new projects", () => {
@@ -58,5 +58,33 @@ describe("project validation", () => {
     const errors = validateDraft(draft);
     expect(errors.name).toBeTruthy();
     expect(errors.isActive).toBeTruthy();
+  });
+});
+
+describe("manual resume and references", () => {
+  it("bounds immutable resume history from 99 to 100 then prunes the oldest at 101", () => {
+    const source = createProject({ ...emptyDraft(), name: "Projet" });
+    const history = Array.from({ length: 99 }, (_, index) => ({ id: `${index}`, text: `Étape ${index}`, createdAt: new Date(Date.UTC(2026, 0, 1, 0, index)).toISOString() }));
+    const at100 = addResume({ ...source, resumeHistory: history }, "Étape 100", "2026-08-07T10:00:00.000Z", "100");
+    const at101 = addResume(at100, "Étape 101", "2026-08-07T11:00:00.000Z", "101");
+    expect(at100.resumeHistory).toHaveLength(100);
+    expect(at101.resumeHistory).toHaveLength(100);
+    expect(at101.resumeHistory?.[0].text).toBe("Étape 101");
+    expect(at101.resumeHistory?.some((entry) => entry.id === "98")).toBe(false);
+    expect(source.resumeHistory).toEqual([]);
+    expect(Date.parse(at101.updatedAt)).not.toBeNaN();
+  });
+
+  it("does not duplicate the current resume and rejects archived mutations", () => {
+    const source = addResume(createProject({ ...emptyDraft(), name: "Projet" }), "Reprendre ici");
+    expect(addResume(source, " Reprendre ici ").resumeHistory).toHaveLength(1);
+    expect(() => addResume({ ...source, status: "archived" }, "Autre")).toThrow(/Restaurez/);
+  });
+
+  it("accepts only absolute credential-free HTTPS references", () => {
+    expect(validateReferenceUrl("https://example.com/doc")).toBeNull();
+    for (const unsafe of ["http://example.com", "javascript:alert(1)", "data:text/plain,x", "file:///tmp/x", "/relative", "https://user:pass@example.com"]) expect(validateReferenceUrl(unsafe)).not.toBeNull();
+    const project = createProject({ ...emptyDraft(), name: "Projet" });
+    expect(addReference(project, " Documentation ", "https://example.com").references?.[0].label).toBe("Documentation");
   });
 });

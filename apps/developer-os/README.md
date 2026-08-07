@@ -31,7 +31,7 @@ Les PNG iPhone/PWA sont générés depuis la source SVG textuelle versionnée `p
 
 ### Module Conversations Codex
 
-Les routes `/codex`, `/codex/new`, `/codex/:id` et `/codex/:id/edit` gèrent un historique dédié, entièrement local. IndexedDB `developeros` passe non destructivement au schéma 2 : le store `projects` est conservé et `codexConversations` ajoute les index `updatedAt` et `status`. L’export JSON versionné et l’import par **fusion** ne suppriment aucune conversation implicitement.
+Les routes `/codex`, `/codex/new`, `/codex/:id` et `/codex/:id/edit` gèrent un historique dédié, entièrement local. IndexedDB `developeros` utilise désormais le schéma 3 avec les stores `projects`, `codexConversations` et `conversation-runs`; BUILD-02R enrichit uniquement les records `Project` et son import/remplacement reste limité à `projects`, sans détruire les conversations ni les runs. L’export JSON versionné et l’import par **fusion** ne suppriment aucune conversation implicitement.
 
 « Lancer dans Codex » enregistre d’abord l’entrée, copie le prompt, puis ouvre `https://chatgpt.com/codex/`. Il ne colle ni n’envoie rien automatiquement : sur iPhone, l’utilisateur colle et valide dans Codex, revient ensuite associer l’URL HTTPS exacte sur `chatgpt.com`, puis peut la rouvrir explicitement. Si Clipboard échoue, le prompt enregistré reste visible dans une zone sélectionnable avec une nouvelle action de copie.
 
