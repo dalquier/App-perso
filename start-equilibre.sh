@@ -7,4 +7,5 @@ PORT="${PORT:-5000}"
 
 cd "$APP_DIR"
 npm ci
-exec npm run dev -- --host 0.0.0.0 --port "$PORT" --strictPort
+npm run build
+exec npm run preview -- --host 0.0.0.0 --port "$PORT" --strictPort
