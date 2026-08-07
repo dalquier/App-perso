@@ -18,18 +18,20 @@ describe("BUILD-04 delivery contract", () => {
     expect(manifest.short_name).toBe("Équilibre");
   });
 
-  it("keeps the BUILD-04 service-worker cache identifier", () => {
-    expect(readApp("public/sw.js")).toContain('const CACHE = "equilibre-shell-v5"');
+  it("uses the hardened BUILD-04 service-worker cache identifier", () => {
+    expect(readApp("public/sw.js")).toContain('const CACHE = "equilibre-shell-v6"');
   });
 
-  it("provides a root Replit launch command for the stable product script", () => {
+  it("provides a root Replit launch command and leaves port routing to Replit auto-detection", () => {
     const replit = readRepo(".replit");
     expect(replit).toContain('run = "./start-equilibre.sh"');
-    expect(replit).toContain("localPort = 5000");
+    expect(replit).not.toContain("[[ports]]");
+    expect(replit).not.toContain("localPort");
+    expect(replit).not.toContain("externalPort");
     expect(replit).not.toMatch(/BUILD-?0?3|Validation/i);
   });
 
-  it("installs deterministically, builds, and serves the production preview on the Replit host and port", () => {
+  it("installs deterministically, builds, and serves the production preview on all interfaces", () => {
     const script = readRepo("start-equilibre.sh");
     expect(script).toContain("npm ci");
     expect(script).toContain("npm run build");
