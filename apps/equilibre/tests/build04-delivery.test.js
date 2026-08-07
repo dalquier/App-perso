@@ -29,9 +29,12 @@ describe("BUILD-04 delivery contract", () => {
     expect(replit).not.toMatch(/BUILD-?0?3|Validation/i);
   });
 
-  it("installs deterministically and starts Vite on the Replit host and port", () => {
+  it("installs deterministically, builds, and serves the production preview on the Replit host and port", () => {
     const script = readRepo("start-equilibre.sh");
     expect(script).toContain("npm ci");
+    expect(script).toContain("npm run build");
+    expect(script).toContain("npm run preview");
+    expect(script).not.toContain("npm run dev");
     expect(script).toContain("--host 0.0.0.0");
     expect(script).toContain('--port "$PORT"');
     expect(script).toContain("--strictPort");
