@@ -5,6 +5,9 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 .DS_Store
+.env
+.env.*
+!.env.example
 
 # Generated from public/icons/icon-512.svg by scripts/generate-icons.mjs
 public/icons/apple-touch-icon-180.png
