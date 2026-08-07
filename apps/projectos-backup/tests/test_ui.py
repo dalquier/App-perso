@@ -36,6 +36,15 @@ class ProgressTests(unittest.TestCase):
         self.assertEqual(filename, "example.py")
         self.assertEqual(ratio, 0.5)
 
+    def test_upload_preparation_has_real_progress(self):
+        title, counter, filename, ratio = progress_copy({
+            "phase": "upload_prepare", "completed": 3, "total": 10, "path": "Pyto/example.py",
+        })
+        self.assertEqual(title, "Préparation des envois")
+        self.assertEqual(counter, "30 %   ·   3 / 10")
+        self.assertEqual(filename, "example.py")
+        self.assertEqual(ratio, 0.3)
+
     def test_progress_copy_for_indeterminate_phase(self):
         title, counter, _, ratio = progress_copy({"phase": "drive_prepare"})
         self.assertEqual(title, "Connexion à Google Drive")
