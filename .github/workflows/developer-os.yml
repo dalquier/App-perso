@@ -53,6 +53,8 @@ jobs:
         run: npm run test:components
       - name: Repository tests
         run: npm run test:repository
+      - name: Server tests
+        run: npm run test:server
       - name: PWA tests
         run: npm run test:pwa
       - name: Production build
