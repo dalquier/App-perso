@@ -286,26 +286,38 @@ def _upload_payload(current: Path, path: str, record: dict) -> tuple[dict, int]:
     }, size)
 
 
-def _partition_uploads(current: Path, changed: list[str], local: dict) -> list[list[dict]]:
-    batches: list[list[dict]] = []
+def _iter_upload_batches(current: Path, changed: list[str], local: dict, progress=None):
+    """Encode at most one small batch at a time instead of the complete seed."""
     batch: list[dict] = []
     batch_bytes = 0
-    for path in sorted(changed):
+    ordered = sorted(changed)
+    for index, path in enumerate(ordered, start=1):
+        source = current / Path(*PurePosixPath(path).parts)
+        size = source.stat().st_size
+        if batch and (len(batch) >= MAX_BATCH_FILES or batch_bytes + size > MAX_BATCH_RAW_BYTES):
+            yield batch
+            batch, batch_bytes = [], 0
+        if progress:
+            progress({"phase": "upload_prepare", "completed": index, "total": len(ordered), "path": path})
         item, size = _upload_payload(current, path, local[path])
         if size > MAX_BATCH_RAW_BYTES:
             if batch:
-                batches.append(batch)
+                yield batch
                 batch, batch_bytes = [], 0
-            batches.append([item])
+            yield [item]
             continue
-        if batch and (len(batch) >= MAX_BATCH_FILES or batch_bytes + size > MAX_BATCH_RAW_BYTES):
-            batches.append(batch)
-            batch, batch_bytes = [], 0
         batch.append(item)
         batch_bytes += size
+        if len(batch) >= MAX_BATCH_FILES:
+            yield batch
+            batch, batch_bytes = [], 0
     if batch:
-        batches.append(batch)
-    return batches
+        yield batch
+
+
+def _partition_uploads(current: Path, changed: list[str], local: dict) -> list[list[dict]]:
+    """Compatibility helper used by focused partition tests."""
+    return list(_iter_upload_batches(current, changed, local))
 
 
 def _status(client, sync_id: str, uploads: list[dict] | None = None, deletes: list[str] | None = None) -> dict:
@@ -430,7 +442,7 @@ def sync_current(current: Path, client: AppsScriptClient, progress=None, should_
         )
 
         completed = 0
-        for batch in _partition_uploads(current, changed, local):
+        for batch in _iter_upload_batches(current, changed, local, progress=progress):
             status = _status(client, sync_id, uploads=batch)
             already = set(status.get("receivedUploads", []))
             pending = [item for item in batch if item["path"] not in already]
