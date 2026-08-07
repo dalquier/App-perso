@@ -28,6 +28,10 @@ export const PROJECT_LIMITS = {
   nextAction: 1_000,
   canonicalSource: 500,
   lastKnownState: 2_000,
+  resume: 2_000,
+  resumeHistory: 100,
+  referenceLabel: 120,
+  references: 100,
 } as const;
 
 export type ProjectStatus = (typeof STATUSES)[number];
@@ -48,7 +52,14 @@ export interface Project {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  resumeText?: string;
+  resumeUpdatedAt?: string | null;
+  resumeHistory?: ResumeEntry[];
+  references?: ProjectReference[];
 }
+
+export interface ResumeEntry { id: string; text: string; createdAt: string }
+export interface ProjectReference { id: string; label: string; url: string; createdAt: string; updatedAt: string }
 
 export type ProjectDraft = Omit<
   Project,
@@ -200,5 +211,57 @@ export function createProject(
     isActive: draft.status === "archived" ? false : draft.isActive,
     createdAt: now,
     updatedAt: now,
+    resumeText: "",
+    resumeUpdatedAt: null,
+    resumeHistory: [],
+    references: [],
   };
+}
+
+export type NormalizedProject = Project & { resumeText: string; resumeUpdatedAt: string | null; resumeHistory: ResumeEntry[]; references: ProjectReference[] };
+export function normalizeProject(project: Project): NormalizedProject {
+  return {
+    ...project,
+    resumeText: typeof project.resumeText === "string" ? project.resumeText : "",
+    resumeUpdatedAt: typeof project.resumeUpdatedAt === "string" ? project.resumeUpdatedAt : null,
+    resumeHistory: Array.isArray(project.resumeHistory) ? project.resumeHistory.slice(0, PROJECT_LIMITS.resumeHistory) : [],
+    references: Array.isArray(project.references) ? project.references.slice(0, PROJECT_LIMITS.references) : [],
+  };
+}
+
+export function addResume(project: Project, rawText: string, now = new Date().toISOString(), id: string = crypto.randomUUID()): Project {
+  if (project.status === "archived") throw new Error("Restaurez le projet avant de modifier sa reprise.");
+  const text = rawText.trim();
+  if (!text) throw new Error("Le point de reprise ne peut pas être vide.");
+  if (text.length > PROJECT_LIMITS.resume) throw new Error(`Le point de reprise est limité à ${PROJECT_LIMITS.resume} caractères.`);
+  if (Number.isNaN(Date.parse(now))) throw new Error("La date de reprise est invalide.");
+  const current = normalizeProject(project);
+  if (current.resumeHistory[0]?.text === text) return current;
+  return { ...current, resumeText: text, resumeUpdatedAt: now, updatedAt: now, resumeHistory: [{ id, text, createdAt: now }, ...current.resumeHistory].slice(0, PROJECT_LIMITS.resumeHistory) };
+}
+
+export function validateReferenceUrl(rawUrl: string): string | null {
+  let url: URL;
+  try { url = new URL(rawUrl.trim()); } catch { return "Saisissez une URL HTTPS absolue valide."; }
+  if (url.protocol !== "https:") return "Seules les URL HTTPS sont acceptées.";
+  if (url.username || url.password) return "Les URL avec identifiants intégrés sont refusées.";
+  return null;
+}
+
+export function addReference(project: Project, rawLabel: string, rawUrl: string, now = new Date().toISOString(), id: string = crypto.randomUUID()): Project {
+  if (project.status === "archived") throw new Error("Restaurez le projet avant d’ajouter une référence.");
+  const label = rawLabel.trim(), url = rawUrl.trim();
+  if (!label) throw new Error("Le libellé de la référence est obligatoire.");
+  if (label.length > PROJECT_LIMITS.referenceLabel) throw new Error(`Le libellé est limité à ${PROJECT_LIMITS.referenceLabel} caractères.`);
+  const urlError = validateReferenceUrl(url); if (urlError) throw new Error(urlError);
+  if (Number.isNaN(Date.parse(now))) throw new Error("La date de référence est invalide.");
+  const current = normalizeProject(project);
+  if (current.references.length >= PROJECT_LIMITS.references) throw new Error(`Maximum ${PROJECT_LIMITS.references} références par projet.`);
+  return { ...current, updatedAt: now, references: [{ id, label, url, createdAt: now, updatedAt: now }, ...current.references] };
+}
+
+export function removeReference(project: Project, referenceId: string, now = new Date().toISOString()): Project {
+  if (project.status === "archived") throw new Error("Restaurez le projet avant de supprimer une référence.");
+  const current = normalizeProject(project);
+  return { ...current, updatedAt: now, references: current.references.filter((reference) => reference.id !== referenceId) };
 }
