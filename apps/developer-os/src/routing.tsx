@@ -15,21 +15,44 @@ type RouterState = {
 };
 const RouterContext = createContext<RouterState | null>(null);
 
+export function routeFromHash(hash: string) {
+  const rawPath = hash.startsWith("#") ? hash.slice(1) : hash;
+  const withLeadingSlash = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+  return withLeadingSlash.length > 1
+    ? withLeadingSlash.replace(/\/+$/, "")
+    : "/";
+}
+
+function routeHref(path: string) {
+  return `#${routeFromHash(path)}`;
+}
+
+function currentRoute() {
+  if (location.hash) return routeFromHash(location.hash);
+  if (location.pathname.startsWith(import.meta.env.BASE_URL)) return "/";
+  return routeFromHash(location.pathname);
+}
+
 export function AppRouter({ children }: { children: ReactNode }) {
-  const [path, setPath] = useState(location.pathname);
+  const [path, setPath] = useState(currentRoute);
   useEffect(() => {
-    const onPop = () => setPath(location.pathname);
+    const onPop = () => setPath(currentRoute());
     addEventListener("popstate", onPop);
-    return () => removeEventListener("popstate", onPop);
+    addEventListener("hashchange", onPop);
+    return () => {
+      removeEventListener("popstate", onPop);
+      removeEventListener("hashchange", onPop);
+    };
   }, []);
   const navigate = (to: string | number, options?: { replace?: boolean }) => {
     if (typeof to === "number") {
       history.go(to);
       return;
     }
-    if (options?.replace) history.replaceState(null, "", to);
-    else history.pushState(null, "", to);
-    setPath(location.pathname);
+    const href = routeHref(to);
+    if (options?.replace) history.replaceState(null, "", href);
+    else history.pushState(null, "", href);
+    setPath(routeFromHash(href));
   };
   return (
     <RouterContext.Provider value={{ path, navigate }}>
@@ -67,7 +90,7 @@ export function Link({
   const navigate = useNavigate();
   return (
     <a
-      href={to}
+      href={routeHref(to)}
       onClick={(event) => {
         onClick?.(event);
         if (
