@@ -1,5 +1,12 @@
 # Changelog
 
+## Non publié — BUILD-02R
+
+- Ajout des points de reprise horodatés avec historique borné à 100 entrées par projet.
+- Ajout de références manuelles HTTPS sécurisées, ouvrables explicitement et supprimables après confirmation.
+- Compatibilité des projets legacy par normalisation sur le schéma IndexedDB v3, sans nouveau store ni montée de version BUILD-02R, avec préservation testée de `codexConversations` et `conversation-runs`.
+- Ajout des tests domaine, composants, repository, import/export et E2E mobile.
+
 ## 0.1.1 — 2026-08-06 — Corrections REVIEW-01 et clôture BUILD-01
 
 - Ajout d’une CI DeveloperOS dédiée avec installation verrouillée, Playwright Chromium, tests obligatoires et artefacts d’échec.
