@@ -349,6 +349,14 @@ textarea:focus {
   font-size: 18px;
   font-weight: 650;
 }
+
+.project-tool { display: grid; gap: .75rem; }
+.project-tool textarea { min-height: 7rem; resize: vertical; }
+.history ol, .references-list { margin: 0; padding: 0; list-style: none; display: grid; gap: .75rem; }
+.history li, .references-list li { border-top: 1px solid var(--line); padding-top: .75rem; }
+.history time, .references-list small { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.references-list li { display: grid; gap: .75rem; }
+@media (min-width: 680px) { .references-list li { grid-template-columns: 1fr auto; align-items: center; } }
 .break {
   word-break: break-word;
 }

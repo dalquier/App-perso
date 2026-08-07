@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,6 +8,17 @@ from projectos_backup.state import ConfigStore, infer_source_label
 
 
 class ConfigStoreTests(unittest.TestCase):
+    def test_filters_are_migrated_and_normalized(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store=ConfigStore(Path(directory))
+            store.path.write_text(json.dumps({
+                'schemaVersion':1,'destinationBookmark':None,'sources':[],'suggestedLabels':[],
+            }))
+            self.assertEqual(store.filters()['ignoredExtensions'],[])
+            filters=store.set_filters(['.git','.git'],['.DS_Store'],['LOG','.tmp','log'])
+            self.assertEqual(filters['ignoredDirectories'],['.git'])
+            self.assertEqual(filters['ignoredExtensions'],['.log','.tmp'])
+
     def test_add_toggle_rename_remove_and_destination(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = ConfigStore(Path(tmp))

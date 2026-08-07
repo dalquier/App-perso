@@ -6,11 +6,11 @@ export default defineConfig({
   reporter: [["html", { open: "never" }], ["list"]],
   webServer: {
     command: "npm run preview -- --port 4173",
-    url: "http://127.0.0.1:4173",
+    url: "http://127.0.0.1:4173/App-perso/developer-os/",
     reuseExistingServer: false,
   },
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: "http://127.0.0.1:4173/App-perso/developer-os/",
     trace: "retain-on-failure",
     browserName: "chromium",
   },

@@ -80,4 +80,12 @@ describe("export contract", () => {
     const backup = makeExport([project({ isActive: false })]);
     expect(parseExport(backup).projects[0].name).toBe("DeveloperOS");
   });
+
+  it("imports BUILD-01 projects with normalized fields and round-trips BUILD-02R data", () => {
+    const legacy = project();
+    const parsedLegacy = parseExport(makeExport([legacy])).projects[0];
+    expect(parsedLegacy).toMatchObject({ resumeText: "", resumeHistory: [], references: [] });
+    const current = { ...legacy, resumeText: "Reprendre", resumeUpdatedAt: legacy.updatedAt, resumeHistory: [{ id: "resume-1", text: "Reprendre", createdAt: legacy.updatedAt }], references: [{ id: "ref-1", label: "Doc", url: "https://example.com", createdAt: legacy.updatedAt, updatedAt: legacy.updatedAt }] };
+    expect(parseExport(makeExport([current])).projects[0]).toMatchObject(current);
+  });
 });

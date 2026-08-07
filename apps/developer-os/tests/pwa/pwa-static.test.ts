@@ -15,12 +15,18 @@ describe("PWA static contract", () => {
     const gitignore = readFileSync(".gitignore", "utf8");
 
     expect(html).toContain("Content-Security-Policy");
-    expect(html).toContain('/icons/apple-touch-icon-180.png');
-    expect(html).toContain('/icons/icon-192.png');
-    expect(html).toContain('/icons/icon-512.png');
+    expect(html).toContain('%BASE_URL%icons/apple-touch-icon-180.png');
+    expect(html).toContain('%BASE_URL%icons/icon-192.png');
+    expect(html).toContain('%BASE_URL%icons/icon-512.png');
     expect(vite).toContain("icon-192.png");
     expect(vite).toContain("icon-512.png");
     expect(vite).toContain("navigateFallback");
+    expect(vite).toContain('base: "/App-perso/developer-os/"');
+    expect(vite).toContain('start_url: "/App-perso/developer-os/"');
+    expect(vite).toContain('scope: "/App-perso/developer-os/"');
+    expect(vite).toContain(
+      'navigateFallback: "/App-perso/developer-os/index.html"',
+    );
     expect(gitignore).toContain("public/icons/apple-touch-icon-180.png");
     expect(gitignore).toContain("public/icons/icon-192.png");
     expect(gitignore).toContain("public/icons/icon-512.png");

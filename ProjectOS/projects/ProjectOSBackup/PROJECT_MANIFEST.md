@@ -5,7 +5,7 @@
 - ID : `projectos-backup`
 - Nom : ProjectOS Backup
 - Alias : Projet 2, sauvegarde ProjectOS, backup de code
-- Statut : BUILD-02.4 v0.4 en construction — synchronisation Drive résiliente et recette iPhone requises
+- Statut : BUILD-02.4 v0.4 en Draft — synchronisation résiliente, interface iPhone et recette requises
 
 ## Objectif
 
@@ -26,6 +26,7 @@ Permettre à Damien de restaurer les derniers fichiers utiles de tous ses projet
 - GitHub `dalquier/App-perso` ;
 - dossiers iCloud sélectionnés explicitement dans l'application ;
 - configuration dynamique : ajout, suspension et retrait de dossiers ;
+- exclusions paramétrables par dossier, nom de fichier et extension ; aucune extension exclue par défaut ;
 - miroir incrémental `Current`, transaction de rollback et SHA-256 ;
 - restauration directe, dossier par dossier.
 
@@ -70,6 +71,7 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 - BUILD-02.3 : interface native v0.3, mode local rapide, cache de reprise et lots Drive — intégré ; timeout Drive observé en recette iPhone.
 - BUILD-02.4 : v0.4 — session Drive persistante, petits lots adaptatifs, reprise après timeout/suspension et synthèse finale — en construction.
 - BUILD-03 : capture cloud de `dalquier/App-perso`, restauration guidée et recette de crise.
+- BUILD-03.1 : connecteurs GitHub, archive Codex/ChatGPT et audit Replit selon `docs/SOURCE_CONNECTORS.md`.
 
 ## Définition de terminé
 

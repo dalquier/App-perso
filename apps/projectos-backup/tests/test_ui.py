@@ -7,6 +7,9 @@ from projectos_backup.ui import (
     backup_summary,
     error_copy,
     load_result,
+    filter_summary,
+    overall_progress,
+    parse_filter_text,
     progress_copy,
     progress_percent,
     progress_ratio,
@@ -19,6 +22,27 @@ from projectos_backup.ui import (
 
 
 class ProgressTests(unittest.TestCase):
+    def test_overall_progress_tracks_full_backup_without_reset(self):
+        events=[
+            {'phase':'scan','completed':1,'total':2},
+            {'phase':'mirror','completed':5,'total':10},
+            {'phase':'complete','scope':'local','completed':10,'total':10},
+            {'phase':'drive_wake'},
+            {'phase':'upload_prepare','completed':1,'total':4},
+            {'phase':'upload','completed':2,'total':4},
+            {'phase':'publish'},
+            {'phase':'complete','completed':4,'total':4},
+        ]
+        values=[overall_progress(event) for event in events]
+        self.assertEqual(values,sorted(values))
+        self.assertEqual(values[-1],1.0)
+
+    def test_filter_copy_and_summary(self):
+        self.assertEqual(parse_filter_text('LOG, .tmp, log',extensions=True),['.log','.tmp'])
+        self.assertIn('toutes extensions incluses',filter_summary({
+            'ignoredDirectories':['.git'],'ignoredFiles':['.DS_Store'],'ignoredExtensions':[],
+        }))
+
     def test_responsive_layout_never_overlaps_sources_and_actions(self):
         for height in (600, 667, 736, 820, 932):
             frames = responsive_layout(390, height)

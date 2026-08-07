@@ -5,7 +5,7 @@
 - ID stable : `equilibre`
 - Nom produit : Équilibre
 - Alias historiques : TCC Budy, TCC Buddy, TCC_Budy, compagnon TCC
-- Statut : BUILD-01 et BUILD-02 intégrés ; BUILD-03 à préparer
+- Statut : BUILD-01, BUILD-02 et BUILD-03 intégrés ; V4 / BUILD-04 candidate finale validée automatiquement, intégration `main` en cours
 - Propriétaire : Damien
 
 ## Vision
@@ -58,9 +58,16 @@
 
 Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; mémoire et données ; moteur TCC ; architecture PWA/Replit/Pyto ; qualité, sécurité et validation. Ils convergent dans un livrable commun piloté par `MASTER_BUILD_PROMPT.md`.
 
+## État des jalons
+
+- BUILD-01 : intégré, socle PWA et séance historique de compatibilité.
+- BUILD-02 : intégré, conversations persistantes locales ; recette iPhone historique validée.
+- BUILD-03 : intégré par la PR #53 ; séances structurées et mémoire locale explicitement proposée, confirmable, corrigeable et supprimable.
+- V4 / BUILD-04 : reconstruite sémantiquement sur la `main` vivante. La candidate finale ajoute deux protocoles versionnés, le stockage v4, les gates de sécurité transverses, le cache `equilibre-shell-v6`, un Run Replit natif via `.replit`, un serveur statique Node dédié et un smoke CI qui exécute exactement `./start-equilibre.sh`. La QA iPhone physique reste à rattacher au SHA intégré.
+
 ## Prochain jalon
 
-`BUILD-03 — séances et mémoire contrôlée` : cadrer puis livrer les séances structurées enrichies, leurs résumés et plans d’action, ainsi qu’une mémoire locale proposée, confirmable, corrigeable et supprimable.
+Intégrer la candidate finale dans `main`, importer `main` dans un Replit neuf, vérifier le Run direct sans Workflow ni Artifact, puis exécuter la recette iPhone physique sur le SHA final.
 
 ## Définition de terminé de la reprise
 
@@ -76,6 +83,7 @@ Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; 
 
 - dépôt `dalquier/App-perso` public : interdiction stricte de versionner données réelles, secrets, historiques ou exports ;
 - exigences cliniques et réglementaires à préciser avant diffusion à des tiers ;
-- stockage et chiffrement à durcir à partir de BUILD-03 ;
+- chiffrement et synchronisation sensible restent à cadrer avant toute diffusion ou stockage distant ;
+- recette iPhone physique BUILD-04 non observée sur le SHA final intégré ;
 - scénarios sensibles à valider par des tests dédiés ;
 - migration sélective du prototype Pyto à réaliser sans duplication inutile.

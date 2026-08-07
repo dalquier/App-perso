@@ -13,8 +13,9 @@
     "test:unit": "vitest run src/domain",
     "test:components": "vitest run src/components src/pages",
     "test:repository": "vitest run src/data",
+    "test:server": "vitest run server",
     "test:e2e": "playwright test",
-    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run test:components && npm run test:repository && npm run test:pwa && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run test:components && npm run test:repository && npm run test:server && npm run test:pwa && npm run build",
     "test:pwa": "npm run icons:generate && vitest run tests/pwa",
     "playwright:install": "playwright install --with-deps chromium",
     "icons:generate": "node scripts/generate-icons.mjs"

@@ -11,12 +11,13 @@ Application Pyto locale pour maintenir une copie exacte et vérifiée des dossie
 - les fichiers inchangés restent en place ;
 - les fichiers absents d’une source sont supprimés du miroir uniquement après un scan complet réussi ;
 - une lecture iCloud impossible annule l’opération et conserve le miroir précédent ;
-- `.git`, les caches Python et `.DS_Store` sont exclus ;
+- `.git`, les caches Python et `.DS_Store` sont exclus par défaut ;
+- les exclusions de dossiers, fichiers et extensions sont modifiables depuis **Filtres** ; aucune extension n'est exclue par défaut ;
 - aucune version historique et aucun ZIP ne sont conservés.
 
 La demande de téléchargement iCloud est explicite, mais iOS reste maître de son exécution. La lecture intégrale de chaque fichier modifié constitue la vérification finale : hors ligne, manque d’espace ou erreur fournisseur provoquent un échec sûr.
 
-Le bouton `Mettre à jour la sauvegarde` commence par un prévol Google Drive non destructif : réveil du relais, vérification signée de l'accès au dossier, puis lecture de l'index distant. Les pannes temporaires sont retentées trois fois avant toute copie ou mutation. Le bouton `Tester Google Drive` exécute uniquement ce prévol et fournit un diagnostic copiable sans secret. L’interface distingue toujours `Miroir local sécurisé`, `Drive en cours` et `Sauvegarde complète et vérifiée`. Elle affiche la phase, le fichier ou lot courant, une progression réelle et conserve une synthèse finale : ajouts, modifications, suppressions, éléments inchangés, reprises, durées et total vérifié. Un bouton `Fermer` reste disponible.
+Le bouton `Mettre à jour la sauvegarde` sécurise d'abord le miroir local, puis exécute un prévol Google Drive frais juste avant le transfert : réveil du relais, vérification signée de l'accès au dossier, puis lecture de l'index distant. Une session Drive déjà en attente est reprise avant le nouveau miroir. Le bouton `Tester Google Drive` exécute uniquement le prévol et fournit un diagnostic copiable sans secret. L’interface distingue toujours `Miroir local sécurisé`, `Drive en cours` et `Sauvegarde complète et vérifiée`. La barre représente l'opération complète et ne repart pas de zéro entre les phases. L'interface conserve une synthèse finale : ajouts, modifications, suppressions, éléments inchangés, reprises, durées et total vérifié. Un bouton `Fermer` reste disponible.
 
 L’application demande une extension d’exécution à iOS lorsque l’utilisateur change d’app. Cette extension est temporaire et décidée par iOS : elle ne garantit pas une exécution illimitée en arrière-plan. Une interruption conserve le miroir valide, le cache `Resume/` et la file Drive persistante. Le lancement suivant réutilise le travail local validé et reprend uniquement les opérations Drive non confirmées. Les fichiers partiels ne sont jamais repris.
 

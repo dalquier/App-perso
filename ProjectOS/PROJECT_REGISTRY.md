@@ -16,7 +16,7 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 1. ChatGPT clarifie, conçoit, spécifie et révise.
 2. Codex réalise les Builds et changements substantiels sur une branche GitHub dédiée.
 3. GitHub reste la source de vérité et le lieu canonique de livraison.
-4. Replit Starter importe le dépôt pour l’exécution, les tests fonctionnels, l’hébergement et le déploiement.
+4. Replit Starter importe le dépôt pour l’exécution, les tests fonctionnels, l’hébergement et le déploiement, sauf exception projet explicitement documentée par ADR.
 5. Pyto, Scriptable et Working Copy assurent les besoins iPhone et locaux selon leur périmètre.
 6. L’agent IA Replit n’est utilisé qu’en exception justifiée pour une capacité propre à Replit.
 
@@ -25,8 +25,8 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 | ID | Nom | Alias | Statut ProjectOS | Dépôt et code canoniques | Références |
 |---|---|---|---|---|---|
 | `projectos` | ProjectOS | App perso, App-perso | actif | `dalquier/App-perso`, dossier `ProjectOS/` | `ProjectOS/` |
-| `developeros` | DeveloperOS | Developer OS, gestionnaire de projets, Project Manager Pyto, PWA DeveloperOS | prêt à construire | dépôt `dalquier/App-perso`; code `apps/developer-os/` | `ProjectOS/projects/DeveloperOS/` |
-| `equilibre` | Équilibre | Equilibre, compagnon TCC, TCC Budy, TCC Buddy, TCC_Budy | BUILD-02 intégré — BUILD-03 à préparer | dépôt `dalquier/App-perso`; code `apps/equilibre/` | `ProjectOS/projects/Equilibre/` |
+| `developeros` | DeveloperOS | Developer OS, gestionnaire de projets, Project Manager Pyto, PWA DeveloperOS | actif — CO-BUILD-02 en cours | dépôt `dalquier/App-perso`; code `apps/developer-os/` | `ProjectOS/projects/DeveloperOS/` ; exception déploiement : ADR-004 GitHub Pages |
+| `equilibre` | Équilibre | Equilibre, compagnon TCC, TCC Budy, TCC Buddy, TCC_Budy | BUILD-01/02/03 intégrés — V4 / BUILD-04 construite sur branche, QA iPhone requise avant fusion | dépôt `dalquier/App-perso`; code `apps/equilibre/` | `ProjectOS/projects/Equilibre/` |
 | `projectos-backup` | ProjectOS Backup | Projet 2, sauvegarde ProjectOS, backup de code | BUILD-01 construit — recette Pyto requise | dépôt `dalquier/App-perso`; code `apps/projectos-backup/` | `ProjectOS/projects/ProjectOSBackup/` |
 | `assistantia` | AssistantIA | Assistant IA | à migrer/compléter | à confirmer avant modification | à créer sous `ProjectOS/projects/AssistantIA/` |
 

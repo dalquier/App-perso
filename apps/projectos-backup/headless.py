@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from projectos_backup.core import Source, run_backup
+from projectos_backup.core import FilterRules, Source, run_backup
 from projectos_backup.pyto_access import BackgroundExecution, request_icloud_download, resolve_folder
 from projectos_backup.state import ConfigStore
 
@@ -29,6 +29,7 @@ def main() -> int:
             resolve_folder(destination_name),
             prepare_file=request_icloud_download,
             should_cancel=background.expired.is_set,
+            filters=FilterRules.from_config(config.get("filters")),
         )
     except Exception as exc:
         print(json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False))
@@ -41,4 +42,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -1,27 +1,35 @@
 # DeveloperOS — Migration vers la publication native Codex
 
-Date : 2026-08-04
+> **Statut : historique / complété par les standards vivants.** Ce document conserve le test de capacité réalisé le 2026-08-04, mais ses règles opérationnelles absolues ont été remplacées par `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md` et `ProjectOS/standards/CODEX_GITHUB_RELIABILITY.md`.
 
-## Constat
+Date du constat initial : 2026-08-04
 
-Un test réel de publication a confirmé que l’environnement Codex peut être relié à `dalquier/App-perso` et publier une Pull Request par le menu GitHub de l’interface, même lorsque le sandbox terminal ne présente ni remote `origin`, ni upstream, ni credentials Git visibles.
+## Constat historique
+
+Un test réel de publication a confirmé qu’un environnement Codex peut être relié à `dalquier/App-perso` et publier une Pull Request par le mécanisme GitHub de l’interface, même lorsque le sandbox terminal ne présente ni remote `origin`, ni upstream, ni credentials Git visibles.
 
 La Pull Request de test nº 18 a été créée avec succès puis fermée sans fusion.
 
-## Nouvelle règle
+## Règle actuelle
 
-Les futurs Builds DeveloperOS :
+Ce test ne prouve pas que **toute** tâche Codex future disposera du même canal de publication. Les tâches DeveloperOS appliquent désormais les standards ProjectOS vivants :
 
-1. utilisent l’environnement Codex `App-perso — ProjectOS` ;
-2. sélectionnent `dalquier/App-perso` et `main` ;
-3. construisent dans le sandbox Codex ;
-4. ne vérifient pas les credentials Git du terminal ;
-5. ne s’arrêtent pas en raison de l’absence de remote ou d’upstream ;
-6. produisent les fichiers, les tests, le handoff et le diff ;
-7. sont publiés après la tâche par le menu GitHub natif de Codex ;
-8. ne modifient jamais directement `main` ;
-9. ne fusionnent aucune Pull Request sans validation.
+1. vérifier le dépôt, la base et le SHA de départ ;
+2. vérifier séparément la lecture GitHub, l’écriture locale, le push terminal et la publication native ;
+3. ne jamais traiter un commentaire `@codex` ou un environnement lisible comme preuve de publication ;
+4. choisir avant modification un canal principal et un canal de récupération ;
+5. produire les modifications et les validations sans modifier directement `main` ;
+6. publier nativement uniquement si cette capacité est réellement disponible pour la branche ou la PR concernée ;
+7. sinon utiliser le canal de récupération ou de publication authentifié prévu ;
+8. vérifier le SHA distant et la CI du SHA effectivement publié ;
+9. ne fusionner aucune Pull Request sans autorisation explicite.
 
 ## Repli
 
-Si la publication native échoue après construction, le diff est conservé et transmis par `Copier git apply` ou `Copier le patch`. Le Build n’est pas relancé depuis zéro.
+Si le canal principal échoue après construction, ne pas reconstruire le Build depuis zéro. Conserver et vérifier le diff, puis utiliser le mécanisme de récupération défini par `ARTIFACT_DELIVERY_AND_RECOVERY.md` et `CODEX_GITHUB_RELIABILITY.md`.
+
+## Références actuelles
+
+- `ProjectOS/standards/CODEX_NATIVE_PUBLISHING.md`
+- `ProjectOS/standards/CODEX_GITHUB_RELIABILITY.md`
+- `ProjectOS/standards/ARTIFACT_DELIVERY_AND_RECOVERY.md`

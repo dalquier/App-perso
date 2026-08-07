@@ -28,6 +28,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/CODE_WORK_ROUTING.md` : routage obligatoire des développements substantiels vers Codex et GitHub.
 - `standards/CODEX_NATIVE_PUBLISHING.md` : fonctionnement des sandboxes Codex Cloud et publication native des branches et Pull Requests.
 - `standards/CODEX_GITHUB_RELIABILITY.md` : garde-fous de fraîcheur, ressources logiques, preuves de SHA/CI et Merge Gate pour les flux Codex ↔ GitHub.
+- `standards/INCIDENT_LEARNING.md` : capture, taxonomie, gravité, déduplication, Execution Capability Preflight et apprentissage à partir des incidents.
 - `standards/ARTIFACT_DELIVERY_AND_RECOVERY.md` : précontrôle obligatoire du canal de livraison, preuves externes et récupération des artefacts.
 - `standards/CODING_STANDARDS.md` : règles communes de conception et de code.
 - `standards/DOCUMENTATION.md` : exigences de documentation et traçabilité.
@@ -43,6 +44,16 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `ADR/ADR-002-PERMANENT-CODEX-CONVERSATION-MEMORY.md` : consentement permanent à l’enregistrement structuré de toutes les conversations ProjectOS exécutées avec Codex.
 - `ADR/ADR-003-DIRECT-CONVERSATION-ARCHIVING.md` : archive directe Drive ; ChatGPT au choix, Codex systématique.
 - `ADR/ADR-004-CONTROLLED-PARALLEL-EXECUTION.md` : autorisation simple et garde-fous pour paralléliser les flux indépendants.
+
+## Observabilité
+
+- `observability/README.md` : architecture, composants et état des phases d’observabilité incidents.
+- `observability/AGGREGATOR_CONTRACT.md` : contrat JSON partagé entre agrégateur, widget, dashboard et Analyzer.
+- `observability/ANALYZER.md` : fonctionnement et garde-fous de la synthèse/prompt à la demande.
+- `observability/pyto/` : widget iPhone/Pyto de comptage synthétique des incidents.
+- `scripts/incident_aggregator.py` : lecture/déduplication/agrégation déterministe du Ledger.
+- `scripts/incident_analyzer.py` : filtres, synthèse et génération du prompt d’audit ChatGPT/Codex.
+- GitHub issue `#87 — ProjectOS — Incident Ledger` : journal append-only des occurrences d’incidents expurgées.
 
 ## Guides
 
@@ -71,6 +82,7 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 - `templates/PROJECT_MANIFEST.md` : manifeste type.
 - `templates/DELIVERY_MANIFEST.md` : preuve type de construction, export, publication, livraison et récupération.
 - `templates/AGENT_TASK_RECORD.json` : exemple anonymisé de tâche Codex ou Work suivie.
+- `templates/INCIDENT_OCCURRENCE.json.example` : modèle machine-readable d’une occurrence d’incident.
 - `templates/CONVERSATION_INDEX.md` : registre type des conversations enregistrées.
 - `templates/PROJECT_TIMELINE.md` : chronologie structurante type.
 - `templates/SESSION_SUMMARY.md` : synthèse autonome type d’une session.
@@ -96,7 +108,7 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 
 ## Stockages
 
-- GitHub : code, règles, manifests, ADR, documentation versionnée, index et synthèses conversationnelles.
+- GitHub : code, règles, manifests, ADR, documentation versionnée, index, synthèses conversationnelles et Incident Ledger expurgé.
 - Working Copy : copie Git locale sur iPhone.
 - iCloud Drive : fichiers locaux et échanges Pyto ; aucun transit iCloud n’est requis pour l’archive conversationnelle.
 - Google Drive : documents collaboratifs, corpus, sauvegardes horodatées et archives conversationnelles intégrales privées.

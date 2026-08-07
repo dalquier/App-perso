@@ -6,7 +6,7 @@
 - **Gouvernance** : `ProjectOS/projects/Equilibre/`
 - **Application** : `apps/equilibre/`
 - **Prototype historique** : `dalquier/Scriptable`, en lecture seule
-- **Dernière mise à jour** : 2026-08-05
+- **Dernière mise à jour** : 2026-08-07
 
 ## 1. Identité et vision
 
@@ -111,10 +111,11 @@ Le prototype `dalquier/Scriptable/TCC_Budy` est chargé uniquement pour inventai
 - BUILD-01 intégré : socle PWA, séance guidée, persistance locale contrôlée, réglages et garde-fou sensible ;
 - BUILD-02 intégré par la PR #29 au commit `b115989fadd0f3e9f6b503c1b933df4d2b179827` ;
 - conversations locales persistantes, historique, reprise, renommage, suppression et modes conversationnels opérationnels ;
-- stockage version 2, migration BUILD-01 déterministe et protection des versions inconnues ;
+- BUILD-03 intégré par la PR #53 : séances structurées et mémoire locale contrôlée ;
+- V4 / BUILD-04 construite sur `equilibre/build-04-main-integration`, mais non intégrée à `main` tant que sa Draft PR n'est pas fusionnée ;
+- la candidate BUILD-04 porte le stockage version 4, deux protocoles actifs versionnés, les gates de sécurité avant mutation et le cache PWA `equilibre-shell-v5` ;
 - génération locale progressive, interruption et isolation par conversation ;
-- 48 tests automatisés, build Vite et workflows GitHub réussis ;
-- recette Replit et recette physique iPhone réussies ;
+- les 48 tests et la recette physique iPhone mentionnés historiquement se rapportent à BUILD-02 ; les preuves BUILD-04 sont consignées dans sa Draft PR et la recette iPhone BUILD-04 reste à exécuter sur son SHA final ;
 - aucun fournisseur OpenAI réel et aucune donnée distante dans BUILD-02.
 
 ## 10. Décisions prises
@@ -218,19 +219,14 @@ Le dépôt `dalquier/App-perso` est public. Sont interdits : données personnell
 
 ## 18. Prochaine étape exacte
 
-Préparer `BUILD-03 — séances et mémoire contrôlée` depuis `main` à jour :
-
-1. consolider les critères produit, données, TCC, sécurité et UX ;
-2. définir le modèle versionné des séances, résumés, plans d’action et éléments de mémoire ;
-3. garantir une mémoire proposée, confirmée, modifiable et supprimable ;
-4. préserver le local-first, la suppression totale, les migrations et le garde-fou déterministe ;
-5. définir les tests automatisés, la recette Replit et la recette iPhone avant implémentation ;
-6. réaliser BUILD-03 avec Codex sur une branche dédiée et une nouvelle Pull Request.
+Valider la candidate V4 / BUILD-04 au SHA exact de sa Draft PR : CI, lancement Replit reproductible, puis recette iPhone physique couvrant les deux protocoles, la reprise, la mémoire explicite, le garde-fou, l'effacement anti-résurrection et le mode hors ligne. Appliquer ensuite le Merge Gate ProjectOS ; ne jamais fusionner automatiquement.
 
 ## 19. Historique des Builds intégrés
 
 - BUILD-01 : socle PWA minimal, séance guidée, confidentialité locale et garde-fou.
 - BUILD-02 : conversations persistantes locales, streaming interruptible, historique multi-conversations, migration versionnée et validation iPhone.
+- BUILD-03 : séances structurées et mémoire contrôlée, intégré par la PR #53.
+- V4 / BUILD-04 : candidate reconstruite sur la `main` vivante ; non intégrée tant que sa Draft PR n'est pas fusionnée.
 - Les anciens prompts d’exécution BUILD-01/BUILD-02 sont historiques et ne doivent plus être utilisés comme instructions actives.
 
 ## 20. Ne pas faire

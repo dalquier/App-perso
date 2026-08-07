@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from "idb";
-import type { Project } from "../domain/project";
+import { normalizeProject, type Project } from "../domain/project";
 import {
   DB_VERSION,
   ensureDeveloperOsStores,
@@ -56,34 +56,38 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   async list(): Promise<Project[]> {
     const db = await this.db;
     const projects = (await db.getAll(STORE)) as Project[];
-    return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return projects
+      .map((project) => normalizeProject(project))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
   async get(id: string): Promise<Project | undefined> {
     const db = await this.db;
-    return (await db.get(STORE, id)) as Project | undefined;
+    const project = (await db.get(STORE, id)) as Project | undefined;
+    return project ? normalizeProject(project) : undefined;
   }
 
   async save(project: Project): Promise<Project> {
     const db = await this.db;
     const tx = db.transaction(STORE, "readwrite");
+    const normalized = normalizeProject(project);
 
-    if (project.isActive) {
+    if (normalized.isActive) {
       const projects = (await tx.store.getAll()) as Project[];
       for (const other of projects) {
-        if (other.id !== project.id && other.isActive) {
+        if (other.id !== normalized.id && other.isActive) {
           await tx.store.put({
-            ...other,
+            ...normalizeProject(other),
             isActive: false,
-            updatedAt: project.updatedAt,
+            updatedAt: normalized.updatedAt,
           });
         }
       }
     }
 
-    await tx.store.put(project);
+    await tx.store.put(normalized);
     await tx.done;
-    return project;
+    return normalized;
   }
 
   async replaceAll(projects: Project[]): Promise<void> {
@@ -93,7 +97,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     const db = await this.db;
     const tx = db.transaction(STORE, "readwrite");
     await tx.store.clear();
-    for (const project of projects) await tx.store.put(project);
+    for (const project of projects) await tx.store.put(normalizeProject(project));
     await tx.done;
   }
 

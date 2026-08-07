@@ -43,6 +43,35 @@ class Source:
 
 
 @dataclass(frozen=True)
+class FilterRules:
+    """User-configurable exclusions applied consistently to every source."""
+
+    ignored_directories: frozenset[str] = DEFAULT_IGNORED_DIRECTORIES
+    ignored_files: frozenset[str] = DEFAULT_IGNORED_FILES
+    ignored_extensions: frozenset[str] = frozenset()
+
+    @classmethod
+    def from_config(cls, payload: dict | None) -> "FilterRules":
+        payload = payload if isinstance(payload, dict) else {}
+
+        def names(key: str, defaults=frozenset()) -> frozenset[str]:
+            raw = payload.get(key, defaults)
+            if not isinstance(raw, (list, tuple, set, frozenset)):
+                raw = defaults
+            return frozenset(str(item).strip() for item in raw if str(item).strip())
+
+        extensions = set()
+        for item in names("ignoredExtensions"):
+            normalized = item.casefold()
+            extensions.add(normalized if normalized.startswith(".") else f".{normalized}")
+        return cls(
+            ignored_directories=names("ignoredDirectories", DEFAULT_IGNORED_DIRECTORIES),
+            ignored_files=names("ignoredFiles", DEFAULT_IGNORED_FILES),
+            ignored_extensions=frozenset(extensions),
+        )
+
+
+@dataclass(frozen=True)
 class BackupResult:
     status: str
     run_id: str
@@ -120,15 +149,21 @@ def validate_layout(sources: Iterable[Source], destination: Path):
     return tuple(resolved)
 
 
-def iter_source_files(root: Path):
+def iter_source_files(root: Path, filters: FilterRules | None = None):
+    filters = filters or FilterRules()
     def failed(error):
         raise SourceAccessError(f"Lecture impossible : {error.filename or root}") from error
     for current, directories, filenames in os.walk(root, topdown=True, onerror=failed, followlinks=False):
         current = Path(current)
-        directories[:] = sorted(n for n in directories if n not in DEFAULT_IGNORED_DIRECTORIES and not (current / n).is_symlink())
+        directories[:] = sorted(n for n in directories if n not in filters.ignored_directories and not (current / n).is_symlink())
         for name in sorted(filenames):
             path = current / name
-            if name not in DEFAULT_IGNORED_FILES and not path.is_symlink() and path.is_file():
+            if (
+                name not in filters.ignored_files
+                and path.suffix.casefold() not in filters.ignored_extensions
+                and not path.is_symlink()
+                and path.is_file()
+            ):
                 yield path, path.relative_to(root).as_posix()
 
 
@@ -260,6 +295,7 @@ def run_backup(
     progress: ProgressCallback | None = None,
     should_cancel: CancellationCheck | None = None,
     deep_verify: bool = False,
+    filters: FilterRules | None = None,
 ) -> BackupResult:
     """Make ``Current`` an exact mirror. Deletions occur only after a full readable scan."""
     destination = Path(destination).expanduser()
@@ -298,11 +334,12 @@ def run_backup(
     try:
         # Phase 1: enumerate every source. An incomplete iCloud directory aborts here.
         scanned = []
-        for source, root in resolved:
+        for source_index, (source, root) in enumerate(resolved, start=1):
             cancel_if_needed()
-            report("scan", label=source.label)
-            files = list(iter_source_files(root))
+            report("scan", source_index - 1, len(resolved), label=source.label)
+            files = list(iter_source_files(root, filters=filters))
             scanned.append((source, root, files))
+            report("scan", source_index, len(resolved), label=source.label)
 
         total_files = sum(len(files) for _, _, files in scanned)
         # Phase 2: metadata is the fast path. Only candidates that need
@@ -403,7 +440,7 @@ def run_backup(
         if global_bundle.exists(): legacy.append(global_bundle)
 
         changed_targets = [(p, current / p.relative_to(staged)) for p in staged.rglob("*") if p.is_file()]
-        report("publish", total_files, total_files)
+        report("publish", total_files, total_files, scope="local")
         manifest_path = current / "MANIFEST.json"
         affected = list(dict.fromkeys([target for _, target in changed_targets] + obsolete + legacy + [manifest_path]))
         created = []
@@ -438,7 +475,7 @@ def run_backup(
         _remove_empty(current)
         shutil.rmtree(transaction, ignore_errors=True)
         shutil.rmtree(resume_root, ignore_errors=True)
-        report("complete", total_files, total_files)
+        report("complete", total_files, total_files, scope="local")
         return BackupResult("complete", run_id, str(current), str(current / "MANIFEST.json"), copied, len(obsolete), unchanged, sum(s["fileCount"] for s in inventory), requested, resumed)
     except Exception:
         shutil.rmtree(transaction, ignore_errors=True)
