@@ -5,7 +5,7 @@
 - ID stable : `equilibre`
 - Nom produit : Équilibre
 - Alias historiques : TCC Budy, TCC Buddy, TCC_Budy, compagnon TCC
-- Statut : BUILD-01 et BUILD-02 intégrés ; BUILD-03 à préparer
+- Statut : BUILD-01, BUILD-02 et BUILD-03 intégrés ; BUILD-04 en validation avant intégration
 - Propriétaire : Damien
 
 ## Vision
@@ -19,9 +19,9 @@
 - aucune donnée personnelle réelle dans GitHub, les tests ou les journaux ;
 - mémoire explicable, corrigeable, désactivable et supprimable ;
 - PWA iPhone comme interface cible ;
-- Replit Starter comme environnement cloud et de déploiement par défaut ;
+- Replit Starter comme environnement d'exécution et de recette, jamais source de vérité ;
 - Pyto comme compagnon local iPhone pour fichiers, sauvegardes, exports et utilitaires ;
-- OpenAI API uniquement comme composant de l’application ;
+- OpenAI API uniquement comme composant futur derrière une interface fournisseur ;
 - sécurité psychologique et confidentialité intégrées dès la conception.
 
 ## Références canoniques
@@ -31,18 +31,17 @@
 - Script maître : `ProjectOS/projects/Equilibre/MASTER_BUILD_PROMPT.md`.
 - Code applicatif : `apps/equilibre/`.
 - Prototype historique en lecture seule : `dalquier/Scriptable`, dossiers `TCC_Budy` et instantanés horodatés associés.
-- Branche de reprise documentaire : `equilibre/recovery-master-build-clean`.
 
 ## Périmètre V1
 
 - échange rapide écrit ;
-- séance TCC structurée ;
+- séance structurée et historique ;
 - historique et reprise ;
 - mémoire personnelle contrôlée ;
-- premiers protocoles TCC versionnés ;
+- deux premiers protocoles guidés versionnés ;
 - PWA installable sur iPhone ;
 - garde-fous pour situations sensibles ;
-- export et sauvegarde préparés.
+- migration, rollback, effacement et fonctionnement hors ligne préparés.
 
 ## Hors périmètre initial
 
@@ -52,30 +51,26 @@
 - voix temps réel complète ;
 - application native Swift ;
 - analyse clinique automatique ;
+- synchronisation cloud sensible ;
 - intégration à DeveloperOS.
 
-## Conception et convergence
+## Builds
 
-Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; mémoire et données ; moteur TCC ; architecture PWA/Replit/Pyto ; qualité, sécurité et validation. Ils convergent dans un livrable commun piloté par `MASTER_BUILD_PROMPT.md`.
+- BUILD-01 : intégré — shell PWA, séance legacy, persistance, réglages, garde-fou.
+- BUILD-02 : intégré — conversations persistantes et streaming local.
+- BUILD-03 : intégré via PR #53 — séances structurées et mémoire contrôlée.
+- BUILD-04 : en validation — protocoles versionnés, stockage v4, sécurité transversale, UI protocoles et service worker renforcé.
+
+BUILD-04 ne doit être déclaré intégré qu'après convergence finale, suite automatisée verte sur le SHA candidat et recettes manuelles requises.
 
 ## Prochain jalon
 
-`BUILD-03 — séances et mémoire contrôlée` : cadrer puis livrer les séances structurées enrichies, leurs résumés et plans d’action, ainsi qu’une mémoire locale proposée, confirmable, corrigeable et supprimable.
-
-## Définition de terminé de la reprise
-
-- audit GitHub et Drive effectué ;
-- prototype historique localisé et classé comme source de migration ;
-- script maître reconstruit ;
-- monorepo et chemin applicatif décidés ;
-- branche et Pull Request documentaires créées ;
-- prompt Codex de BUILD-01 défini ;
-- aucune donnée personnelle réelle ajoutée.
+Clore BUILD-04 : convergence C1+C2+C3, validation GitHub commune, recette Replit sans IA, recette iPhone Safari/PWA et vérification du rollback. Le jalon suivant ne doit être cadré qu'après cette clôture.
 
 ## Risques ouverts
 
-- dépôt `dalquier/App-perso` public : interdiction stricte de versionner données réelles, secrets, historiques ou exports ;
-- exigences cliniques et réglementaires à préciser avant diffusion à des tiers ;
-- stockage et chiffrement à durcir à partir de BUILD-03 ;
-- scénarios sensibles à valider par des tests dédiés ;
-- migration sélective du prototype Pyto à réaliser sans duplication inutile.
+- dépôt public : interdiction stricte de versionner données réelles, secrets, historiques ou exports ;
+- garde-fou déterministe non exhaustif et non médical ;
+- stockage local navigateur non chiffré ;
+- Safari et PWA pouvant disposer de contextes de stockage distincts ;
+- recettes physiques BUILD-04 non acquises tant qu'elles n'ont pas été exécutées sur le SHA final convergé.
