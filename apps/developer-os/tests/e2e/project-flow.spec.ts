@@ -1,9 +1,26 @@
 import { expect, test } from "@playwright/test";
 
+test("hash routes survive refresh and browser Back/Forward under the Pages subpath", async ({
+  page,
+}) => {
+  await page.goto("./#/settings/");
+  await expect(page.getByRole("heading", { name: "Paramètres" })).toBeVisible();
+  await expect(page).toHaveURL(/\/App-perso\/developer-os\/#\/settings\/$/);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Paramètres" })).toBeVisible();
+
+  await page.getByRole("link", { name: /DeveloperOS/ }).click();
+  await expect(page.getByRole("heading", { name: "Mes projets" })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Paramètres" })).toBeVisible();
+  await page.goForward();
+  await expect(page.getByRole("heading", { name: "Mes projets" })).toBeVisible();
+});
+
 test("mobile project lifecycle persists after reload and navigates back", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await expect(page.getByText("Votre cockpit est prêt")).toBeVisible();
   await page
     .getByRole("link", { name: "Créer un projet", exact: true })
@@ -54,7 +71,7 @@ test("offline production PWA serves cached app and preserves IndexedDB", async (
   page,
   context,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await expect
     .poll(async () =>
       page.evaluate(() => navigator.serviceWorker.controller?.state ?? "none"),
@@ -74,7 +91,7 @@ test("offline production PWA serves cached app and preserves IndexedDB", async (
     page.getByRole("heading", { name: "Offline Project" }),
   ).toBeVisible();
   await context.setOffline(true);
-  await page.goto("/");
+  await page.goto("./");
   await expect(page.getByText("Offline Project")).toBeVisible();
   await page.reload();
   await expect(page.getByText("Offline Project")).toBeVisible();
@@ -84,7 +101,7 @@ test("offline production PWA serves cached app and preserves IndexedDB", async (
 test("long settings view scrolls and JSON import errors are handled", async ({
   page,
 }) => {
-  await page.goto("/settings");
+  await page.goto("./#/settings");
   await expect(page.getByRole("heading", { name: "Paramètres" })).toBeVisible();
   await page.locator("input[type=file]").setInputFiles({
     name: "bad.json",
@@ -99,13 +116,19 @@ test("long settings view scrolls and JSON import errors are handled", async ({
 test("archive appears in archives, restores inactive and persists after reload", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("./");
   await page.getByRole("link", { name: "Nouvelle création rapide" }).click();
   await page.getByLabel(/Nom/).fill("Archivable");
-  await page.getByRole("combobox", { name: "État", exact: true }).selectOption("active");
+  await page
+    .getByRole("combobox", { name: "État", exact: true })
+    .selectOption("active");
   await page.getByLabel("Source", { exact: true }).fill("dalquier/App-perso");
   await page.getByText("Définir comme projet actif").click();
-  await page.locator("form").getByRole("button", { name: "Enregistrer" }).last().click();
+  await page
+    .locator("form")
+    .getByRole("button", { name: "Enregistrer" })
+    .last()
+    .click();
   await expect(page.getByText("● Projet actif")).toBeVisible();
 
   page.once("dialog", async (dialog) => {
@@ -127,22 +150,34 @@ test("archive appears in archives, restores inactive and persists after reload",
   await page.getByRole("link", { name: "Paramètres" }).click();
   await page.getByRole("link", { name: "Projets archivés" }).click();
   await page.getByRole("link", { name: /Archivable/ }).click();
-  await expect(page.getByRole("button", { name: "Restaurer le projet" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Définir comme projet actif" })).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: "Restaurer le projet" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Définir comme projet actif" }),
+  ).toBeHidden();
   await page.getByRole("button", { name: "Restaurer le projet" }).click();
   await expect(page.getByText("En pause")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Définir comme projet actif" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Définir comme projet actif" }),
+  ).toBeVisible();
   await page.reload();
   await expect(page.getByText("En pause")).toBeVisible();
   await expect(page.getByText("● Projet actif")).toBeHidden();
 });
 
-test("mobile resume, secure reference and project import preserve Codex and run data", async ({ page }) => {
-  await page.goto("/");
+test("mobile resume, secure reference and project import preserve Codex and run data", async ({
+  page,
+}) => {
+  await page.goto("./");
   await page.getByRole("link", { name: "Nouvelle création rapide" }).click();
   await page.getByLabel(/Nom/).fill("BUILD-02R");
   await page.getByLabel("Source", { exact: true }).fill("dalquier/App-perso");
-  await page.locator("form").getByRole("button", { name: "Enregistrer" }).last().click();
+  await page
+    .locator("form")
+    .getByRole("button", { name: "Enregistrer" })
+    .last()
+    .click();
   await page.getByLabel("Point de reprise courant").fill("Relire la PR");
   await page.getByRole("button", { name: "Enregistrer la reprise" }).click();
   await page.getByLabel("Libellé").fill("Documentation");
@@ -154,9 +189,19 @@ test("mobile resume, secure reference and project import preserve Codex and run 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
-    const tx = db.transaction(["codexConversations", "conversation-runs"], "readwrite");
-    tx.objectStore("codexConversations").put({ id: "e2e-codex", name: "Conversation conservée", updatedAt: new Date().toISOString() });
-    tx.objectStore("conversation-runs").put({ run_id: "e2e-run", updated_at: new Date().toISOString() });
+    const tx = db.transaction(
+      ["codexConversations", "conversation-runs"],
+      "readwrite",
+    );
+    tx.objectStore("codexConversations").put({
+      id: "e2e-codex",
+      name: "Conversation conservée",
+      updatedAt: new Date().toISOString(),
+    });
+    tx.objectStore("conversation-runs").put({
+      run_id: "e2e-run",
+      updated_at: new Date().toISOString(),
+    });
     await new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
@@ -169,11 +214,14 @@ test("mobile resume, secure reference and project import preserve Codex and run 
   ).toHaveValue("Relire la PR");
   const history = page.getByRole("heading", { name: "Historique" }).locator("..");
   await expect(history.getByText("Relire la PR", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Ouvrir" })).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(page.getByRole("link", { name: "Ouvrir" })).toHaveAttribute(
+    "rel",
+    "noopener noreferrer",
+  );
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Supprimer" }).click();
   await expect(page.getByText("Référence supprimée.")).toBeVisible();
-  await page.goto("/settings");
+  await page.goto("./#/settings");
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Exporter" }).click();
   const exportDownload = await download;
@@ -193,11 +241,17 @@ test("mobile resume, secure reference and project import preserve Codex and run 
       request.onerror = () => reject(request.error);
     });
     const codexConversation = await new Promise<boolean>((resolve) => {
-      const get = db.transaction("codexConversations").objectStore("codexConversations").get("e2e-codex");
+      const get = db
+        .transaction("codexConversations")
+        .objectStore("codexConversations")
+        .get("e2e-codex");
       get.onsuccess = () => resolve(Boolean(get.result));
     });
     const conversationRun = await new Promise<boolean>((resolve) => {
-      const get = db.transaction("conversation-runs").objectStore("conversation-runs").get("e2e-run");
+      const get = db
+        .transaction("conversation-runs")
+        .objectStore("conversation-runs")
+        .get("e2e-run");
       get.onsuccess = () => resolve(Boolean(get.result));
     });
     const stores = Array.from(db.objectStoreNames);
@@ -207,6 +261,12 @@ test("mobile resume, secure reference and project import preserve Codex and run 
   });
   expect(preserved.codexConversation).toBe(true);
   expect(preserved.conversationRun).toBe(true);
-  expect(preserved.stores).toEqual(expect.arrayContaining(["projects", "codexConversations", "conversation-runs"]));
+  expect(preserved.stores).toEqual(
+    expect.arrayContaining([
+      "projects",
+      "codexConversations",
+      "conversation-runs",
+    ]),
+  );
   expect(preserved.version).toBe(3);
 });
