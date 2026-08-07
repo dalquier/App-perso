@@ -40,11 +40,21 @@ Statut : intégré et validé. Le chat persistant, le streaming local, la repris
 
 ## Jalon E — BUILD-03, séances et mémoire contrôlée
 
-Livrer la séance structurée, le résumé, les plans d’action et la mémoire proposée/confirmée/corrigeable.
+Statut : intégré par la PR #53. Séances structurées, résumés, plans d'action et mémoire locale proposée/confirmée/corrigeable/supprimable sont présents dans `main`.
 
-## Jalon F — Protocoles, sécurité et voix
+## Jalon F — V4 / BUILD-04, protocoles versionnés, stockage v4 et sécurité
 
-Intégrer progressivement les protocoles TCC, les scénarios sensibles, la dictée, la lecture vocale puis la voix temps réel si les critères de sécurité sont satisfaits.
+Statut : candidate finale validée automatiquement et prête à intégrer dans `main`.
+
+La candidate contient exactement deux protocoles actifs, une navigation principale à cinq destinations avec `Protocoles`, le stockage v4 et ses migrations/garanties anti-résurrection, des gates de sécurité avant mutation, la mémoire uniquement explicite et le cache PWA `equilibre-shell-v6`.
+
+Le lancement Replit final est natif : `.replit` contient uniquement la commande Run `./start-equilibre.sh`. Le script exécute l’installation déterministe, le build Vite puis un serveur statique Node dédié sur `0.0.0.0:${PORT:-5000}`. Aucun Workflow manuel ni Artifact Replit n’est requis. La CI exécute exactement ce chemin et vérifie le HTTP 200.
+
+Les tests automatisés, le build, le direct-run smoke et ProjectOS Quality sont verts sur la candidate. La recette physique iPhone reste requise après intégration et import dans un Replit neuf.
+
+## Jalon G — Capacités ultérieures
+
+La dictée, la lecture vocale puis la voix temps réel restent hors BUILD-04 et ne seront envisagées qu'après critères de sécurité dédiés.
 
 ## Règle de passage
 
