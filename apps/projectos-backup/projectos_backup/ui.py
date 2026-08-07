@@ -6,10 +6,10 @@ import json
 import threading
 from pathlib import Path
 
-from projectos_backup.core import BackupError, Source, run_backup
-from projectos_backup.drive_client import AppsScriptClient, sync_current
-from projectos_backup.pyto_access import BackgroundExecution, PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
-from projectos_backup.state import ConfigStore, infer_source_label
+from .core import BackupError, Source, run_backup
+from .drive_client import AppsScriptClient, sync_current
+from .pyto_access import BackgroundExecution, PytoUnavailable, choose_folder, delete_bookmark, request_icloud_download, resolve_folder
+from .state import ConfigStore, infer_source_label
 
 
 def _ui():
