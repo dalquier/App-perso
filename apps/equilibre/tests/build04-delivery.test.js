@@ -22,24 +22,27 @@ describe("BUILD-04 delivery contract", () => {
     expect(readApp("public/sw.js")).toContain('const CACHE = "equilibre-shell-v6"');
   });
 
-  it("provides a root Replit launch command and leaves port routing to Replit auto-detection", () => {
+  it("provides a root Replit Run command and leaves port routing to Replit auto-detection", () => {
     const replit = readRepo(".replit");
-    expect(replit).toContain('run = "./start-equilibre.sh"');
+    expect(replit.trim()).toBe('run = "./start-equilibre.sh"');
     expect(replit).not.toContain("[[ports]]");
     expect(replit).not.toContain("localPort");
     expect(replit).not.toContain("externalPort");
     expect(replit).not.toMatch(/BUILD-?0?3|Validation/i);
   });
 
-  it("installs deterministically, builds, and serves the production preview on all interfaces", () => {
+  it("installs deterministically, builds, then serves dist with the dedicated Replit server", () => {
     const script = readRepo("start-equilibre.sh");
+    const server = readApp("scripts/replit-server.mjs");
     expect(script).toContain("npm ci");
     expect(script).toContain("npm run build");
-    expect(script).toContain("npm run preview");
+    expect(script).toContain("node scripts/replit-server.mjs");
     expect(script).not.toContain("npm run dev");
-    expect(script).toContain("--host 0.0.0.0");
-    expect(script).toContain('--port "$PORT"');
-    expect(script).toContain("--strictPort");
+    expect(script).not.toContain("npm run preview");
+    expect(server).toContain('const host = "0.0.0.0"');
+    expect(server).toContain("process.env.PORT || 5000");
+    expect(server).toContain("EQUILIBRE_READY");
+    expect(server).toContain('return "no-store"');
     expect(statSync(resolve(repoRoot, "start-equilibre.sh")).mode & 0o111).toBeTruthy();
   });
 
