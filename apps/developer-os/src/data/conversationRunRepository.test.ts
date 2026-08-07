@@ -232,11 +232,11 @@ describe("manual ChatGPT Plus service", () => {
 });
 
 describe("IndexedDB schema migration", () => {
-  it("adds the run store at version 2 without deleting existing DeveloperOS projects", async () => {
+  it("adds the run store at the current version without deleting existing DeveloperOS projects", async () => {
     const name = `migration-${crypto.randomUUID()}`; names.push(name);
     await new Promise<void>((resolve, reject) => { const request = indexedDB.open(name, 1); request.onupgradeneeded = () => request.result.createObjectStore("projects", { keyPath: "id" }).put({ id: "PROJECT-FICTION", name: "Fictional" }); request.onsuccess = () => { request.result.close(); resolve(); }; request.onerror = () => reject(request.error); });
     const repository = new IndexedDbRunRepository(name); await repository.list();
-    const database = await new Promise<IDBDatabase>((resolve, reject) => { const request = indexedDB.open(name, 2); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+    const database = await new Promise<IDBDatabase>((resolve, reject) => { const request = indexedDB.open(name); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
     expect(database.objectStoreNames.contains("conversation-runs")).toBe(true);
     const project = await new Promise((resolve, reject) => { const request = database.transaction("projects").objectStore("projects").get("PROJECT-FICTION"); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
     expect(project).toEqual({ id: "PROJECT-FICTION", name: "Fictional" }); database.close();
