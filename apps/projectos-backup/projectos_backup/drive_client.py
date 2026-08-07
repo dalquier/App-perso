@@ -5,12 +5,13 @@ from __future__ import annotations
 import base64
 from datetime import datetime, timezone
 import hashlib
+import hmac
 import json
 import mimetypes
 import os
 from pathlib import Path, PurePosixPath
 import urllib.request
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlencode, urlsplit, urlunsplit
 
 
 MAX_RAW_FILE_BYTES = 7 * 1024 * 1024
@@ -86,6 +87,36 @@ class AppsScriptClient:
             raise DriveSyncError(f"Google Drive — {action} : {result.get('error', 'erreur inconnue')}")
         return result
 
+    def read(self, action: str, **payload) -> dict:
+        """Use a short GET for idempotent control-plane reads on iOS.
+
+        Apps Script ContentService POST redirects can occasionally yield an
+        empty body in Pyto.  GET is reliable on the same deployment and is
+        safe here because the server only accepts read-only actions.
+        """
+        encoded_payload = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        timestamp = str(int(datetime.now(timezone.utc).timestamp()))
+        message = f"{action}\n{timestamp}\n{encoded_payload}".encode("utf-8")
+        signature = hmac.new(self.token.encode("utf-8"), message, hashlib.sha256).hexdigest()
+        query = urlencode({
+            "action": action,
+            "timestamp": timestamp,
+            "payload": encoded_payload,
+            "signature": signature,
+        })
+        request = urllib.request.Request(f"{self.url}?{query}", method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                raw = response.read().decode("utf-8")
+                if not raw.strip():
+                    raise ValueError("réponse vide")
+                result = json.loads(raw)
+        except Exception as exc:
+            raise DriveSyncError(f"Google Drive — {action} : {exc}") from exc
+        if not result.get("ok"):
+            raise DriveSyncError(f"Google Drive — {action} : {result.get('error', 'erreur inconnue')}")
+        return result
+
 
 def _plan_digest(sync_id: str, uploads: list[dict], deletes: list[str]) -> str:
     plan = {
@@ -133,7 +164,7 @@ def _partition_uploads(current: Path, changed: list[str], local: dict) -> list[l
 
 
 def _status(client, sync_id: str, uploads: list[dict] | None = None, deletes: list[str] | None = None) -> dict:
-    return client.call(
+    return client.read(
         "syncStatus", syncId=sync_id,
         uploads=[{"path": item["path"], "sha256": item["sha256"]} for item in uploads or []],
         deletes=deletes or [],
@@ -219,7 +250,7 @@ def sync_current(current: Path, client: AppsScriptClient, progress=None) -> dict
     try:
         if progress:
             progress({"phase": "drive_prepare", "completed": 0, "total": 0})
-        remote_manifest = client.call("manifest").get("manifest") or {}
+        remote_manifest = client.read("manifest").get("manifest") or {}
         local, remote = manifest_files(local_manifest), manifest_files(remote_manifest)
         changed = sorted(path for path, item in local.items() if remote.get(path, {}).get("sha256") != item.get("sha256"))
         deleted = sorted(set(remote) - set(local))
@@ -227,10 +258,21 @@ def sync_current(current: Path, client: AppsScriptClient, progress=None) -> dict
         digest = _plan_digest(sync_id, uploads_plan, deleted)
         total = len(changed) + len(deleted) + 1
 
-        begin = client.call(
-            "beginSync", syncId=sync_id, planDigest=digest,
-            uploadCount=len(changed), deleteCount=len(deleted),
-        )
+        try:
+            begin = client.call(
+                "beginSync", syncId=sync_id, planDigest=digest,
+                uploadCount=len(changed), deleteCount=len(deleted),
+            )
+        except DriveSyncError as begin_error:
+            try:
+                status = _status(client, sync_id)
+            except DriveSyncError:
+                raise begin_error
+            begin = {
+                "receivedUploads": len(status.get("receivedUploads", [])),
+                "receivedDeletes": len(status.get("receivedDeletes", [])),
+                "resumed": True,
+            }
         resumed = int(begin.get("receivedUploads", 0)) + int(begin.get("receivedDeletes", 0))
         _save_state(
             state_path, status="running", syncId=sync_id, phase="upload",
@@ -276,11 +318,16 @@ def sync_current(current: Path, client: AppsScriptClient, progress=None) -> dict
 
         if progress:
             progress({"phase": "publish", "completed": completed, "total": total, "resumed": resumed})
-        client.call(
-            "finalizeSync", syncId=sync_id, planDigest=digest, manifest=local_manifest,
-            uploads=uploads_plan, deletes=deleted,
-        )
-        verified_manifest = client.call("manifest").get("manifest") or {}
+        try:
+            client.call(
+                "finalizeSync", syncId=sync_id, planDigest=digest, manifest=local_manifest,
+                uploads=uploads_plan, deletes=deleted,
+            )
+        except DriveSyncError:
+            # A lost POST response is acceptable only if the durable manifest
+            # proves that finalizeSync completed on Drive.
+            pass
+        verified_manifest = client.read("manifest").get("manifest") or {}
         if verified_manifest != local_manifest:
             raise DriveSyncError("MANIFEST.json Drive ne correspond pas au miroir local")
         if progress:
