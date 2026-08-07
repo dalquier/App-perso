@@ -2,6 +2,8 @@
 
 Statut : BUILD-04 en validation. Ce document ne déclare pas le Build intégré dans `main`.
 
+Validation commune C1+C2+C3 : déclenchée via la PR technique #100 sur la base C1+C2 ; le résultat final doit être confirmé par CI avant toute fusion.
+
 ## Objet
 
 BUILD-04 introduit exactement deux protocoles guidés locaux et versionnés :
