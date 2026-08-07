@@ -105,6 +105,21 @@ def progress_stages(event: dict) -> tuple[str, str]:
     return "En attente", "En attente"
 
 
+def responsive_layout(width: float, height: float) -> dict[str, tuple[int, int, int, int]]:
+    """Return non-overlapping frames for the scrollable source area and fixed action card."""
+    page_width = max(320, int(width))
+    page_height = max(600, int(height))
+    margin = 16
+    table_top = 316
+    action_height = 166
+    action_y = page_height - action_height - margin
+    table_height = max(96, action_y - table_top - 10)
+    return {
+        "table": (0, table_top, page_width, table_height),
+        "actions": (margin, action_y, page_width - 2 * margin, action_height),
+    }
+
+
 def backup_summary(local, drive: dict, local_seconds: float = 0.0, drive_seconds: float = 0.0) -> dict:
     """Build the serialisable, user-facing summary kept across launches."""
     return {
@@ -182,6 +197,7 @@ class BackupApplication:
         self.root.title = "Backup"
         self.root.size = (390, 820)
         self.root.background_color = self.ui.SystemColors.SYSTEM_BACKGROUND
+        layout = responsive_layout(*self.root.size)
 
         self.header = self.ui.View()
         self.header.frame = (16, 12, 358, 92)
@@ -231,41 +247,47 @@ class BackupApplication:
             self.progress_card.add_subview(view)
 
         self.table = self.ui.TableView(style=self.ui.TableViewStyle.INSET_GROUPED)
-        self.table.frame = (0, 316, 390, 238)
+        self.table.frame = layout["table"]
         self.table.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_HEIGHT]
         self.table.did_select_cell = self._selected
         self.table.did_delete_cell = self._deleted
 
+        self.action_bar = self.ui.View()
+        self.action_bar.frame = layout["actions"]
+        self.action_bar.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
+
         self.add_button = self.ui.Button(title="Ajouter un dossier")
-        self.add_button.frame = (20, 648, 350, 38)
-        self.add_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
+        self.add_button.frame = (181, 12, 161, 38)
+        self.add_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN]
         self.add_button.action = self._add_source
         self.backup_button = self.ui.Button(title="Mettre à jour la sauvegarde")
-        self.backup_button.frame = (20, 696, 350, 54)
-        self.backup_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
+        self.backup_button.frame = (12, 100, 334, 54)
+        self.backup_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.backup_button.action = self._backup
 
         self.detail_button = self.ui.Button(title="Afficher le détail")
-        self.detail_button.frame = (20, 608, 170, 32)
+        self.detail_button.frame = (12, 58, 161, 32)
         self.detail_button.flex = [self.ui.AutoResizing.FLEXIBLE_RIGHT_MARGIN, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
         self.detail_button.action = self._show_error_detail
         self.detail_button.hidden = True
 
         self.copy_button = self.ui.Button(title="Copier le diagnostic")
-        self.copy_button.frame = (200, 608, 170, 32)
+        self.copy_button.frame = (181, 58, 161, 32)
         self.copy_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
         self.copy_button.action = self._copy_error_detail
         self.copy_button.hidden = True
 
-        self.test_drive_button = self.ui.Button(title="Tester Google Drive")
-        self.test_drive_button.frame = (20, 562, 350, 38)
-        self.test_drive_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
+        self.test_drive_button = self.ui.Button(title="Tester Drive")
+        self.test_drive_button.frame = (12, 12, 161, 38)
+        self.test_drive_button.flex = [self.ui.AutoResizing.FLEXIBLE_RIGHT_MARGIN]
         self.test_drive_button.action = self._test_drive
 
         for view in (
-            self.header, self.progress_card, self.table, self.test_drive_button, self.detail_button,
-            self.copy_button, self.add_button, self.backup_button,
+            self.test_drive_button, self.add_button, self.detail_button, self.copy_button, self.backup_button,
         ):
+            self.action_bar.add_subview(view)
+
+        for view in (self.header, self.progress_card, self.table, self.action_bar):
             self.root.add_subview(view)
         self._apply_colors()
         self.refresh()
@@ -278,12 +300,16 @@ class BackupApplication:
         card = self._color("SECONDARY_SYSTEM_BACKGROUND", "SYSTEM_BACKGROUND")
         self.header.background_color = card
         self.progress_card.background_color = card
+        self.action_bar.background_color = card
         self.progress_track.background_color = self._color("SYSTEM_GRAY_5", "SYSTEM_BACKGROUND")
         self.progress_fill.background_color = self._color("SYSTEM_BLUE", "SYSTEM_BACKGROUND")
         self.state_label.text_color = self._color("SYSTEM_BLUE", "LABEL")
         self.file_label.text_color = self._color("SECONDARY_LABEL", "LABEL")
         self.counter_label.text_color = self._color("SECONDARY_LABEL", "LABEL")
-        for view, radius in ((self.header, 16), (self.progress_card, 18), (self.progress_track, 6), (self.progress_fill, 6)):
+        for view, radius in (
+            (self.header, 16), (self.progress_card, 18), (self.action_bar, 18),
+            (self.progress_track, 6), (self.progress_fill, 6),
+        ):
             try:
                 view.corner_radius = radius
             except (AttributeError, TypeError):
