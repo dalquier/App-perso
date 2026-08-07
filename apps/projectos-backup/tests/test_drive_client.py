@@ -12,6 +12,7 @@ from projectos_backup.drive_client import (
     drive_state_path, format_preflight_diagnostic, has_pending_drive_sync, manifest_files,
     normalize_apps_script_url, preflight_drive, sync_current,
 )
+from projectos_backup import drive_client
 
 
 def manifest(records, run_id="run-new"):
@@ -260,6 +261,26 @@ class DriveClientTests(unittest.TestCase):
             sync_current(current, client)
             uploads = [payload for action, payload in client.calls if action == "uploadBatch"]
             self.assertEqual([len(item["files"]) for item in uploads], [1, 1])
+
+    def test_first_upload_batch_is_encoded_lazily(self):
+        changed = [f"Pyto/f{i}.txt" for i in range(MAX_BATCH_FILES + 3)]
+        records = {path: {"sha256": "x"} for path in changed}
+        encoded = []
+
+        def fake_payload(current, path, record):
+            encoded.append(path)
+            return {"path": path, "sha256": "x", "contentBase64": ""}, 1
+
+        with tempfile.TemporaryDirectory() as raw:
+            current = Path(raw)
+            (current / "Pyto").mkdir()
+            for path in changed:
+                (current / path).write_bytes(b"x")
+            with mock.patch.object(drive_client, "_upload_payload", side_effect=fake_payload):
+                batches = drive_client._iter_upload_batches(current, changed, records)
+                first = next(batches)
+        self.assertEqual(len(first), MAX_BATCH_FILES)
+        self.assertEqual(len(encoded), MAX_BATCH_FILES)
 
     def test_lost_response_is_confirmed_without_second_upload(self):
         with tempfile.TemporaryDirectory() as raw:
