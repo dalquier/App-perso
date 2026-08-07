@@ -1,0 +1,14 @@
+{
+  "fixtureId": "fixture-atelier-boreal-clarify-001",
+  "fictional": true,
+  "protocolId": "equilibre.protocol.clarify-situation",
+  "protocolVersion": "1.0.0",
+  "answers": {
+    "situation": "Dans l’organisation fictive Atelier Boréal, la présentation du projet Aurore a été reportée après la réunion du lundi.",
+    "observed_facts": "La réunion a commencé à 9 h. Un report a été annoncé. Aucune nouvelle date n’a été donnée.",
+    "interpretation": "Je me dis que le projet fictif Aurore n’est peut-être plus prioritaire.",
+    "concrete_impact": "Je ne sais pas si je dois encore préparer la maquette fictive prévue jeudi.",
+    "next_check": "Demander si une nouvelle date est prévue."
+  },
+  "expectedAction": "Demander si une nouvelle date est prévue."
+}
