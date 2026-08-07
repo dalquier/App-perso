@@ -11,6 +11,7 @@ from projectos_backup.ui import (
     progress_percent,
     progress_ratio,
     progress_stages,
+    responsive_layout,
     save_result,
     should_emit_progress,
     summary_copy,
@@ -18,6 +19,15 @@ from projectos_backup.ui import (
 
 
 class ProgressTests(unittest.TestCase):
+    def test_responsive_layout_never_overlaps_sources_and_actions(self):
+        for height in (600, 667, 736, 820, 932):
+            frames = responsive_layout(390, height)
+            table = frames["table"]
+            actions = frames["actions"]
+            self.assertLessEqual(table[1] + table[3], actions[1])
+            self.assertLessEqual(actions[1] + actions[3], max(600, height))
+            self.assertGreaterEqual(table[3], 96)
+
     def test_ratio_is_clamped(self):
         self.assertEqual(progress_ratio(-1, 10), 0.0)
         self.assertEqual(progress_ratio(5, 10), 0.5)
