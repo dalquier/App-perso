@@ -305,7 +305,8 @@ def run_backup(
                     if prepare_file is not None and prepare_file(path):
                         requested += 1
                     prepared += 1
-                    report("prepare", prepared, total_files, label=source.label, path=relative)
+                    # Candidate count is not known before metadata inspection.
+                    report("prepare", prepared, 0, label=source.label, path=relative)
                     # iCloud may materialize or replace the file here.
                     try: stat = path.stat()
                     except OSError as exc: raise SourceAccessError(f"Fichier iCloud indisponible : {path}") from exc
