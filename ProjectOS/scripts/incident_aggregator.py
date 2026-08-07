@@ -2,10 +2,9 @@
 """ProjectOS Incident Ledger aggregator.
 
 Reads structured INCIDENT OCCURRENCE comments from GitHub issue #87 and emits
-one deterministic JSON summary. The module uses only the Python standard
-library so it can run in GitHub Actions, Replit, desktop Python and Pyto.
+one deterministic JSON summary. Standard-library only for GitHub Actions,
+Replit, desktop Python and Pyto.
 """
-
 from __future__ import annotations
 
 import argparse
@@ -41,43 +40,30 @@ def _parse_iso(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def parse_occurrence(body: str) -> dict[str, str] | None:
-    """Parse one canonical Ledger comment.
+def _epoch(value: str) -> float:
+    parsed = _parse_iso(value)
+    if parsed == datetime.min.replace(tzinfo=timezone.utc):
+        return 0.0
+    return parsed.timestamp()
 
-    Unknown keys are preserved. Malformed/non-incident comments are ignored.
-    """
+
+def parse_occurrence(body: str) -> dict[str, str] | None:
     if not body or not body.lstrip().startswith("INCIDENT OCCURRENCE"):
         return None
-
     record: dict[str, str] = {}
     for raw_line in body.splitlines()[1:]:
         line = raw_line.strip()
         if not line or ":" not in line:
             continue
         key, value = line.split(":", 1)
-        key = key.strip().lower()
-        value = value.strip()
-        if key:
-            record[key] = value
-
-    required = {
-        "incident_id",
-        "signature",
-        "severity",
-        "status",
-        "project",
-        "tool",
-        "stage",
-        "occurred_at",
-    }
+        if key.strip():
+            record[key.strip().lower()] = value.strip()
+    required = {"incident_id", "signature", "severity", "status", "project", "tool", "stage", "occurred_at"}
     if not required.issubset(record):
         return None
-    if record["severity"] not in SEVERITY_ORDER:
+    if record["severity"] not in SEVERITY_ORDER or record["status"] not in KNOWN_STATUSES:
         return None
-    if record["status"] not in KNOWN_STATUSES:
-        return None
-    coverage = record.get("projectos_coverage", "NONE")
-    if coverage not in KNOWN_COVERAGE:
+    if record.get("projectos_coverage", "NONE") not in KNOWN_COVERAGE:
         record["projectos_coverage"] = "NONE"
     return record
 
@@ -91,26 +77,14 @@ def parse_comment_objects(comments: Iterable[dict[str, Any]]) -> list[dict[str, 
     return occurrences
 
 
-def fetch_issue_comments(
-    repository: str = DEFAULT_REPOSITORY,
-    issue: int = DEFAULT_ISSUE,
-    token: str | None = None,
-) -> list[dict[str, Any]]:
-    """Fetch all issue comments through GitHub REST pagination."""
+def fetch_issue_comments(repository: str = DEFAULT_REPOSITORY, issue: int = DEFAULT_ISSUE, token: str | None = None) -> list[dict[str, Any]]:
     owner, repo = repository.split("/", 1)
     comments: list[dict[str, Any]] = []
     page = 1
     while True:
         query = urllib.parse.urlencode({"per_page": 100, "page": page})
         url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue}/comments?{query}"
-        request = urllib.request.Request(
-            url,
-            headers={
-                "Accept": "application/vnd.github+json",
-                "User-Agent": "ProjectOS-Incident-Aggregator/1.0",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-        )
+        request = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "ProjectOS-Incident-Aggregator/1.0", "X-GitHub-Api-Version": "2022-11-28"})
         if token:
             request.add_header("Authorization", f"Bearer {token}")
         try:
@@ -129,92 +103,73 @@ def fetch_issue_comments(
     return comments
 
 
-def aggregate(occurrences: Iterable[dict[str, str]], now: datetime | None = None) -> dict[str, Any]:
-    """Aggregate occurrences into incident-centric counters."""
+def aggregate(occurrences: Iterable[dict[str, str]], now: datetime | None = None, *, repository: str = DEFAULT_REPOSITORY, issue: int = DEFAULT_ISSUE) -> dict[str, Any]:
     occurrence_list = list(occurrences)
     groups: dict[str, list[dict[str, str]]] = defaultdict(list)
     for occurrence in occurrence_list:
-        key = occurrence.get("incident_id") or occurrence.get("signature") or "UNKNOWN"
-        groups[key].append(occurrence)
+        groups[occurrence.get("incident_id") or occurrence.get("signature") or "UNKNOWN"].append(occurrence)
 
-    incident_rows: list[dict[str, Any]] = []
+    incidents: list[dict[str, Any]] = []
     for incident_id, records in groups.items():
         ordered = sorted(records, key=lambda item: _parse_iso(item.get("occurred_at", "")))
         current = ordered[-1]
         worst = min(records, key=lambda item: SEVERITY_ORDER.get(item.get("severity", "S4"), 4))
-        incident_rows.append(
-            {
-                "incident_id": incident_id,
-                "signature": current.get("signature", "UNKNOWN.UNKNOWN"),
-                "type": current.get("signature", "UNKNOWN.UNKNOWN").split(".", 1)[0],
-                "current_severity": current.get("severity", "S4"),
-                "worst_severity": worst.get("severity", "S4"),
-                "status": current.get("status", "OPEN"),
-                "project": current.get("project", "unknown"),
-                "tool": current.get("tool", "unknown"),
-                "stage": current.get("stage", "unknown"),
-                "projectos_coverage": current.get("projectos_coverage", "NONE"),
-                "occurrence_count": len(records),
-                "first_occurrence": ordered[0].get("occurred_at"),
-                "last_occurrence": current.get("occurred_at"),
-                "candidate_projectos_change": current.get("candidate_projectos_change", "NONE"),
-                "root_cause": current.get("root_cause", "UNKNOWN"),
-                "workaround": current.get("workaround", "NONE"),
-                "source": current.get("source", ""),
-            }
-        )
+        signature = current.get("signature", "UNKNOWN.UNKNOWN")
+        incidents.append({
+            "incident_id": incident_id,
+            "signature": signature,
+            "type": signature.split(".", 1)[0],
+            "current_severity": current.get("severity", "S4"),
+            "worst_severity": worst.get("severity", "S4"),
+            "status": current.get("status", "OPEN"),
+            "project": current.get("project", "unknown"),
+            "tool": current.get("tool", "unknown"),
+            "stage": current.get("stage", "unknown"),
+            "projectos_coverage": current.get("projectos_coverage", "NONE"),
+            "occurrence_count": len(records),
+            "first_occurrence": ordered[0].get("occurred_at"),
+            "last_occurrence": current.get("occurred_at"),
+            "candidate_projectos_change": current.get("candidate_projectos_change", "NONE"),
+            "root_cause": current.get("root_cause", "UNKNOWN"),
+            "workaround": current.get("workaround", "NONE"),
+            "source": current.get("source", ""),
+        })
 
-    incident_rows.sort(
-        key=lambda item: (
-            SEVERITY_ORDER.get(item["current_severity"], 9),
-            item.get("last_occurrence") or "",
-            item["incident_id"],
-        )
-    )
-
-    current_severity = Counter(row["current_severity"] for row in incident_rows)
-    status = Counter(row["status"] for row in incident_rows)
-    type_counts = Counter(row["type"] for row in incident_rows)
-    project = Counter(row["project"] for row in incident_rows)
-    tool = Counter(row["tool"] for row in incident_rows)
-    coverage = Counter(row["projectos_coverage"] for row in incident_rows)
-
-    recurrent = [row for row in incident_rows if row["occurrence_count"] > 1]
-    recurrent.sort(key=lambda row: (-row["occurrence_count"], row["incident_id"]))
-
+    incidents.sort(key=lambda item: (SEVERITY_ORDER.get(item["current_severity"], 9), -_epoch(item.get("last_occurrence") or ""), item["incident_id"]))
+    counters = {
+        "severity": Counter(row["current_severity"] for row in incidents),
+        "status": Counter(row["status"] for row in incidents),
+        "type": Counter(row["type"] for row in incidents),
+        "project": Counter(row["project"] for row in incidents),
+        "tool": Counter(row["tool"] for row in incidents),
+        "stage": Counter(row["stage"] for row in incidents),
+        "coverage": Counter(row["projectos_coverage"] for row in incidents),
+    }
+    recurrent = sorted((row for row in incidents if row["occurrence_count"] > 1), key=lambda row: (-row["occurrence_count"], row["incident_id"]))
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
-    recent_7d = 0
-    recent_30d = 0
+    recent_7d = recent_30d = 0
     for occurrence in occurrence_list:
         occurred = _parse_iso(occurrence.get("occurred_at", ""))
         if occurred == datetime.min.replace(tzinfo=timezone.utc):
             continue
         age_days = (now - occurred).total_seconds() / 86400
-        if 0 <= age_days <= 7:
-            recent_7d += 1
-        if 0 <= age_days <= 30:
-            recent_30d += 1
+        recent_7d += int(0 <= age_days <= 7)
+        recent_30d += int(0 <= age_days <= 30)
 
     return {
         "schema_version": "1.0",
         "generated_at": now.isoformat().replace("+00:00", "Z"),
-        "ledger": {"repository": DEFAULT_REPOSITORY, "issue": DEFAULT_ISSUE},
-        "totals": {
-            "unique_incidents": len(incident_rows),
-            "occurrences": len(occurrence_list),
-            "active_incidents": sum(1 for row in incident_rows if row["status"] in OPEN_STATUSES),
-            "recurrent_incidents": len(recurrent),
-            "occurrences_last_7d": recent_7d,
-            "occurrences_last_30d": recent_30d,
-        },
-        "by_severity": {severity: current_severity.get(severity, 0) for severity in SEVERITY_ORDER},
-        "by_status": {name: status.get(name, 0) for name in sorted(KNOWN_STATUSES)},
-        "by_type": dict(type_counts.most_common()),
-        "by_project": dict(project.most_common()),
-        "by_tool": dict(tool.most_common()),
-        "by_projectos_coverage": {name: coverage.get(name, 0) for name in ("NONE", "PARTIAL", "FULL")},
+        "ledger": {"repository": repository, "issue": issue},
+        "totals": {"unique_incidents": len(incidents), "occurrences": len(occurrence_list), "active_incidents": sum(1 for row in incidents if row["status"] in OPEN_STATUSES), "recurrent_incidents": len(recurrent), "occurrences_last_7d": recent_7d, "occurrences_last_30d": recent_30d},
+        "by_severity": {name: counters["severity"].get(name, 0) for name in SEVERITY_ORDER},
+        "by_status": {name: counters["status"].get(name, 0) for name in sorted(KNOWN_STATUSES)},
+        "by_type": dict(counters["type"].most_common()),
+        "by_project": dict(counters["project"].most_common()),
+        "by_tool": dict(counters["tool"].most_common()),
+        "by_stage": dict(counters["stage"].most_common()),
+        "by_projectos_coverage": {name: counters["coverage"].get(name, 0) for name in ("NONE", "PARTIAL", "FULL")},
         "recurrent": recurrent,
-        "incidents": incident_rows,
+        "incidents": incidents,
     }
 
 
@@ -235,22 +190,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", type=Path, help="Write summary JSON to this file")
     parser.add_argument("--compact", action="store_true", help="Disable pretty JSON output")
     args = parser.parse_args(argv)
-
     try:
-        if args.input:
-            comments = load_comments_file(args.input)
-        else:
-            comments = fetch_issue_comments(
-                repository=args.repository,
-                issue=args.issue,
-                token=os.getenv("GITHUB_TOKEN"),
-            )
-        occurrences = parse_comment_objects(comments)
-        summary = aggregate(occurrences)
+        comments = load_comments_file(args.input) if args.input else fetch_issue_comments(args.repository, args.issue, os.getenv("GITHUB_TOKEN"))
+        summary = aggregate(parse_comment_objects(comments), repository=args.repository, issue=args.issue)
     except (OSError, ValueError, RuntimeError) as exc:
         print(f"incident_aggregator: {exc}", file=sys.stderr)
         return 2
-
     text = json.dumps(summary, ensure_ascii=False, indent=None if args.compact else 2) + "\n"
     if args.output:
         args.output.write_text(text, encoding="utf-8")
