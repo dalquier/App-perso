@@ -15,7 +15,7 @@ from typing import Callable, Iterable
 import unicodedata
 
 SCHEMA_VERSION = 2
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 DEFAULT_IGNORED_DIRECTORIES = frozenset({".git", "__pycache__", ".pytest_cache", ".mypy_cache"})
 DEFAULT_IGNORED_FILES = frozenset({".DS_Store"})
 PrepareFile = Callable[[Path], bool]
