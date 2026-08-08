@@ -29,6 +29,7 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 | `equilibre` | Équilibre | Equilibre, compagnon TCC, TCC Budy, TCC Buddy, TCC_Budy | BUILD-01/02/03 intégrés — V4 / BUILD-04 construite sur branche, QA iPhone requise avant fusion | dépôt `dalquier/App-perso`; code `apps/equilibre/` | `ProjectOS/projects/Equilibre/` |
 | `projectos-backup` | ProjectOS Backup | Projet 2, sauvegarde ProjectOS, backup de code | BUILD-01 construit — recette Pyto requise | dépôt `dalquier/App-perso`; code `apps/projectos-backup/` | `ProjectOS/projects/ProjectOSBackup/` |
 | `assistantia` | AssistantIA | Assistant IA | à migrer/compléter | à confirmer avant modification | à créer sous `ProjectOS/projects/AssistantIA/` |
+| `pyto-replit-test` | PytoReplitTest | test Pyto Replit | expérimentation temporaire — à supprimer après validation | dépôt `dalquier/App-perso`; code `apps/pyto-replit-test/` | `ProjectOS/projects/PytoReplitTest/` |
 
 ## Résolution
 
