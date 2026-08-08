@@ -7,6 +7,7 @@
 - Ne jamais déclarer un test réussi sans l’avoir exécuté ou observé.
 - Documenter les tests impossibles à exécuter et la raison.
 - Distinguer la qualité du résultat, la publiabilité du diff et la récupération effective du livrable.
+- Pour une application exécutée dans Replit, appliquer en plus `REPLIT_RUNTIME_CONTRACT.md` : une CI métier verte ne prouve pas à elle seule que le runtime Replit, le port ou la Preview native fonctionnent.
 
 ## Niveaux
 
@@ -18,6 +19,21 @@
 6. Régression ciblée : comportement corrigé et zones adjacentes.
 7. Tests manuels iPhone : clavier, défilement, safe areas, menus, fermeture, reprise et persistance.
 8. Contrôle de livraison : diff final, fichiers binaires, artefacts générés, compatibilité du canal de publication, récupération et hygiène Git.
+
+## Replit Runtime Gate
+
+Pour toute application dont Replit constitue un environnement de recette, Preview, exécution ou hébergement :
+
+1. exécuter le `REPLIT RUNTIME PREFLIGHT` de `REPLIT_RUNTIME_CONTRACT.md` avant la recette ;
+2. prouver le SHA canonique attendu ;
+3. prouver que le worktree/runtime n’est ni sale ni divergent ;
+4. exécuter en CI un `Direct Run Smoke` avec la même commande de lancement que Replit ou une commande strictement équivalente ;
+5. vérifier un HTTP 200 réel ;
+6. lorsqu’une UI web est critique, ajouter un browser smoke vérifiant au minimum DOM non vide et absence d’erreur JavaScript bloquante ;
+7. valider la vraie Preview/Webview de l’application, et non `Open Artifact`, un panneau `Validation` ou un Workflow manuel ;
+8. refaire ce gate après toute évolution du build, serveur, port, `.replit`, service worker, PWA, manifeste, racine du monorepo ou commande de lancement.
+
+Un test sur un ancien runtime, un ancien Artifact ou une Preview dont le SHA n’est pas prouvé ne peut pas valider la version courante.
 
 ## Contrôle de livraison
 
@@ -51,7 +67,8 @@ Avant de déclarer la tâche terminée :
 - [ ] SHA-256 vérifié pour chaque artefact exporté ;
 - [ ] aucun lien vide ou chemin interne présenté comme téléchargement ;
 - [ ] récupération confirmée hors de l’environnement producteur ;
-- [ ] état final qualifié : construit, exporté, publié, livré ou intégré.
+- [ ] état final qualifié : construit, exporté, publié, livré ou intégré ;
+- [ ] pour Replit : Runtime Contract chargé, preflight `READY`, Direct Run Smoke vert et vraie Preview native utilisée pour la recette.
 
 ## Preuves de livraison
 
@@ -70,4 +87,5 @@ Une Pull Request ou un manifeste de livraison doit indiquer :
 - les SHA de base et de tête ;
 - les liens ou emplacements réellement récupérables ;
 - les empreintes SHA-256 des artefacts de secours ;
-- le résultat de la vérification GitHub après publication.
+- le résultat de la vérification GitHub après publication ;
+- pour une application Replit : mode runtime, nom du Replit, SHA exécuté, commande de lancement, résultat du Direct Run Smoke et résultat de la Preview native.
