@@ -23,6 +23,8 @@ L'écran principal contient l'état, la phase courante, les sources, un accès d
 
 L'état de reprise Drive est écrit avec un fichier temporaire unique et retenté si iCloud rematérialise son dossier. Deux exécutions qui se chevauchent ne partagent donc plus le même `STATE.json.part`.
 
+Au démarrage, une exécution précédemment interrompue est présentée comme **Reprise prête**, et non comme une nouvelle erreur. Le bouton `＋ Dossier` ajoute directement une source depuis l’accueil. `❓` ouvre une carte d’aide interactive qui décrit le fonctionnement et localise le programme Pyto, la configuration, le miroir local, le tampon des conversations, les archives Drive et le dépôt GitHub. **Paramètres > Google Drive** ouvre une vue de test dédiée avec progression, résultat, diagnostic éventuel et retour vers les paramètres.
+
 Le miroir local réutilise un fichier lorsque source, chemin, taille et date de modification concordent avec le manifeste valide. Drive compare ensuite le SHA-256 : un contenu déjà identique n'est pas renvoyé, même si sa date a changé. Chaque source conserve son propre dossier, ce qui empêche deux fichiers homonymes provenant de sources différentes de s'écraser.
 
 L’application demande une extension d’exécution à iOS lorsque l’utilisateur change d’app. Cette extension est temporaire et décidée par iOS : elle ne garantit pas une exécution illimitée en arrière-plan. Une interruption conserve le miroir valide, le cache `Resume/` et la file Drive persistante. Le lancement suivant réutilise le travail local validé et reprend uniquement les opérations Drive non confirmées. Les fichiers partiels ne sont jamais repris.
