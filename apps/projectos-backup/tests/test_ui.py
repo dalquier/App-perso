@@ -7,6 +7,7 @@ from projectos_backup.ui import (
     backup_summary,
     compact_summary_copy,
     compact_filter_summary,
+    compact_stage_name,
     error_copy,
     load_result,
     filter_summary,
@@ -27,6 +28,12 @@ from projectos_backup.ui import (
 
 
 class ProgressTests(unittest.TestCase):
+    def test_stage_names_fit_the_narrow_iphone_cards(self):
+        self.assertEqual(compact_stage_name("En attente"), "Attente")
+        self.assertEqual(compact_stage_name("À reprendre"), "Reprise")
+        self.assertEqual(compact_stage_name("À vérifier"), "Vérif.")
+        self.assertEqual(compact_stage_name("En cours"), "En cours")
+
     def test_overall_progress_tracks_full_backup_without_reset(self):
         events=[
             {'phase':'scan','completed':1,'total':2},
