@@ -1,4 +1,4 @@
-# Équilibre — Roadmap initiale
+# Équilibre — Roadmap
 
 ## Vague 0 — Fondation canonique
 
@@ -6,71 +6,191 @@ Objectif : unifier le projet, formaliser les décisions de base et préparer le 
 
 Sortie : manifeste, ADR, contrat de parallélisation et registre mis à jour.
 
-## Jalon A — Conception parallèle
+## Jalon A — Conception parallèle initiale
 
-Produire cinq livraisons indépendantes :
+Cinq axes ont servi à figer la première architecture : produit/UX, mémoire/données, moteur TCC, architecture PWA/Replit/Pyto, qualité/sécurité/validation.
 
-1. Produit et UX ;
-2. Mémoire et données ;
-3. Moteur TCC ;
-4. Architecture PWA/Replit/Pyto ;
-5. Qualité, sécurité et validation.
+## Jalon B — Revue de convergence initiale
 
-Aucun code applicatif n’est autorisé pendant ce jalon.
-
-## Jalon B — Revue de convergence
-
-Comparer les cinq livraisons, résoudre les contradictions, figer :
-
-- parcours MVP ;
-- modèle de données ;
-- machine d’états conversationnelle ;
-- architecture technique ;
-- critères go/no-go.
-
-Sortie : spécification consolidée et plan `BUILD-01`.
+La convergence initiale a figé le parcours MVP, le modèle de données, l’architecture technique et les critères permettant d’engager BUILD-01.
 
 ## Jalon C — BUILD-01, socle PWA
 
-Statut : intégré. Le dossier applicatif canonique, le shell PWA, la persistance locale contrôlée, la séance guidée, les réglages et le garde-fou sensible sont présents dans `apps/equilibre/`.
+Statut : **intégré**.
+
+Le dossier applicatif canonique, le shell PWA, la persistance locale contrôlée, la séance guidée, les réglages et le garde-fou sensible sont présents dans `apps/equilibre/`.
 
 ## Jalon D — BUILD-02, conversation écrite
 
-Statut : intégré et validé. Le chat persistant, le streaming local, la reprise, les modes conversationnels, la migration versionnée, la confidentialité, l’interruption et l’isolation des générations ont été validés par 48 tests automatisés, les workflows GitHub et une recette physique iPhone. Référence d’intégration : PR #29, commit `b115989fadd0f3e9f6b503c1b933df4d2b179827`.
+Statut : **intégré et validé**.
+
+Le chat persistant, le streaming local, la reprise, les modes conversationnels, la migration versionnée, la confidentialité, l’interruption et l’isolation des générations ont été validés. Référence d’intégration historique : PR #29, commit `b115989fadd0f3e9f6b503c1b933df4d2b179827`.
 
 ## Jalon E — BUILD-03, séances et mémoire contrôlée
 
-Statut : intégré par la PR #53. Séances structurées, résumés, plans d'action et mémoire locale proposée/confirmée/corrigeable/supprimable sont présents dans `main`.
+Statut : **intégré** par la PR #53.
+
+Séances structurées, résumés, plans d'action et mémoire locale proposée/confirmée/corrigeable/supprimable sont présents dans `main`.
 
 ## Jalon F — V4 / BUILD-04, protocoles versionnés, stockage v4 et sécurité
 
 Statut : **intégré dans `main`**.
 
-BUILD-04 apporte deux protocoles actifs versionnés, une navigation principale à cinq destinations avec `Protocoles`, le stockage v4 et ses migrations/garanties anti-résurrection, des gates de sécurité avant mutation, la mémoire uniquement explicite et le cache PWA `equilibre-shell-v6`.
+BUILD-04 apporte :
 
-Le lancement Replit versionné utilise `./start-equilibre.sh`, le build Vite de production et un serveur statique Node dédié. Le direct-run smoke CI vérifie ce chemin et le HTTP 200. La validation runtime/iPhone post-intégration est désormais régie par le contrat canonique `ProjectOS/projects/Equilibre/docs/REPLIT_RUNTIME_CONTRACT.md` et reste à rattacher au SHA effectivement exécuté.
+- exactement deux protocoles actifs versionnés ;
+- navigation principale à cinq destinations avec `Protocoles` ;
+- stockage v4, migrations, révisions et garanties anti-résurrection ;
+- gates de sécurité avant mutation ;
+- mémoire durable uniquement explicite ;
+- cache PWA `equilibre-shell-v6` ;
+- lancement Replit versionné via `./start-equilibre.sh` ;
+- build Vite de production et serveur statique Node dédié ;
+- direct-run smoke CI et HTTP 200 ;
+- polish UX compact.
 
-## Jalon G — Convergence Équilibre conversationnelle
+### Baseline QA V4
 
-Objectif : préparer la version réellement conversationnelle d’Équilibre avant tout nouveau Build substantiel.
+`V4-QA-AUTO-01` :
 
-Flux analytiques à faire converger :
+- 181/181 tests automatisés PASS ;
+- build production PASS ;
+- direct-run PASS ;
+- HTTP 200 PASS ;
+- protocoles, stockage, mémoire, safety, conversations et confidentialité PASS ;
+- aucun défaut produit MAJOR reproduit.
 
-- `CLINICAL-ROLE-01` — rôle, posture, compétences et limites ;
-- `AI-BACKEND-01` — backend sécurisé et fournisseur OpenAI réel ;
-- `MEMORY-CONTEXT-01` — utilisation intelligente de la mémoire explicitement validée ;
-- `AI-EVAL-01` — évaluations comportementales et sécurité ;
-- `SESSION-30-01` — séances conversationnelles longues ;
-- `VOICE-ARCH-01` — architecture de modalité vocale future ;
-- `V4-QA-AUTO-01` — QA automatisée du socle V4.
+La preuve navigateur réelle est partielle en raison de l’indisponibilité de Chromium dans le sandbox Codex. Le reliquat physique est limité à PWA/standalone, clavier/safe areas, offline réel/service worker, reprise physique/anti-résurrection et VoiceOver minimal, à rattacher au SHA exécuté selon `docs/REPLIT_RUNTIME_CONTRACT.md`.
 
-Sortie attendue : spécification consolidée des interfaces entre rôle, safety, contexte, mémoire, provider, protocoles courts, séances longues et modalités futures, puis découpage en Builds non concurrents.
+## Jalon G — CONVERGENCE-05, architecture conversationnelle
 
-Aucune implémentation semi-structurée ou spécialisée à risque ne commence avant cette convergence.
+Référence : `ProjectOS/projects/Equilibre/docs/CONVERSATION_AI_CONVERGENCE.md`.
+
+ADR : `ProjectOS/projects/Equilibre/ADR/ADR-006-conversational-ai-governance.md`.
+
+Statut : **convergence définie ; aucun BUILD-05 commencé**.
+
+Les analyses suivantes ont convergé :
+
+- `CLINICAL-ROLE-01` ;
+- `AI-BACKEND-01` ;
+- `MEMORY-CONTEXT-01` ;
+- `AI-EVAL-01` ;
+- `SESSION-30-01` ;
+- `VOICE-ARCH-01` ;
+- `V4-QA-AUTO-01`.
+
+### Invariants figés
+
+- Équilibre reste propriétaire de l’état métier ;
+- backend same-origin = passerelle d’inférence, pas base de conversations ;
+- contexte en deux étages : minimisation locale puis assemblage autoritaire serveur ;
+- `ClinicalRolePolicy` versionnée et indépendante du modèle ;
+- safety multicouche et indépendante du provider ;
+- LLM sans pouvoir métier direct ;
+- mémoire durable explicitement contrôlée et sélectionnée localement ;
+- pas d’embeddings dans le premier cycle ;
+- Responses API avec `store:false`, `background:false`, `maxRetries:0` pour le premier provider réel ;
+- texte accepté canonique ; audio = transport ;
+- séances longues avec moteur spécialisé ;
+- evals provider-agnostic appartenant à Équilibre ;
+- modèle choisi par gate comportemental et coût.
+
+### Gate de passage
+
+Aucun nouvel incrément ne peut contourner ces invariants. Toute PR applique les Resource Locks et le Freshness/Merge Gate global ProjectOS.
+
+## Jalon G1 — BUILD-05A, Governance & Contracts
+
+**Prochain Build recommandé.**
+
+Objectif : figer les contrats avant toute dépendance OpenAI réelle.
+
+Inclure :
+
+- `ClinicalRolePolicy 1.0` ;
+- premières interfaces `DomainPolicy` ;
+- `UserTurn`/`Turn` modality-ready ;
+- `ContextPackage` ;
+- contrat `ClientContextSelector` / `ServerContextAssembler` ;
+- contrat mémoire confirmation/cycle de vie ;
+- contrat safety des futurs appels distants ;
+- décisions de stockage nécessaires à BUILD-05C et SESSION-30.
+
+Pas d’appel OpenAI réel.
+
+## Jalon G2 — BUILD-05B, Secure Backend Boundary
+
+Inclure :
+
+- serveur statique + `/api` same-origin ;
+- health ;
+- auth mono-utilisateur ;
+- session HttpOnly/Secure/SameSite ;
+- Origin/CSRF ;
+- JSON borné ;
+- rate limiting ;
+- erreurs structurées ;
+- logs metadata-only ;
+- secrets runtime ;
+- tests serveur.
+
+Pas d’OpenAI réel.
+
+## Jalon G3 — BUILD-05C, Deterministic Memory Context
+
+Inclure :
+
+- modèle mémoire enrichi et migration décidée ;
+- lecture locale contrôlée ;
+- sélection structurée + lexicale ;
+- score déterministe ;
+- fraîcheur, conflits, déduplication ;
+- mémoire globale ON/OFF ;
+- conversation sans mémoire ;
+- explicabilité/reconfirmation ;
+- tests de non-fuite, non-hallucination et non-résurrection.
+
+Embeddings/vector DB/cloud memory : hors périmètre.
+
+## Jalon G4 — BUILD-05D, OpenAI Provider & Streaming
+
+Inclure :
+
+- SDK OpenAI serveur ;
+- Responses API ;
+- `store:false` ;
+- `background:false` ;
+- `maxRetries:0` ;
+- modèle configurable ;
+- `ServerContextAssembler` ;
+- `RemoteConversationProvider` ;
+- streaming ;
+- AbortSignal bout en bout ;
+- erreurs/timeouts ;
+- fallback local explicite ;
+- tests mock et intégration.
+
+Pas de tool calling métier.
+
+## Jalon G5 — BUILD-05E, AI Eval Harness & Model Gate
+
+Inclure :
+
+- corpus fictif canonique ;
+- rubriques et blockers ;
+- runners déterministes/mock/API ;
+- red-team critique ;
+- baseline/champion ;
+- calibration du juge éventuel ;
+- holdout ;
+- sélection du modèle le moins coûteux satisfaisant les gates.
+
+CI ordinaire : zéro appel OpenAI. Les campagnes payantes restent ciblées et explicitement déclenchées.
 
 ## Jalon H — SESSION-30, séances conversationnelles d’environ 30 minutes
 
-Référence normative de travail : `ProjectOS/projects/Equilibre/docs/SESSION_30_REFERENCE.md`.
+Référence normative : `ProjectOS/projects/Equilibre/docs/SESSION_30_REFERENCE.md`.
 
 Verdict analytique : `READY FOR 30-MIN SESSION CONVERGENCE`.
 
@@ -79,62 +199,70 @@ Verdict analytique : `READY FOR 30-MIN SESSION CONVERGENCE`.
 - nouvelle famille `long-conversational` ;
 - cible d’environ 30 minutes de temps actif ;
 - sept phases communes : cadrage, objectif, exploration, travail central, mise en perspective, action éventuelle, synthèse ;
-- deux modes prévus : `structured` puis `semi-structured` ;
+- modes `structured` puis `semi-structured` ;
 - `ShortProtocolEngine` BUILD-04 préservé ;
 - nouveau `LongSessionEngine` spécialisé ;
-- même famille `ProtocolRun`, avec identité/version/digest communs ;
-- séance longue distincte d’une Conversation libre, sans duplication automatique des messages ;
+- même famille conceptuelle `ProtocolRun` ;
+- séance longue distincte d’une Conversation libre ;
 - pause persistante, reprise exacte et fin anticipée ;
 - action facultative ;
 - mémoire jamais automatique ;
-- sécurité déterministe et transversale ;
-- architecture modality-ready pour la future voix.
+- safety transverse ;
+- architecture modality-ready.
 
-### Premier protocole recommandé
+### Premier protocole
 
-`S30-02 — Résoudre un problème concret`, d’abord en mode entièrement structuré, local et déterministe.
+`S30-02 — Résoudre un problème concret`, d’abord entièrement structuré, local et déterministe.
 
-Le premier incrément doit valider le cœur métier sans LLM : phases, temps actif, pause/reprise, fin anticipée, synthèse et `sessionRecord`.
+### Séquence
 
-### Découpage SESSION-30
+1. contrats `LongSessionDefinition` / `LongSessionRun` ;
+2. moteur structuré déterministe ;
+3. persistance et UX iPhone après décision stockage ;
+4. sessionRecord/action/mémoire ;
+5. dialogue semi-structuré **uniquement après BUILD-05E** ;
+6. bibliothèque faible/moyen risque ;
+7. travail/RPS puis prévention de rechute après revues safety/eval dédiées.
 
-1. **SESSION-30-A — Contrats** : `LongSessionDefinition`, `LongSessionRun`, phases, timing, relation `ProtocolRun`, sécurité, `sessionRecord`.
-2. **SESSION-30-B — Moteur structuré** : premier protocole local et déterministe.
-3. **SESSION-30-C — Persistance et UX iPhone** : décision stockage, migration/rollback, interface longue, background/foreground.
-4. **SESSION-30-D — SessionRecord / action / mémoire** : provenance, résumé, action facultative, proposition mémoire explicite, historique.
-5. **SESSION-30-E — Dialogue semi-structuré** : provider, orchestrateur, intents, génération interruptible, validation des sorties et fallback structuré.
-6. **SESSION-30-F — Bibliothèque faible/moyen risque** : clarification complexe, ambivalence, affirmation de soi, activation légère.
-7. **SESSION-30-G — Domaines renforcés** : travail/RPS puis prévention de rechute après revue sécurité dédiée.
-8. **SESSION-30-H — Voix** : dictée, TTS, tour par tour, puis temps réel sans modifier le moteur métier.
+### Gates
 
-### Gates avant implémentation
+Avant persistance longue, trancher explicitement :
 
-Avant le code correspondant, trancher explicitement :
-
-- contrat exact `LongSessionDefinition` ;
-- extension contrôlée du stockage v4 ou migration storage-v5 / IndexedDB ;
-- contrat du provider semi-structuré ;
-- extension du modèle de sécurité pour conversations longues.
-
-Le dialogue semi-structuré ne doit pas précéder la validation du moteur structuré local.
-
-Les domaines RPS et prévention de rechute sont différés jusqu’à validation du moteur générique, des guards et des evals de sécurité.
+- extension contrôlée du stockage actuel versus storage-v5/IndexedDB ;
+- migration/rollback/anti-résurrection ;
+- extension safety long-session.
 
 ## Jalon I — Voix progressive
 
-La voix reste une capacité ultérieure et ne bloque pas la finalisation écrite.
+La voix ne bloque pas la finalisation écrite.
 
-Ordre cible :
+Règle : **Audio is transport. Text is state.**
 
-1. dictée vers le même modèle `Turn` texte ;
-2. lecture vocale des réponses ;
-3. conversation vocale tour par tour ;
-4. voix temps réel avec interruption lorsque les critères de sécurité sont satisfaits.
+Ordre :
 
-Le texte accepté reste la représentation canonique du dialogue ; l’audio brut n’est pas conservé par défaut.
+1. **dictée canonique** — capture → STT → texte éditable → envoi explicite ;
+2. **TTS** — lecture optionnelle d’une réponse textuelle canonique ;
+3. **conversation tour par tour** ;
+4. **realtime** après Voice Gate spécifique.
+
+Le premier Build vocal exclut speech-to-speech direct, audio durable, VAD métier et logique conversationnelle parallèle.
+
+## Parallélisation future
+
+Après BUILD-05A intégré et contrats figés, BUILD-05B et BUILD-05C peuvent être candidats à une parallélisation seulement si le contrôle des fichiers et des ressources logiques confirme leur indépendance.
+
+Les fusions vers `main` restent toujours séquentielles et repassent par le Freshness Gate global après chaque intégration.
 
 ## Règle de passage
 
-Chaque jalon nécessite des critères d’acceptation vérifiés, des risques documentés et une livraison traçable par Pull Request.
+Chaque jalon nécessite :
 
-Les futurs Builds ne doivent pas contourner la convergence analytique en mélangeant moteur de séance, fournisseur IA, mémoire, sécurité, stockage et voix dans un unique incrément.
+- critères d’acceptation vérifiés ;
+- risques documentés ;
+- Resource Locks explicites ;
+- livraison par Pull Request ;
+- CI sur le SHA exact ;
+- QA physique seulement lorsqu’elle apporte une preuve non automatisable ;
+- autorisation explicite avant fusion.
+
+Les futurs Builds ne doivent pas mélanger implicitement rôle, provider, mémoire, safety, stockage, moteur de séance et voix dans un incrément monolithique.
