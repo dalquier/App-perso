@@ -8,7 +8,7 @@ La mémoire conversationnelle sert à retrouver le contexte, les décisions, les
 
 ## 2. Consentement et activation au démarrage
 
-La mémoire conversationnelle n’est jamais activée silencieusement : elle repose soit sur un consentement permanent explicite et versionné, soit sur un consentement ponctuel.
+La mémoire conversationnelle n’est jamais activée silencieusement : elle repose soit sur un consentement permanent explicite et versionné, soit sur un consentement ponctuel, soit sur une directive explicite de désactivation pour la conversation courante.
 
 ### 2.1 Consentement permanent spécifique à Codex
 
@@ -48,6 +48,39 @@ Réponses attendues :
 
 Une réponse équivalente et non ambiguë peut être comprise. Tant que Damien n’a pas répondu, l’état est `consentement-en-attente` et aucun artefact permanent de mémoire ne doit être créé.
 
+### 2.3 Directive explicite `MEMORY = OFF`
+
+Une conversation peut porter la directive explicite suivante :
+
+```text
+MEMORY = OFF — Ne mémorise ni n’archive cette conversation. Ne pose pas la question « Enregistrer la conversation ? ». Après l’amorçage ProjectOS, commence directement la mission demandée.
+```
+
+Cette directive vaut instruction explicite de Damien pour la conversation courante.
+
+Effets :
+
+- aucune question `Enregistrer la conversation ?` ;
+- aucun identifiant de session mémoire ;
+- aucun index, aucune synthèse et aucune archive Drive de conversation ;
+- aucun chargement de mémoire conversationnelle au seul titre de la continuité ;
+- poursuite immédiate vers la mission après l’amorçage ;
+- aucun effet sur les artefacts GitHub, PR, documents, tests ou livrables exigés indépendamment de la mémoire.
+
+Pour Codex, `MEMORY = OFF` suspend le consentement permanent uniquement pour cette conversation précise. Le consentement permanent reste actif pour les autres conversations qui ne portent pas cette directive.
+
+### 2.4 Prompts générés automatiquement par les scripts MAÎTRE
+
+Tout script, analyseur, orchestrateur ou autre générateur ProjectOS qui produit un prompt opérationnel contenant une activation `POS =` ou `RPOS =` doit insérer immédiatement après cette activation la directive canonique `MEMORY = OFF` de la section 2.3.
+
+C’est le régime par défaut des prompts générés automatiquement : ils ne doivent jamais interrompre la mission pour demander `Enregistrer la conversation ?`.
+
+Cette règle s’applique notamment aux scripts sous `ProjectOS/scripts/**`, aux futurs scripts MAÎTRE, aux générateurs de prompts DeveloperOS et aux générateurs d’audit, QA, build ou analyse d’incidents.
+
+Un générateur ne peut utiliser un autre régime que si sa fonction exige explicitement une conversation enregistrée ; dans ce cas, il doit déclarer ce régime dans le prompt au lieu de retomber implicitement sur une question de consentement.
+
+Les tests d’un générateur contenant `POS =` ou `RPOS =` doivent vérifier la présence de `MEMORY = OFF` avant le début de la mission.
+
 ## 3. Effet d’une activation
 
 Après une activation, automatique avec Codex ou ponctuelle après un `oui`, l’agent :
@@ -66,9 +99,9 @@ Après une activation, automatique avec Codex ou ponctuelle après un `oui`, l�
 
 L’activation ne vaut pas autorisation d’archiver des secrets, données personnelles sensibles, données médicales brutes ou contenus confidentiels inutiles.
 
-## 4. Effet d’un non ou d’une révocation
+## 4. Effet d’un non, de `MEMORY = OFF` ou d’une révocation
 
-Après un `non` dans un régime à consentement ponctuel :
+Après un `non` dans un régime à consentement ponctuel ou lorsque `MEMORY = OFF` est présent :
 
 - poursuivre normalement la conversation ;
 - ne pas créer de synthèse de session ;
@@ -76,7 +109,7 @@ Après un `non` dans un régime à consentement ponctuel :
 - ne pas archiver la conversation brute ;
 - continuer néanmoins à documenter dans GitHub toute décision ou livraison que la tâche exige indépendamment de la mémoire conversationnelle.
 
-Le refus de mémoire ne bloque jamais le traitement du projet.
+Le refus ou la désactivation de mémoire ne bloque jamais le traitement du projet.
 
 ## 5. Hiérarchie et statut
 
@@ -112,6 +145,8 @@ Sélectionner uniquement les synthèses liées :
 - à la branche ou Pull Request ;
 - aux fichiers, fonctionnalités ou décisions concernés ;
 - à la période utile.
+
+Avec `MEMORY = OFF`, ne pas charger ces éléments uniquement pour recréer le contexte conversationnel ; les documents canoniques explicitement nécessaires à la mission restent consultables normalement.
 
 ## 8. Sessions à mémoriser
 
@@ -163,6 +198,8 @@ Pour une session enregistrée et significative, avant la réponse finale :
 5. distinguer les faits vérifiés des hypothèses ;
 6. indiquer ce qui n’a pas pu être archivé ou vérifié.
 
+Aucune clôture mémoire n’est exécutée pour une conversation `MEMORY = OFF`.
+
 ## 11. Archive intégrale
 
 L’archive intégrale est une archive secondaire de continuité, jamais une source de vérité.
@@ -176,6 +213,8 @@ Répartition obligatoire :
 La capture commence dès l’activation et s’effectue tour par tour selon `CONVERSATION_ARCHIVE_PIPELINE.md`. Elle contient les messages visibles exacts, toutes les pièces jointes réellement accessibles et les livrables générés. Les raisonnements internes et instructions invisibles sont exclus.
 
 Une archive n’est `complete` que si la transcription depuis l’activation et tous les fichiers accessibles ont été vérifiés. Toute limite d’accès, panne de connecteur ou perte d’historique impose `partial` ou `error`, avec cause explicite. Une archive intégrale ne doit jamais être nécessaire pour reprendre le projet.
+
+`MEMORY = OFF` interdit l’initialisation de cette archive pour la conversation concernée.
 
 ## 12. Sécurité
 
