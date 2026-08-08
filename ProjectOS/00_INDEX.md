@@ -19,6 +19,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 
 - `standards/TOOLCHAIN_POLICY.md` : politique obligatoire de développement frugal et rôle de chaque outil.
 - `standards/REPLIT_RUNTIME_CONTRACT.md` : contrat obligatoire pour toute application utilisant Replit ; mode runtime, Git hygiene, lancement direct, Preview native, Direct Run Smoke et récupération d’un workspace contaminé.
+- `standards/WORKSPACE_AND_FILE_LIFECYCLE.md` : espace de travail iCloud canonique pour les téléchargements, fichiers temporaires, échanges et livrables locaux, avec routage, rétention et règles de promotion vers GitHub/Drive.
 - `standards/CREDIT_OPTIMIZATION.md` : optimisation obligatoire des crédits, quotas et appels payants, avec recommandation d’outil avant chaque prompt opérationnel.
 - `standards/PARALLEL_EXECUTION.md` : détection, autorisation et orchestration des flux de travail indépendants.
 - `standards/PROGRESS_COMMUNICATION.md` : mises à jour factuelles sur les tâches réalisées, l’action en cours et le temps restant estimé.
@@ -41,6 +42,8 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 
 `standards/REPLIT_RUNTIME_CONTRACT.md` doit être chargé dès qu’une demande concerne Replit, Preview/Webview, Artifact, Workflow de lancement, port, serveur runtime, PWA exécutée dans Replit, import GitHub dans Replit ou création d’une nouvelle application destinée à y être exécutée.
 
+`standards/WORKSPACE_AND_FILE_LIFECYCLE.md` doit être chargé dès qu’une demande concerne un téléchargement, un fichier généré ou reçu, un fichier temporaire, un export, un ZIP/patch de transit, un classement local, un nettoyage de fichiers ou le choix d’une destination iCloud/Drive/GitHub.
+
 ## Décisions transverses
 
 - `ADR/ADR-001-FRUGAL-DEVELOPMENT-TOOLCHAIN.md` : ChatGPT et Codex développent ; Replit Starter exécute, teste, stocke et déploie.
@@ -62,6 +65,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 
 - `guides/SHORTCUT_AGENT_HANDOFF.md` : flux iOS Raccourcis pour collecter et classer les livraisons d’agents.
 - `guides/CONVERSATION_ARCHIVING.md` : usage iPhone pour enregistrer et retrouver une conversation.
+- `guides/WORKSPACE_IPHONE.md` : installation de `ProjectOS Workspace`, configuration Safari et construction des raccourcis `Ranger dans ProjectOS` et `Nettoyer Workspace`.
 
 ## Prompts
 
@@ -114,7 +118,7 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 
 - GitHub : code, règles, manifests, ADR, documentation versionnée, index, synthèses conversationnelles et Incident Ledger expurgé.
 - Working Copy : copie Git locale sur iPhone.
-- iCloud Drive : fichiers locaux et échanges Pyto ; aucun transit iCloud n’est requis pour l’archive conversationnelle.
+- iCloud Drive : `ProjectOS Workspace` pour les téléchargements, fichiers de travail, échanges et livrables locaux ; autres données locales/Pyto selon leur projet. iCloud n’est jamais une seconde branche canonique du code.
 - Google Drive : documents collaboratifs, corpus, sauvegardes horodatées et archives conversationnelles intégrales privées.
 - Replit Starter : environnement d’exécution, de test, de stockage de travail et de déploiement ; jamais source canonique.
 
