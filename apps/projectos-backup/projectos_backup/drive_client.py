@@ -43,10 +43,33 @@ def _utc_now() -> str:
 
 
 def _write_json_atomic(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".part")
-    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
-    os.replace(temporary, path)
+    encoded = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)
+    last_error = None
+    for attempt in range(3):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_name(
+            f".{path.name}.{os.getpid()}.{time.time_ns()}.{attempt}.part"
+        )
+        try:
+            temporary.write_text(encoded, encoding="utf-8")
+            os.replace(temporary, path)
+            return
+        except FileNotFoundError as exc:
+            # iCloud can briefly rematerialise the parent directory. A unique
+            # temporary name also prevents two resumable workers stealing the
+            # same STATE.json.part from one another.
+            last_error = exc
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+        except Exception:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
+    raise last_error or FileNotFoundError(path)
 
 
 def manifest_files(manifest: dict) -> dict[str, dict]:
