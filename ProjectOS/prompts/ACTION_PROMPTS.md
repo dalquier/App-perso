@@ -21,7 +21,17 @@ Interprétation obligatoire de cet alias :
 3. suivre sa séquence de chargement dynamique ;
 4. utiliser les références vivantes, manifests et ADR résolus ;
 5. traiter ensuite la demande de l’utilisateur ;
-6. avec Codex, activer automatiquement la mémoire et l’archive Drive puis terminer par `Mémoire Codex : enregistrement activé.` ; avec ChatGPT ou un autre outil, terminer par `Enregistrer la conversation ?`.
+6. appliquer le régime de mémoire défini dans `CONVERSATION_MEMORY.md`, y compris la priorité de `MEMORY = OFF` lorsqu’elle est explicitement présente.
+
+## Prompts générés automatiquement
+
+Tout script, analyseur, orchestrateur ou script MAÎTRE qui génère un prompt comportant `POS =` ou `RPOS =` insère immédiatement après cette activation :
+
+```text
+MEMORY = OFF — Ne mémorise ni n’archive cette conversation. Ne pose pas la question « Enregistrer la conversation ? ». Après l’amorçage ProjectOS, commence directement la mission demandée.
+```
+
+Le prompt généré ne doit donc pas s’arrêter pour demander un consentement mémoire. Cette désactivation est limitée à la conversation générée et ne révoque aucun consentement permanent global.
 
 Dans le projet ChatGPT `App perso`, ProjectOS est déjà actif : les commandes ci-dessous peuvent être utilisées sans répéter la phrase d’activation.
 
@@ -76,7 +86,7 @@ Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, p
 ## Créer un nouveau projet
 
 ```text
-Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis crée le manifeste, l’architecture, les ADR initiales, le README, les tests essentiels, la CI et le plan de livraison. Utilise GitHub comme source de vérité, Replit Starter comme cloud par défaut et Pyto comme compagnon iPhone permanent lorsque pertinent.
+Active ProjectOS depuis `dalquier/App-perso`, charge `ProjectOS/BOOTSTRAP.md`, puis crée le manifeste, l’architecture, les ADR initiales, le README, les tests essentiels, la CI et le plan de livraison. Si Replit est prévu pour exécuter, tester, prévisualiser, héberger ou déployer l’application, crée aussi le Replit Runtime Contract, choisis explicitement le mode runtime et vérifie la Preview native avant de déclarer l’environnement prêt. Utilise GitHub comme source de vérité et Pyto comme compagnon iPhone permanent lorsque pertinent.
 ```
 
 ## Clôturer une session enregistrée

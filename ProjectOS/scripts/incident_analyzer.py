@@ -133,6 +133,8 @@ def build_analysis_prompt(summary: dict, scope_text: str, target: str) -> str:
     }[target]
     return f"""RPOS = Recharge ProjectOS depuis `dalquier/App-perso`, branche `main`.
 
+MEMORY = OFF — Ne mémorise ni n’archive cette conversation. Ne pose pas la question « Enregistrer la conversation ? ». Après l’amorçage ProjectOS, commence directement la mission demandée.
+
 Charge `ProjectOS/BOOTSTRAP.md` et toutes ses références obligatoires, notamment `standards/INCIDENT_LEARNING.md`, `standards/CODEX_GITHUB_RELIABILITY.md` et `observability/AGGREGATOR_CONTRACT.md`.
 
 {target_hint}
