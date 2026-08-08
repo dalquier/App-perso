@@ -6,7 +6,7 @@
 - Codex : outil obligatoire pour les nouveaux Builds, les projets multi-fichiers, les changements de code importants, les refactorings, les migrations, le débogage transversal, les tests et les Pull Requests associées.
 - GitHub : source de vérité de tout contenu versionnable et lieu canonique de livraison.
 - Working Copy : client Git principal sur iPhone.
-- Replit Starter : environnement cloud d’exécution, de test, de stockage de travail, d’hébergement et de déploiement. Son agent IA n’est pas un outil de développement par défaut.
+- Replit Starter : environnement cloud d’exécution, de test, de stockage de travail, d’hébergement et de déploiement. Son agent IA n’est pas un outil de développement par défaut. Tout projet utilisant Replit applique `REPLIT_RUNTIME_CONTRACT.md`.
 - Pyto : compagnon permanent pour fonctions iPhone natives, automatisations locales, accès Fichiers/iCloud et utilitaires.
 - Scriptable : widgets et automatisations iOS simples lorsque JavaScript est le meilleur choix.
 - Google Drive : documents collaboratifs, sauvegardes et archives conversationnelles intégrales privées ; jamais source canonique du code.
@@ -27,6 +27,9 @@
 9. Un ZIP, un export Pyto, un artefact Replit ou une copie locale est un moyen d’installation, de test ou de sauvegarde, jamais la livraison canonique.
 10. Tout changement durable effectué pendant un test Replit doit être reversé dans GitHub.
 11. Pour une conversation enregistrée, GitHub ne reçoit que l’index et la synthèse ; le verbatim et les fichiers vont directement dans `App-perso/ProjectOS/Conversation-Archives/<Projet>/<année>/<Session>/` sur Drive.
+12. Un runtime Replit doit être considéré comme jetable : il ne doit contenir aucun travail unique nécessaire à la continuité du projet.
+13. Un Replit `dirty`, `ahead` ou `diverged` n’est pas synchronisé tant que les changements locaux ne sont pas classés ; `Pull`, `Sync` et `Push` sont interdits par défaut jusqu’à résolution.
+14. `Open Artifact`, un Workflow manuel ou le panneau Validation ne remplacent jamais la vraie Preview/Webview du produit canonique sauf contrat explicite contraire.
 
 ## Routage des développements
 
@@ -34,15 +37,21 @@ Appliquer `CODE_WORK_ROUTING.md` et `TOOLCHAIN_POLICY.md` avant toute implément
 
 - changement limité, local et réversible : ChatGPT peut l’exécuter directement dans GitHub ;
 - nouveau Build, projet multi-fichiers, architecture, refactoring substantiel, migration ou validation approfondie : Codex obligatoire ;
-- exécution, test fonctionnel, hébergement et déploiement : Replit lorsque pertinent ;
+- exécution, test fonctionnel, hébergement et déploiement : Replit lorsque pertinent, après `REPLIT RUNTIME PREFLIGHT` ;
 - fonctions natives iPhone et tests locaux : Pyto ou Scriptable selon la technologie.
 
 Codex travaille contre le dépôt et la branche canoniques. Sa sortie attendue est une livraison GitHub vérifiable, pas un texte à recopier manuellement.
+
+Pour un nouveau projet destiné à Replit, le `REPLIT_RUNTIME_CONTRACT.md` spécifique au projet doit être créé avant la première recette Replit. Pour une évolution qui modifie build, serveur, port, PWA, service worker, racine monorepo ou configuration Replit, ce contrat doit être relu et éventuellement mis à jour dans la même livraison.
 
 ## Maîtrise des crédits Replit
 
 Les crédits IA Replit sont réservés à une capacité propre à Replit qui ne peut raisonnablement être traitée par ChatGPT ou Codex. Toute exception doit être annoncée et justifiée avant consommation. La génération ordinaire de code, les correctifs, refactorings et tests ne constituent pas une exception.
 
+Un Agent Replit ne doit jamais être utilisé pour reconstruire un produit déjà canonique dans GitHub. Une exception limitée à la configuration propre au runtime Replit reste possible sous les conditions de `TOOLCHAIN_POLICY.md`, et ne doit produire aucun changement métier durable uniquement dans Replit.
+
 ## Choix d’outil
 
 Choisir l’outil qui réduit le plus les manipulations manuelles tout en gardant GitHub comme référence. Ne pas imposer Replit, Pyto ou une WebView lorsque la plateforme ne convient pas au besoin. Ne pas contourner Codex pour un travail substantiel en fragmentant artificiellement la livraison dans la conversation.
+
+Lorsque plusieurs surfaces Replit coexistent, identifier d’abord la surface réellement utilisée : `Preview/Webview`, `Artifact`, `Workflow`, `Validation` ou Agent. Ne jamais déduire que l’une exécute le produit canonique sans preuve du runtime et du SHA.
