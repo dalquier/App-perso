@@ -22,6 +22,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/WORKSPACE_AND_FILE_LIFECYCLE.md` : espace de travail iCloud canonique pour les téléchargements, fichiers temporaires, échanges et livrables locaux, avec routage, rétention et règles de promotion vers GitHub/Drive.
 - `standards/CREDIT_OPTIMIZATION.md` : optimisation obligatoire des crédits, quotas et appels payants, avec recommandation d’outil avant chaque prompt opérationnel.
 - `standards/PARALLEL_EXECUTION.md` : détection, autorisation et orchestration des flux de travail indépendants.
+- `standards/GITHUB_MERGE_COORDINATION.md` : coordination globale de toutes les Pull Requests concurrentes, Resource Locks, Freshness Gate, preuve CI sur le SHA exact et fusion séquentielle vers les branches canoniques.
 - `standards/PROGRESS_COMMUNICATION.md` : mises à jour factuelles sur les tâches réalisées, l’action en cours et le temps restant estimé.
 - `standards/LONG_CONTENT_DELIVERY.md` : choix entre réponse conversationnelle, fichier téléchargeable et livraison GitHub pour les contenus longs, prompts et code.
 - `standards/AGENT_USAGE_TRACKING.md` : suivi des tâches Codex/Work, relevés de quota, règles d’attribution et confidentialité.
@@ -43,6 +44,8 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 `standards/REPLIT_RUNTIME_CONTRACT.md` doit être chargé dès qu’une demande concerne Replit, Preview/Webview, Artifact, Workflow de lancement, port, serveur runtime, PWA exécutée dans Replit, import GitHub dans Replit ou création d’une nouvelle application destinée à y être exécutée.
 
 `standards/WORKSPACE_AND_FILE_LIFECYCLE.md` doit être chargé dès qu’une demande concerne un téléchargement, un fichier généré ou reçu, un fichier temporaire, un export, un ZIP/patch de transit, un classement local, un nettoyage de fichiers ou le choix d’une destination iCloud/Drive/GitHub.
+
+`standards/GITHUB_MERGE_COORDINATION.md` doit être chargé dès qu'une demande concerne la préparation, la revue, la coordination ou la fusion d'une Pull Request vers une branche canonique, ainsi que lorsqu'une parallélisation produit plusieurs PR concurrentes dans le même dépôt.
 
 ## Décisions transverses
 
