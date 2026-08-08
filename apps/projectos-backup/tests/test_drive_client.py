@@ -252,6 +252,19 @@ class DriveClientTests(unittest.TestCase):
             self.assertEqual(result["verified_files"], len(files))
             self.assertIn("finalizeSync", [action for action, _ in client.calls])
 
+    def test_same_sha_is_not_uploaded_when_remote_metadata_differs(self):
+        with tempfile.TemporaryDirectory() as raw:
+            current = Path(raw) / "Current"
+            current.mkdir()
+            local, client = prepare(current, [("same.txt", b"identique")])
+            remote_record = dict(local["sources"][0]["files"][0])
+            remote_record["mtimeNs"] = 1
+            client.remote = manifest([remote_record], "run-old")
+            result = sync_current(current, client)
+            self.assertEqual(result["uploaded_files"], 0)
+            self.assertEqual(result["unchanged_files"], 1)
+            self.assertNotIn("uploadBatch", [action for action, _ in client.calls])
+
     def test_partitions_on_raw_byte_limit(self):
         with tempfile.TemporaryDirectory() as raw:
             current = Path(raw) / "Current"

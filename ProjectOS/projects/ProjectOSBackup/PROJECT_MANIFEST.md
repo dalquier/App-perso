@@ -72,6 +72,7 @@ Le dossier applicatif `iCloud Drive/Scriptable` reste inclus lorsqu'il est séle
 - BUILD-02.2 : miroir incrémental vers Google Drive et automatisation personnelle par Raccourcis — intégré.
 - BUILD-02.3 : interface native v0.3, mode local rapide, cache de reprise et lots Drive — intégré ; timeout Drive observé en recette iPhone.
 - BUILD-02.4 : v0.4 — session Drive persistante, petits lots adaptatifs, reprise après timeout/suspension et synthèse finale — en construction.
+- BUILD-02.4 UI2 : écran principal compact, Paramètres dédié, exclusions par lignes, diagnostic unifié et progression de phase cohérente — construit, recette iPhone requise.
 - BUILD-03 : capture cloud de `dalquier/App-perso`, restauration guidée et recette de crise.
 - BUILD-03.1 : connecteurs GitHub, archive Codex/ChatGPT et audit Replit selon `docs/SOURCE_CONNECTORS.md`.
 - BUILD-03.1a : tampon iCloud et protocole Drive append-only des conversations — construit, recette iPhone requise.

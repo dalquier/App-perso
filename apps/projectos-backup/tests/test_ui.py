@@ -5,12 +5,17 @@ from types import SimpleNamespace
 
 from projectos_backup.ui import (
     backup_summary,
+    compact_summary_copy,
+    compact_filter_summary,
     error_copy,
     load_result,
     filter_summary,
+    filter_editor_rows,
+    normalize_filter_item,
     overall_progress,
     parse_filter_text,
     progress_copy,
+    progress_color,
     progress_percent,
     progress_ratio,
     progress_stages,
@@ -42,6 +47,9 @@ class ProgressTests(unittest.TestCase):
         self.assertIn('toutes extensions incluses',filter_summary({
             'ignoredDirectories':['.git'],'ignoredFiles':['.DS_Store'],'ignoredExtensions':[],
         }))
+        self.assertEqual(compact_filter_summary({
+            'ignoredDirectories':['.git'],'ignoredFiles':['.DS_Store'],'ignoredExtensions':[],
+        }), '1 dossiers · 1 fichiers · 0 extensions')
 
     def test_responsive_layout_never_overlaps_sources_and_actions(self):
         for height in (600, 667, 736, 820, 932):
@@ -66,7 +74,7 @@ class ProgressTests(unittest.TestCase):
             {"phase": "upload", "completed": 2, "total": 4, "path": "/tmp/example.py"}
         )
         self.assertEqual(title, "Envoi vers Google Drive")
-        self.assertEqual(counter, "50 %   ·   2 / 4")
+        self.assertEqual(counter, "2 / 4   ·   50 % de cette étape")
         self.assertEqual(filename, "example.py")
         self.assertEqual(ratio, 0.5)
 
@@ -75,7 +83,7 @@ class ProgressTests(unittest.TestCase):
             "phase": "upload_prepare", "completed": 3, "total": 10, "path": "Pyto/example.py",
         })
         self.assertEqual(title, "Préparation des envois")
-        self.assertEqual(counter, "30 %   ·   3 / 10")
+        self.assertEqual(counter, "3 / 10   ·   30 % de cette étape")
         self.assertEqual(filename, "example.py")
         self.assertEqual(ratio, 0.3)
 
@@ -110,6 +118,17 @@ class ProgressTests(unittest.TestCase):
         self.assertEqual(progress_stages({"phase": "archive_upload"}), ("En attente", "Archives"))
         self.assertEqual(progress_stages({"phase": "drive_wake", "localComplete": True}), ("Terminé", "Connexion"))
 
+    def test_progress_colors_identify_the_active_pipeline(self):
+        self.assertEqual(progress_color({"phase": "mirror"}), "SYSTEM_BLUE")
+        self.assertEqual(progress_color({"phase": "archive_upload"}), "SYSTEM_PURPLE")
+        self.assertEqual(progress_color({"phase": "upload"}), "SYSTEM_TEAL")
+        self.assertEqual(progress_color({"phase": "complete"}), "SYSTEM_GREEN")
+
+    def test_filter_editor_normalizes_individual_rows(self):
+        self.assertEqual(normalize_filter_item(" log, ", "ignoredExtensions"), ".log")
+        self.assertEqual(normalize_filter_item(".git", "ignoredDirectories"), ".git")
+        self.assertEqual(filter_editor_rows({"ignoredFiles": ["a", "A", "b"]}, "ignoredFiles"), ["a", "b"])
+
     def test_summary_is_serialisable_and_readable(self):
         local = SimpleNamespace(copied_files=3, resumed_files=2, deleted_files=1)
         local.unchanged_files = 5
@@ -126,6 +145,10 @@ class ProgressTests(unittest.TestCase):
         self.assertEqual(result["drive"]["durationSeconds"], 2.8)
         self.assertIn("3 copiés", local_line)
         self.assertIn("9 vérifiés", drive_line)
+        headline, compact_drive, compact_local = compact_summary_copy(result)
+        self.assertIn("9 fichiers vérifiés", headline)
+        self.assertIn("4 envoyés", compact_drive)
+        self.assertIn("3 copiés", compact_local)
 
     def test_result_round_trip_and_invalid_file(self):
         with tempfile.TemporaryDirectory() as directory:

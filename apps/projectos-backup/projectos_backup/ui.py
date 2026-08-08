@@ -102,6 +102,14 @@ def filter_summary(filters: dict) -> str:
     return f"{directories} dossiers · {files} fichiers{suffix}"
 
 
+def compact_filter_summary(filters: dict) -> str:
+    return (
+        f"{len(filters.get('ignoredDirectories', []))} dossiers · "
+        f"{len(filters.get('ignoredFiles', []))} fichiers · "
+        f"{len(filters.get('ignoredExtensions', []))} extensions"
+    )
+
+
 def should_emit_progress(previous: dict | None, event: dict, now: float, interval: float = PROGRESS_THROTTLE_SECONDS) -> bool:
     """Throttle cosmetic updates while always showing phase changes and completion."""
     if previous is None:
@@ -151,10 +159,21 @@ def progress_copy(event: dict) -> tuple[str, str, str, float]:
     if event.get("maxAttempts"):
         counter = f"Tentative {event.get('attempt', 1)} / {event['maxAttempts']}"
     else:
-        counter = f"{progress_percent(completed, total)} %   ·   {completed} / {total}" if total else "Préparation en cours"
+        counter = f"{completed} / {total}   ·   {progress_percent(completed, total)} % de cette étape" if total else "Préparation en cours"
     message = event.get("message", "")
     filename = message[:100] if message else (Path(path).name[:60] if path else "Les fichiers restent disponibles pendant l'opération.")
     return title, counter, filename, ratio
+
+
+def progress_color(event: dict) -> str:
+    phase = event.get("phase")
+    if phase in ARCHIVE_PHASES:
+        return "SYSTEM_PURPLE"
+    if phase in {"complete", "publish"}:
+        return "SYSTEM_GREEN"
+    if phase in DRIVE_PHASES:
+        return "SYSTEM_TEAL"
+    return "SYSTEM_BLUE"
 
 
 def progress_stages(event: dict) -> tuple[str, str]:
@@ -179,13 +198,42 @@ def responsive_layout(width: float, height: float) -> dict[str, tuple[int, int, 
     page_height = max(600, int(height))
     margin = 16
     table_top = 308
-    action_height = 174
+    action_height = 82
     action_y = page_height - action_height - margin
     table_height = max(96, action_y - table_top - 10)
     return {
         "table": (0, table_top, page_width, table_height),
         "actions": (margin, action_y, page_width - 2 * margin, action_height),
     }
+
+
+FILTER_SECTIONS = (
+    ("ignoredDirectories", "📁", "Dossiers", "Ex. .git ou __pycache__"),
+    ("ignoredFiles", "📄", "Fichiers", "Ex. .DS_Store"),
+    ("ignoredExtensions", "🏷", "Extensions", "Ex. log ou .tmp"),
+)
+
+
+def normalize_filter_item(value: str, key: str) -> str:
+    """Normalize one exclusion entered on iPhone without comma editing."""
+    item = str(value).strip().strip(",")
+    if not item:
+        return ""
+    if key == "ignoredExtensions":
+        item = item.casefold()
+        if not item.startswith("."):
+            item = f".{item}"
+    return item
+
+
+def filter_editor_rows(filters: dict, key: str) -> list[str]:
+    """Return stable, de-duplicated rows for the list editor."""
+    result = []
+    for raw in filters.get(key, []):
+        item = normalize_filter_item(raw, key)
+        if item and item.casefold() not in {entry.casefold() for entry in result}:
+            result.append(item)
+    return sorted(result, key=str.casefold)
 
 
 def backup_summary(local, drive: dict, local_seconds: float = 0.0, drive_seconds: float = 0.0, archives=None) -> dict:
@@ -232,6 +280,20 @@ def summary_copy(summary: dict) -> tuple[str, str]:
     return local_line, drive_line
 
 
+def compact_summary_copy(summary: dict) -> tuple[str, str, str]:
+    """Three short lines sized for the iPhone status cards."""
+    local, drive, archives = summary.get("local", {}), summary.get("drive", {}), summary.get("archives", {})
+    headline = f"✓ {drive.get('verified', 0)} fichiers vérifiés sur Google Drive"
+    drive_line = (
+        f"☁️ {drive.get('uploaded', 0)} envoyés · {drive.get('unchanged', 0)} inchangés"
+        f" · {drive.get('resumed', 0)} repris"
+    )
+    local_line = f"📱 {local.get('copied', 0)} copiés · {local.get('deleted', 0)} supprimés"
+    if archives.get("pending"):
+        local_line += f" · 💬 {archives.get('pending', 0)} archive(s) en attente"
+    return headline, drive_line, local_line
+
+
 def error_copy(exc: Exception) -> tuple[str, str]:
     """Return a readable headline plus a complete diagnostic."""
     headline = str(exc).strip() or exc.__class__.__name__
@@ -255,6 +317,239 @@ def load_result(path: Path) -> dict | None:
     return payload if isinstance(payload, dict) else None
 
 
+def _set_button_appearance(button, background, foreground, radius=11) -> None:
+    """Apply legible button colors across PytoUI versions."""
+    button.background_color = background
+    for attribute in ("title_color", "tint_color"):
+        try:
+            setattr(button, attribute, foreground)
+        except (AttributeError, TypeError):
+            pass
+    try:
+        button.corner_radius = radius
+    except (AttributeError, TypeError):
+        pass
+
+
+def _solid_white(ui):
+    try:
+        return ui.Color.white()
+    except (AttributeError, TypeError):
+        try:
+            return ui.Color(1, 1, 1, 1)
+        except (AttributeError, TypeError):
+            return ui.SystemColors.SYSTEM_BACKGROUND
+
+
+class FilterSettingsController:
+    """Retained list editor; bound callbacks remain alive while the sheet is open."""
+
+    def __init__(self, app):
+        self.app, self.ui = app, app.ui
+        self.values = {key: filter_editor_rows(app.store.filters(), key) for key, *_ in FILTER_SECTIONS}
+        self.key = "ignoredDirectories"
+        self.view = self.ui.View()
+        self.view.title = "Exclusions"
+        self.view.size = (390, 600)
+        self.view.background_color = self.ui.SystemColors.SYSTEM_BACKGROUND
+
+        title = self.ui.Label("Exclusions de sauvegarde")
+        title.frame = (18, 14, 250, 30)
+        intro = self.ui.Label("Chaque règle est indépendante. Balayez une ligne pour la supprimer.")
+        intro.frame = (18, 46, 354, 42)
+        intro.number_of_lines = 2
+        self.view.add_subview(title); self.view.add_subview(intro)
+
+        self.mode_buttons = []
+        actions = (self._show_directories, self._show_files, self._show_extensions)
+        for index, ((_, icon, label, _), action) in enumerate(zip(FILTER_SECTIONS, actions)):
+            button = self.ui.Button(title=f"{icon} {'Types' if label == 'Extensions' else label}")
+            button.frame = (18 + index * 119, 94, 112, 38)
+            button.action = action
+            self.view.add_subview(button)
+            self.mode_buttons.append(button)
+
+        self.table = self.ui.TableView(style=self.ui.TableViewStyle.INSET_GROUPED)
+        self.table.frame = (0, 140, 390, 260)
+        self.table.did_delete_cell = self._delete
+        self.view.add_subview(self.table)
+
+        self.input = self.ui.TextField()
+        self.input.frame = (18, 408, 254, 42)
+        self.add_button = self.ui.Button(title="＋ Ajouter")
+        self.add_button.frame = (280, 408, 92, 42)
+        self.add_button.action = self._add
+        self.reset_button = self.ui.Button(title="↺ Valeurs recommandées")
+        self.reset_button.frame = (18, 460, 190, 38)
+        self.reset_button.action = self._reset
+        self.cancel_button = self.ui.Button(title="Annuler")
+        self.cancel_button.frame = (18, 524, 110, 48)
+        self.cancel_button.action = self._cancel
+        self.save_button = self.ui.Button(title="Enregistrer")
+        self.save_button.frame = (214, 524, 158, 48)
+        self.save_button.action = self._save
+        for item in (self.input, self.add_button, self.reset_button, self.cancel_button, self.save_button):
+            self.view.add_subview(item)
+        self._style(); self._refresh()
+
+    def _style(self):
+        blue = self.app._color("SYSTEM_BLUE", "LABEL")
+        white = _solid_white(self.ui)
+        secondary = self.app._color("TERTIARY_SYSTEM_BACKGROUND", "SYSTEM_BACKGROUND")
+        for button in self.mode_buttons + [self.add_button, self.reset_button, self.cancel_button]:
+            _set_button_appearance(button, secondary, blue)
+        _set_button_appearance(self.save_button, blue, white, radius=13)
+
+    def _set_mode(self, key: str):
+        self.key = key
+        self.input.text = ""
+        self._refresh()
+
+    def _show_directories(self, sender=None): self._set_mode("ignoredDirectories")
+    def _show_files(self, sender=None): self._set_mode("ignoredFiles")
+    def _show_extensions(self, sender=None): self._set_mode("ignoredExtensions")
+
+    def _refresh(self):
+        selected = self.app._color("SYSTEM_BLUE", "LABEL")
+        selected_text = _solid_white(self.ui)
+        normal = self.app._color("TERTIARY_SYSTEM_BACKGROUND", "SYSTEM_BACKGROUND")
+        for button, (key, *_rest) in zip(self.mode_buttons, FILTER_SECTIONS):
+            _set_button_appearance(button, selected if key == self.key else normal, selected_text if key == self.key else selected)
+        section = next(item for item in FILTER_SECTIONS if item[0] == self.key)
+        self.input.placeholder = section[3]
+        cells = []
+        for value in self.values[self.key]:
+            cell = self.ui.TableViewCell(text=f"{section[1]}  {value}")
+            cell.detail_text_label.text = "Balayez vers la gauche pour supprimer"
+            cell.removable = True
+            cells.append(cell)
+        if not cells:
+            cell = self.ui.TableViewCell(text="Aucune exclusion")
+            cell.detail_text_label.text = "Tous les éléments de cette catégorie sont sauvegardés"
+            cells.append(cell)
+        self.table.set_cells(cells)
+
+    def _add(self, sender=None):
+        item = normalize_filter_item(self.input.text or "", self.key)
+        if not item:
+            return
+        if item.casefold() not in {value.casefold() for value in self.values[self.key]}:
+            self.values[self.key].append(item)
+            self.values[self.key].sort(key=str.casefold)
+        self.input.text = ""
+        self._refresh()
+
+    def _delete(self, section, index: int):
+        if 0 <= index < len(self.values[self.key]):
+            self.values[self.key].pop(index)
+            self._refresh()
+
+    def _reset(self, sender=None):
+        self.values = {key: list(DEFAULT_FILTERS[key]) for key, *_ in FILTER_SECTIONS}
+        self._refresh()
+
+    def _cancel(self, sender=None):
+        self.view.close()
+        self.app._filter_controller = None
+
+    def _save(self, sender=None):
+        self.app.store.set_filters(
+            self.values["ignoredDirectories"], self.values["ignoredFiles"], self.values["ignoredExtensions"],
+        )
+        self.app.message_label.text = "Exclusions enregistrées pour la prochaine sauvegarde."
+        self.app.refresh()
+        if self.app._settings_controller:
+            self.app._settings_controller.refresh()
+        self.view.close()
+        self.app._filter_controller = None
+
+    def show(self):
+        self.ui.show_view(self.view, self.ui.PresentationMode.SHEET)
+
+
+class SettingsController:
+    """Dedicated compact settings sheet for storage, sources, filters and Drive."""
+
+    def __init__(self, app):
+        self.app, self.ui = app, app.ui
+        self.view = self.ui.View()
+        self.view.title = "Paramètres"
+        self.view.size = (390, 620)
+        self.view.background_color = self.ui.SystemColors.SYSTEM_BACKGROUND
+        title = self.ui.Label("⚙️  Paramètres")
+        title.frame = (18, 14, 250, 34)
+        self.done = self.ui.Button(title="Terminé")
+        self.done.frame = (276, 12, 96, 38)
+        self.done.action = self._close
+        self.table = self.ui.TableView(style=self.ui.TableViewStyle.INSET_GROUPED)
+        self.table.frame = (0, 62, 390, 430)
+        self.table.did_select_cell = self._selected
+        self.add = self.ui.Button(title="＋ Ajouter un dossier source")
+        self.add.frame = (18, 510, 354, 46)
+        self.add.action = self._add_source
+        self.view.add_subview(title); self.view.add_subview(self.done)
+        self.view.add_subview(self.table); self.view.add_subview(self.add)
+        blue = self.app._color("SYSTEM_BLUE", "LABEL")
+        white = _solid_white(self.ui)
+        secondary = self.app._color("TERTIARY_SYSTEM_BACKGROUND", "SYSTEM_BACKGROUND")
+        _set_button_appearance(self.done, blue, white)
+        _set_button_appearance(self.add, secondary, blue)
+        self.refresh()
+
+    def refresh(self):
+        config = self.app.store.load()
+        destination = "À choisir"
+        if config.get("destinationBookmark"):
+            try: destination = Path(resolve_folder(config["destinationBookmark"])).name or "Configuré"
+            except PytoUnavailable: destination = "Accès à renouveler"
+        source_count = len(config.get("sources", []))
+        enabled_count = sum(1 for source in config.get("sources", []) if source.get("enabled", True))
+        filters = compact_filter_summary(config.get("filters", {}))
+        archive_text = "Destination requise"
+        if config.get("destinationBookmark"):
+            try:
+                summary = queue_summary(initialize_buffer(buffer_root(resolve_folder(config["destinationBookmark"]))))
+                archive_text = f"{summary['pendingTotal']} en attente · {summary['Verified']} vérifiées"
+            except (OSError, PytoUnavailable): archive_text = "État indisponible"
+        rows = (
+            ("📍  Miroir local", destination),
+            ("📂  Dossiers sources", f"{enabled_count} actifs sur {source_count}"),
+            ("🚫  Exclusions", filters),
+            ("☁️  Google Drive", "Tester la connexion et l’accès"),
+            ("💬  Archives Codex", archive_text),
+        )
+        cells = []
+        for title, detail in rows:
+            cell = self.ui.TableViewCell(text=title)
+            cell.detail_text_label.text = detail
+            cell.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
+            cells.append(cell)
+        self.table.set_cells(cells)
+
+    def _selected(self, section, index: int):
+        section.table_view.deselect_row()
+        if index == 0:
+            self.view.close(); self.app._settings_controller = None; self.app._choose_destination()
+        elif index == 1:
+            self.app.alert("Dossiers sources", "Ajoutez un dossier ci-dessous. Les dossiers actifs se suspendent ou se réactivent depuis l’écran principal.")
+        elif index == 2:
+            self.view.close(); self.app._settings_controller = None; self.app._show_filter_settings()
+        elif index == 3:
+            self.view.close(); self.app._settings_controller = None; self.app._test_drive()
+        elif index == 4:
+            self.app.alert("Archives Codex", "Les archives non confirmées restent dans iCloud. Après vérification Drive, elles sont conservées 30 jours.")
+
+    def _add_source(self, sender=None):
+        self.view.close(); self.app._settings_controller = None; self.app._add_source()
+
+    def _close(self, sender=None):
+        self.view.close()
+        self.app._settings_controller = None
+
+    def show(self):
+        self.ui.show_view(self.view, self.ui.PresentationMode.SHEET)
+
+
 class BackupApplication:
     def __init__(self):
         self.ui = _ui()
@@ -265,6 +560,8 @@ class BackupApplication:
         self._operation = None
         self._last_error_detail = ""
         self._navigation = None
+        self._settings_controller = None
+        self._filter_controller = None
         self._result_path = self.store.directory / RESULT_FILE
 
         self.root = self.ui.View()
@@ -277,18 +574,23 @@ class BackupApplication:
         self.header.frame = (16, 12, 358, 82)
         self.header.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.state_label = self.ui.Label("ProjectOS Backup")
-        self.state_label.frame = (16, 9, 238, 25)
+        self.state_label.frame = (16, 9, 205, 25)
         self.state_label.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.message_label = self.ui.Label("Configurez vos sources puis lancez la mise à jour.")
-        self.message_label.frame = (16, 36, 326, 38)
+        self.message_label.frame = (16, 36, 326, 40)
         self.message_label.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.message_label.number_of_lines = 3
-        self.close_button = self.ui.Button(title="✕ Fermer")
-        self.close_button.frame = (270, 8, 76, 30)
+        self.settings_button = self.ui.Button(title="⚙️")
+        self.settings_button.frame = (224, 6, 40, 34)
+        self.settings_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN]
+        self.settings_button.action = self._show_settings
+        self.close_button = self.ui.Button(title="Fermer")
+        self.close_button.frame = (270, 6, 76, 34)
         self.close_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN]
         self.close_button.action = self._close
         self.header.add_subview(self.state_label)
         self.header.add_subview(self.message_label)
+        self.header.add_subview(self.settings_button)
         self.header.add_subview(self.close_button)
         self.status = self.message_label
 
@@ -308,12 +610,12 @@ class BackupApplication:
         self.progress_fill.frame = (0, 0, 0, 12)
         self.progress_track.add_subview(self.progress_fill)
         self.file_label = self.ui.Label("Local → Google Drive · miroir vérifié")
-        self.local_stage = self.ui.Label("1  LOCAL    En attente")
+        self.local_stage = self.ui.Label("📱 Local · En attente")
         self.local_stage.frame = (16, 96, 157, 24)
-        self.local_stage.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
-        self.drive_stage = self.ui.Label("2  DRIVE    En attente")
+        self.local_stage.flex = [self.ui.AutoResizing.FLEXIBLE_RIGHT_MARGIN]
+        self.drive_stage = self.ui.Label("☁️ Drive · En attente")
         self.drive_stage.frame = (181, 96, 161, 24)
-        self.drive_stage.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
+        self.drive_stage.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN]
         self.file_label.frame = (16, 128, 326, 50)
         self.file_label.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.file_label.number_of_lines = 2
@@ -330,40 +632,18 @@ class BackupApplication:
         self.action_bar.frame = layout["actions"]
         self.action_bar.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
 
-        self.add_button = self.ui.Button(title="＋ Dossier")
-        self.add_button.frame = (234, 12, 108, 38)
-        self.add_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN]
-        self.add_button.action = self._add_source
         self.backup_button = self.ui.Button(title="Mettre à jour la sauvegarde")
-        self.backup_button.frame = (12, 108, 334, 54)
+        self.backup_button.frame = (12, 12, 334, 56)
         self.backup_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.backup_button.action = self._backup
 
-        self.detail_button = self.ui.Button(title="Afficher le détail")
-        self.detail_button.frame = (12, 62, 161, 34)
-        self.detail_button.flex = [self.ui.AutoResizing.FLEXIBLE_RIGHT_MARGIN, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
+        self.detail_button = self.ui.Button(title="Diagnostic")
+        self.detail_button.frame = (240, 12, 106, 56)
+        self.detail_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN]
         self.detail_button.action = self._show_error_detail
         self.detail_button.hidden = True
 
-        self.copy_button = self.ui.Button(title="Copier le diagnostic")
-        self.copy_button.frame = (181, 62, 161, 34)
-        self.copy_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
-        self.copy_button.action = self._copy_error_detail
-        self.copy_button.hidden = True
-
-        self.test_drive_button = self.ui.Button(title="✓ Drive")
-        self.test_drive_button.frame = (12, 12, 104, 38)
-        self.test_drive_button.flex = [self.ui.AutoResizing.FLEXIBLE_RIGHT_MARGIN]
-        self.test_drive_button.action = self._test_drive
-
-        self.filters_button = self.ui.Button(title="⚙ Filtres")
-        self.filters_button.frame = (123, 12, 104, 38)
-        self.filters_button.action = self._show_filter_settings
-
-        for view in (
-            self.test_drive_button, self.filters_button, self.add_button,
-            self.detail_button, self.copy_button, self.backup_button,
-        ):
+        for view in (self.detail_button, self.backup_button):
             self.action_bar.add_subview(view)
 
         for view in (self.header, self.progress_card, self.table, self.action_bar):
@@ -393,18 +673,13 @@ class BackupApplication:
                 view.corner_radius = radius
             except (AttributeError, TypeError):
                 pass
+        blue = self._color("SYSTEM_BLUE", "LABEL")
+        white = _solid_white(self.ui)
         secondary = self._color("TERTIARY_SYSTEM_BACKGROUND", "SYSTEM_BACKGROUND")
-        for button in (self.test_drive_button, self.filters_button, self.add_button):
-            button.background_color = secondary
-            try:
-                button.corner_radius = 10
-            except (AttributeError, TypeError):
-                pass
-        self.backup_button.background_color = self._color("SYSTEM_BLUE", "SYSTEM_BACKGROUND")
-        try:
-            self.backup_button.corner_radius = 14
-        except (AttributeError, TypeError):
-            pass
+        _set_button_appearance(self.settings_button, secondary, blue)
+        _set_button_appearance(self.close_button, secondary, blue)
+        _set_button_appearance(self.detail_button, secondary, blue)
+        _set_button_appearance(self.backup_button, blue, white, radius=14)
 
     def alert(self, title: str, message: str) -> str:
         alert = self.ui.Alert(title, message)
@@ -418,117 +693,75 @@ class BackupApplication:
             close()
 
     def _show_error_detail(self, sender=None) -> None:
-        if self._last_error_detail:
-            self.alert("Détail du diagnostic", self._last_error_detail)
-
-    def _copy_error_detail(self, sender=None) -> None:
         if not self._last_error_detail:
             return
-        try:
-            import pasteboard
-            pasteboard.set_string(self._last_error_detail)
-            self.message_label.text = "Diagnostic copié dans le presse-papiers."
-        except Exception:
-            self.alert("Diagnostic à copier", self._last_error_detail)
+        dialog = self.ui.Alert("Diagnostic technique", self._last_error_detail)
+        dialog.add_action("Fermer")
+        dialog.add_action("Copier")
+        if dialog.show() in ("Copier", 1):
+            try:
+                import pasteboard
+                pasteboard.set_string(self._last_error_detail)
+                self.message_label.text = "Diagnostic copié. Vous pouvez maintenant me l’envoyer."
+            except Exception:
+                self.alert("Copie indisponible", "Sélectionnez le texte du diagnostic manuellement.")
 
     def _set_controls_enabled(self, enabled: bool) -> None:
-        self.backup_button.enabled = enabled
-        self.add_button.enabled = enabled
-        self.test_drive_button.enabled = enabled
-        self.filters_button.enabled = enabled
+        # Keep the primary action legible while running; _running is the
+        # authoritative double-tap guard and the title explains the state.
+        self.backup_button.enabled = True
+        self.settings_button.enabled = enabled
+
+    def _set_state_color(self, state: str) -> None:
+        name = {
+            "success": "SYSTEM_GREEN", "warning": "SYSTEM_ORANGE",
+            "error": "SYSTEM_RED", "active": "SYSTEM_BLUE",
+        }.get(state, "SYSTEM_BLUE")
+        self.state_label.text_color = self._color(name, "LABEL")
+
+    def _set_diagnostic_visible(self, visible: bool) -> None:
+        self.detail_button.hidden = not visible
+        self.backup_button.frame = (12, 12, 220 if visible else 334, 56)
+
+    def _show_settings(self, sender=None) -> None:
+        if self._running:
+            return
+        self._settings_controller = SettingsController(self)
+        self._settings_controller.show()
 
     def _show_filter_settings(self, sender=None) -> None:
         if self._running:
             return
-        current = self.store.filters()
-        sheet = self.ui.View()
-        sheet.title = "Filtres de sauvegarde"
-        sheet.size = (390, 560)
-        sheet.background_color = self.ui.SystemColors.SYSTEM_BACKGROUND
-
-        title = self.ui.Label("Exclusions")
-        title.frame = (20, 18, 350, 32)
-        intro = self.ui.Label("Tout est sauvegardé sauf les éléments listés ici. Séparez les valeurs par des virgules.")
-        intro.frame = (20, 52, 350, 52)
-        intro.number_of_lines = 3
-
-        def field(label_text: str, y: int, value: str):
-            label = self.ui.Label(label_text)
-            label.frame = (20, y, 350, 24)
-            control = self.ui.TextField()
-            control.frame = (20, y + 26, 350, 42)
-            control.text = value
-            control.placeholder = "Aucune exclusion"
-            sheet.add_subview(label)
-            sheet.add_subview(control)
-            return control
-
-        directories = field("Dossiers ignorés", 112, ", ".join(current["ignoredDirectories"]))
-        files = field("Fichiers ignorés", 196, ", ".join(current["ignoredFiles"]))
-        extensions = field("Extensions ignorées", 280, ", ".join(current["ignoredExtensions"]))
-        hint = self.ui.Label("Exemple : .log, .tmp. Laissez vide pour sauvegarder toutes les extensions.")
-        hint.frame = (20, 350, 350, 44)
-        hint.number_of_lines = 2
-
-        reset = self.ui.Button(title="Valeurs recommandées")
-        reset.frame = (20, 410, 170, 42)
-        cancel = self.ui.Button(title="Annuler")
-        cancel.frame = (20, 474, 110, 46)
-        save = self.ui.Button(title="Enregistrer")
-        save.frame = (220, 474, 150, 46)
-
-        def reset_fields(_sender=None):
-            directories.text = ", ".join(DEFAULT_FILTERS["ignoredDirectories"])
-            files.text = ", ".join(DEFAULT_FILTERS["ignoredFiles"])
-            extensions.text = ""
-
-        def cancel_settings(_sender=None):
-            sheet.close()
-
-        def save_settings(_sender=None):
-            self.store.set_filters(
-                parse_filter_text(directories.text or ""),
-                parse_filter_text(files.text or ""),
-                parse_filter_text(extensions.text or "", extensions=True),
-            )
-            self.message_label.text = "Filtres enregistrés · appliqués à la prochaine sauvegarde."
-            self.refresh()
-            sheet.close()
-
-        reset.action = reset_fields
-        cancel.action = cancel_settings
-        save.action = save_settings
-        save.background_color = self._color("SYSTEM_BLUE", "SYSTEM_BACKGROUND")
-        for view in (title, intro, hint, reset, cancel, save):
-            sheet.add_subview(view)
-        self.ui.show_view(sheet, self.ui.PresentationMode.SHEET)
+        self._filter_controller = FilterSettingsController(self)
+        self._filter_controller.show()
 
     def _restore_last_result(self) -> None:
         result = load_result(self._result_path)
         if not result:
             return
         if result.get("status") == "complete":
-            local_line, drive_line = summary_copy(result)
-            self.state_label.text = "SAUVEGARDE VÉRIFIÉE"
-            self.message_label.text = result.get("finishedAt", "Résultat conservé")
+            headline, drive_line, local_line = compact_summary_copy(result)
+            self.state_label.text = "À JOUR"
+            self._set_state_color("success")
+            self.message_label.text = headline
             self.phase_label.text = "Tout est à jour"
             self.counter_label.text = drive_line
             self.file_label.text = local_line
-            self.local_stage.text = "1  LOCAL    Terminé"
-            self.drive_stage.text = "2  DRIVE    Vérifié"
+            self.local_stage.text = "📱 Local · Terminé"
+            self.drive_stage.text = "☁️ Drive · Vérifié"
             self._set_progress_fill(1.0)
         elif result.get("status") == "interrupted":
             self.state_label.text = "REPRISE DISPONIBLE"
+            self._set_state_color("warning")
             self.message_label.text = result.get("message", "Une opération reste à reprendre.")
             self.phase_label.text = "Sauvegarde interrompue"
             local_complete = bool(result.get("localComplete"))
             self.counter_label.text = "Le miroir local valide est conservé" if local_complete else "Le miroir local devra reprendre"
             self.file_label.text = "Relancez pour reprendre les éléments non confirmés."
-            self.local_stage.text = f"1  LOCAL    {'Terminé' if local_complete else 'À reprendre'}"
-            self.drive_stage.text = "2  DRIVE    À reprendre"
+            self.local_stage.text = f"📱 Local · {'Terminé' if local_complete else 'À reprendre'}"
+            self.drive_stage.text = "☁️ Drive · À reprendre"
             self._last_error_detail = result.get("detail", "")
-            self.detail_button.hidden = not bool(self._last_error_detail)
-            self.copy_button.hidden = not bool(self._last_error_detail)
+            self._set_diagnostic_visible(bool(self._last_error_detail))
 
     def _sources_with_repaired_labels(self):
         config = self.store.load()
@@ -547,37 +780,17 @@ class BackupApplication:
         return repaired
 
     def refresh(self) -> None:
-        config = self.store.load()
         cells = []
-        destination = self.ui.TableViewCell(text="Destination du miroir local")
-        destination.detail_text_label.text = "Configurée" if config.get("destinationBookmark") else "À choisir avant la première sauvegarde"
-        destination.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
-        cells.append(destination)
-        filters = self.ui.TableViewCell(text="Filtres de sauvegarde")
-        filters.detail_text_label.text = filter_summary(config.get("filters", {}))
-        filters.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
-        cells.append(filters)
-        archives = self.ui.TableViewCell(text="Archives Codex")
-        try:
-            destination_name = config.get("destinationBookmark")
-            if destination_name:
-                archive_root = initialize_buffer(buffer_root(resolve_folder(destination_name)))
-                summary = queue_summary(archive_root)
-                archives.detail_text_label.text = (
-                    f"{summary['pendingTotal']} en attente · {summary['Verified']} vérifiées · conservation 30 j"
-                )
-            else:
-                archives.detail_text_label.text = "Disponible après choix de la destination"
-        except (OSError, PytoUnavailable):
-            archives.detail_text_label.text = "État indisponible"
-        archives.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
-        cells.append(archives)
         self._visible_sources = self._sources_with_repaired_labels()
         for source in self._visible_sources:
-            cell = self.ui.TableViewCell(text=source.label)
-            cell.detail_text_label.text = "Active · touchez pour suspendre" if source.enabled else "Suspendue · touchez pour activer"
+            cell = self.ui.TableViewCell(text=f"📂  {source.label}")
+            cell.detail_text_label.text = "Sauvegardé · toucher pour suspendre" if source.enabled else "Suspendu · toucher pour réactiver"
             cell.accessory_type = self.ui.AccessoryType.CHECKMARK if source.enabled else self.ui.AccessoryType.NONE
             cell.removable = not self._running
+            cells.append(cell)
+        if not cells:
+            cell = self.ui.TableViewCell(text="Aucun dossier source")
+            cell.detail_text_label.text = "Ajoutez-en un depuis ⚙️ Paramètres"
             cells.append(cell)
         self.table.set_cells(cells)
 
@@ -585,26 +798,16 @@ class BackupApplication:
         section.table_view.deselect_row()
         if self._running:
             return
-        if index == 0:
-            self._choose_destination()
+        if not self._visible_sources or index >= len(self._visible_sources):
             return
-        if index == 1:
-            self._show_filter_settings()
-            return
-        if index == 2:
-            self.alert(
-                "Archives Codex",
-                "Déposez chaque export complet dans ConversationBuffer/Inbox. Il restera dans iCloud jusqu’à sa vérification sur Drive, puis 30 jours.",
-            )
-            return
-        source = self._visible_sources[index - 3]
+        source = self._visible_sources[index]
         self.store.toggle_source(source.source_id)
         self.refresh()
 
     def _deleted(self, section, index: int) -> None:
-        if self._running or index < 3:
+        if self._running or not self._visible_sources or index >= len(self._visible_sources):
             return
-        source = self._visible_sources[index - 3]
+        source = self._visible_sources[index]
         removed = self.store.remove_source(source.source_id)
         delete_bookmark(removed.bookmark_name)
         self.refresh()
@@ -651,15 +854,16 @@ class BackupApplication:
         self._last_progress = None
         self._overall_progress = 0.0
         self._set_controls_enabled(False)
-        self.state_label.text = "EN COURS"
-        self.message_label.text = "La sauvegarde peut continuer pendant un changement d'app court."
+        self.backup_button.title = "Sauvegarde en cours…"
+        self.state_label.text = "SAUVEGARDE"
+        self._set_state_color("active")
+        self.message_label.text = "Vous pouvez changer d’app brièvement pendant la sauvegarde."
         self.phase_label.text = "Démarrage"
         self.counter_label.text = "Préparation en cours"
         self.file_label.text = "Analyse de la configuration"
-        self.local_stage.text = "1  LOCAL    En cours"
-        self.drive_stage.text = "2  DRIVE    En attente"
-        self.detail_button.hidden = True
-        self.copy_button.hidden = True
+        self.local_stage.text = "📱 Local · En cours"
+        self.drive_stage.text = "☁️ Drive · En attente"
+        self._set_diagnostic_visible(False)
         self._last_error_detail = ""
         self._set_progress_fill(0.0)
         self.refresh()
@@ -675,13 +879,14 @@ class BackupApplication:
         self._last_progress = None
         self._overall_progress = 0.0
         self._last_error_detail = ""
-        self.detail_button.hidden = True
-        self.copy_button.hidden = True
+        self._set_diagnostic_visible(False)
         self._set_controls_enabled(False)
-        self.state_label.text = "TEST DE CONNEXION"
+        self.backup_button.title = "Test de Google Drive…"
+        self.state_label.text = "TEST DRIVE"
+        self._set_state_color("active")
         self.message_label.text = "Aucun fichier ne sera modifié."
-        self.local_stage.text = "1  LOCAL    Non lancé"
-        self.drive_stage.text = "2  DRIVE    Connexion"
+        self.local_stage.text = "📱 Local · Non lancé"
+        self.drive_stage.text = "☁️ Drive · Connexion"
         self._set_progress_fill(0.0)
         self.refresh()
         self.background_execution = BackgroundExecution("Test Google Drive")
@@ -712,18 +917,18 @@ class BackupApplication:
             def finish():
                 self._running = False
                 self._operation = None
-                self.state_label.text = "DRIVE PRÊT" if success else "CONNEXION IMPOSSIBLE"
+                self.state_label.text = "DRIVE PRÊT" if success else "DRIVE INDISPONIBLE"
+                self._set_state_color("success" if success else "error")
                 self.message_label.text = message
                 self.phase_label.text = "Connexion vérifiée" if success else "Vérification interrompue"
                 self.counter_label.text = "Service, jeton et index accessibles" if success else "Diagnostic disponible"
                 self.file_label.text = "Aucun fichier n’a été modifié."
-                self.local_stage.text = "1  LOCAL    Non lancé"
-                self.drive_stage.text = f"2  DRIVE    {'Prêt' if success else 'À vérifier'}"
+                self.local_stage.text = "📱 Local · Non lancé"
+                self.drive_stage.text = f"☁️ Drive · {'Prêt' if success else 'À vérifier'}"
                 self._set_progress_fill(1.0 if success else 0.0)
-                self.test_drive_button.title = "Tester Google Drive" if success else "Réessayer le test Drive"
-                self.detail_button.hidden = success
-                self.copy_button.hidden = success
+                self._set_diagnostic_visible(not success)
                 self._set_controls_enabled(True)
+                self.backup_button.title = "Mettre à jour la sauvegarde"
                 self.refresh()
 
             mainthread.run_async(finish)
@@ -736,12 +941,7 @@ class BackupApplication:
         now = time.monotonic()
         if not should_emit_progress(self._last_progress, event, now):
             return
-        title, counter, filename, _phase_ratio = progress_copy(event)
-        ratio = max(
-            self._overall_progress,
-            overall_progress(event, standalone_drive=self._operation == "drive_test"),
-        )
-        self._overall_progress = ratio
+        title, counter, filename, ratio = progress_copy(event)
         self._last_progress = {
             "phase": event.get("phase"),
             "percent": progress_percent(event.get("completed", 0), event.get("total", 0)),
@@ -753,9 +953,10 @@ class BackupApplication:
             self.phase_label.text = title
             self.counter_label.text = counter
             self.file_label.text = filename
+            self.progress_fill.background_color = self._color(progress_color(event), "SYSTEM_BLUE")
             local_state, drive_state = progress_stages(event)
-            self.local_stage.text = f"1  LOCAL    {local_state}"
-            self.drive_stage.text = f"2  DRIVE    {drive_state}"
+            self.local_stage.text = f"📱 Local · {local_state}"
+            self.drive_stage.text = f"☁️ Drive · {drive_state}"
             self._set_progress_fill(ratio)
 
         mainthread.run_async(update)
@@ -861,27 +1062,28 @@ class BackupApplication:
                 self._operation = None
                 archive_pending = int((result or {}).get("archives", {}).get("pending", 0)) if success else 0
                 self.state_label.text = (
-                    "VÉRIFIÉE · ARCHIVES EN ATTENTE" if success and archive_pending
-                    else "SAUVEGARDE VÉRIFIÉE" if success else "ACTION NÉCESSAIRE"
+                    "ARCHIVES EN ATTENTE" if success and archive_pending
+                    else "À JOUR" if success else "ACTION REQUISE"
                 )
+                self._set_state_color("warning" if success and archive_pending else "success" if success else "error")
                 self.message_label.text = message
                 self.phase_label.text = (
                     "Code vérifié · archives conservées dans iCloud" if success and archive_pending
                     else "Sauvegarde complète" if success else "Sauvegarde interrompue"
                 )
                 if success:
-                    local_line, drive_line = summary_copy(result or {})
+                    headline, drive_line, local_line = compact_summary_copy(result or {})
+                    self.message_label.text = headline
                     self.counter_label.text = drive_line
                     self.file_label.text = local_line
-                    self.local_stage.text = "1  LOCAL    Terminé"
-                    self.drive_stage.text = "2  DRIVE    Vérifié"
+                    self.local_stage.text = "📱 Local · Terminé"
+                    self.drive_stage.text = "☁️ Drive · Vérifié"
                 else:
                     self.counter_label.text = "La reprise est sécurisée"
-                    self.file_label.text = "Touchez « Afficher le détail » pour le diagnostic complet."
-                    self.local_stage.text = f"1  LOCAL    {'Terminé' if local_complete else 'À reprendre'}"
-                    self.drive_stage.text = "2  DRIVE    À reprendre"
-                    self.detail_button.hidden = False
-                    self.copy_button.hidden = False
+                    self.file_label.text = "Le diagnostic technique est disponible à côté du bouton Réessayer."
+                    self.local_stage.text = f"📱 Local · {'Terminé' if local_complete else 'À reprendre'}"
+                    self.drive_stage.text = "☁️ Drive · À reprendre"
+                    self._set_diagnostic_visible(True)
                 self._set_progress_fill(1.0 if success else 0.0)
                 self.backup_button.title = "Mettre à jour la sauvegarde" if success else "Réessayer la sauvegarde"
                 self._set_controls_enabled(True)

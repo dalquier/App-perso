@@ -10,7 +10,7 @@ Prérequis : `main` à jour dans Working Copy, dossier `apps/projectos-backup/` 
 
 | ID | Action iPhone | Résultat attendu | Preuve courte |
 |---|---|---|---|
-| Q0 | Appuyer sur `Tester Google Drive` | Réveil, accès signé et index deviennent verts ; aucun fichier n'est modifié | État `DRIVE PRÊT` |
+| Q0 | Ouvrir `⚙️ Paramètres > Google Drive` | Réveil, accès signé et index deviennent verts ; aucun fichier n'est modifié | État `DRIVE PRÊT` |
 | Q1 | Lancer sans modifier les sources | Miroir local rapide ; aucun fichier inchangé renvoyé ; Drive vérifié | Synthèse finale et compteurs |
 | Q2 | Ajouter un petit fichier, relancer | Un ajout local puis un seul envoi confirmé | Fichier visible dans `Current` local et Drive |
 | Q3 | Modifier ce fichier, relancer | Une modification transférée ; contenu et SHA concordent | Synthèse + contenu Drive |
@@ -20,16 +20,20 @@ Prérequis : `main` à jour dans Working Copy, dossier `apps/projectos-backup/` 
 | Q7 | Couper le réseau pendant un lot, le rétablir et relancer | Aucun succès prématuré ; interrogation distante puis reprise ciblée | Erreur complète, puis synthèse vérifiée |
 | Q8 | Test automatisé : simuler un timeout après application distante | État distant interrogé ; lot réduit ou repris ; aucune suppression prématurée | Test d'intégration vert |
 | Q9 | Fermer l'interface | Fermeture immédiate ; état conservé | Bouton `Fermer`, puis même état au lancement |
-| Q10 | Ouvrir l'app après succès | Dernière synthèse toujours consultable | Date, durées et compteurs visibles |
+| Q10 | Ouvrir l'app après succès | Dernière synthèse toujours consultable | Compteurs Local et Drive visibles sans texte tronqué |
 | Q11 | Couper le réseau puis lancer `Tester Google Drive` | Trois tentatives visibles, puis diagnostic copiable sans jeton | État `CONNEXION IMPOSSIBLE` |
 | Q12 | Rétablir le réseau puis lancer la sauvegarde | Après sécurisation locale, un prévol frais devient vert immédiatement avant toute mutation Drive | Ordre des phases visible |
 | Q13 | Déposer un paquet avec transcription et pièce jointe dans `ConversationBuffer/Inbox` | Capture atomique, envoi dans `ConversationArchives/<archiveId>`, manifeste publié en dernier | État `Verified` local et `BUFFER_MANIFEST.json` distant |
 | Q14 | Couper le réseau pendant Q13 puis relancer | Le paquet reste dans `Uploading` et seuls les fichiers sans reçu sont repris | Compteur `repris`, aucun doublon Drive |
 | Q15 | Laisser une archive non vérifiée plus de 30 jours | Elle n'est jamais purgée ; seules les archives vérifiées depuis 30 jours sont éligibles | Dossier toujours présent hors `Verified` |
+| Q16 | Ouvrir `⚙️ Paramètres > Exclusions`, changer de catégorie puis Annuler | Les boutons restent lisibles, la feuille se ferme et aucune règle n'est modifiée | Retour à l'écran principal, valeurs initiales conservées |
+| Q17 | Ajouter `log`, supprimer une règle par balayage puis Enregistrer | `.log` apparaît comme ligne indépendante et les règles sont persistées | Réouverture identique de la feuille |
+| Q18 | Observer une phase à 5 % | Le remplissage de la barre est lui aussi voisin de 5 % ; aucune valeur globale contradictoire n'est affichée | Compteur et barre alignés |
+| Q19 | Relancer sans modification | Aucun fichier identique n'est recopié localement ni renvoyé vers Drive | Compteurs copiés/envoyés à zéro, inchangés non nuls |
 
 ## Critère de validation
 
-La recette est réussie si Q0 à Q15 sont conformes et si `Current/MANIFEST.json` local et Drive décrivent les mêmes chemins, tailles et SHA-256. Un miroir local terminé avec Drive en attente est un état sûr, mais ne valide pas Q1 ni la sauvegarde complète.
+La recette est réussie si Q0 à Q19 sont conformes et si `Current/MANIFEST.json` local et Drive décrivent les mêmes chemins, tailles et SHA-256. Un miroir local terminé avec Drive en attente est un état sûr, mais ne valide pas Q1 ni la sauvegarde complète.
 
 Consigner pour la PR : version Pyto/iOS, SHA testé, URL de déploiement masquée, durée de la première synchronisation, durée d'une synchronisation sans changement, IDs réussis/échoués et captures utiles. Ne jamais joindre le jeton.
 
