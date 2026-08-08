@@ -7,6 +7,7 @@
 - GitHub : source de vérité de tout contenu versionnable et lieu canonique de livraison.
 - Working Copy : client Git principal sur iPhone.
 - Replit Starter : environnement cloud d’exécution, de test, de stockage de travail, d’hébergement et de déploiement. Son agent IA n’est pas un outil de développement par défaut. Tout projet utilisant Replit applique `REPLIT_RUNTIME_CONTRACT.md`.
+- iCloud Drive / `ProjectOS Workspace` : espace local de réception, travail, échange et sortie pour les fichiers non encore canoniques, régi par `WORKSPACE_AND_FILE_LIFECYCLE.md`.
 - Pyto : compagnon permanent pour fonctions iPhone natives, automatisations locales, accès Fichiers/iCloud et utilitaires.
 - Scriptable : widgets et automatisations iOS simples lorsque JavaScript est le meilleur choix.
 - Google Drive : documents collaboratifs, sauvegardes et archives conversationnelles intégrales privées ; jamais source canonique du code.
@@ -20,16 +21,20 @@
 2. Tout nouveau projet doit disposer d’un dépôt ou dossier canonique déclaré dans `PROJECT_REGISTRY.md` et son manifeste avant une livraison substantielle.
 3. Les fichiers complets d’un Build sont créés ou modifiés directement dans le dépôt canonique sur une branche dédiée.
 4. Les secrets restent dans les gestionnaires de secrets des plateformes.
-5. iCloud contient les données locales et les échanges avec Pyto, sans devenir une seconde branche éditable du code ni un transit obligatoire pour les conversations.
-6. Drive reçoit des archives horodatées, les documents Google natifs et les archives conversationnelles directes définies dans `CONVERSATION_ARCHIVE_PIPELINE.md`.
-7. Les fichiers volumineux sont indexés ; seuls les fragments utiles sont chargés.
-8. Toute migration conserve une copie de retour arrière.
-9. Un ZIP, un export Pyto, un artefact Replit ou une copie locale est un moyen d’installation, de test ou de sauvegarde, jamais la livraison canonique.
-10. Tout changement durable effectué pendant un test Replit doit être reversé dans GitHub.
-11. Pour une conversation enregistrée, GitHub ne reçoit que l’index et la synthèse ; le verbatim et les fichiers vont directement dans `App-perso/ProjectOS/Conversation-Archives/<Projet>/<année>/<Session>/` sur Drive.
-12. Un runtime Replit doit être considéré comme jetable : il ne doit contenir aucun travail unique nécessaire à la continuité du projet.
-13. Un Replit `dirty`, `ahead` ou `diverged` n’est pas synchronisé tant que les changements locaux ne sont pas classés ; `Pull`, `Sync` et `Push` sont interdits par défaut jusqu’à résolution.
-14. `Open Artifact`, un Workflow manuel ou le panneau Validation ne remplacent jamais la vraie Preview/Webview du produit canonique sauf contrat explicite contraire.
+5. `iCloud Drive/ProjectOS Workspace` reçoit les téléchargements, brouillons, échanges et livrables locaux qui n’ont pas encore de destination canonique. Son cycle de vie est défini dans `WORKSPACE_AND_FILE_LIFECYCLE.md`.
+6. Un fichier temporaire ne doit jamais être placé dans Working Copy ou un dépôt Git uniquement pour faciliter un téléchargement, un transfert ou un échange entre outils.
+7. iCloud peut contenir d’autres données locales et échanges Pyto selon les besoins des projets, sans devenir une seconde branche éditable du code ni un transit obligatoire pour les conversations.
+8. Drive reçoit des archives horodatées, les documents Google natifs et les archives conversationnelles directes définies dans `CONVERSATION_ARCHIVE_PIPELINE.md`.
+9. Les fichiers volumineux sont indexés ; seuls les fragments utiles sont chargés.
+10. Toute migration conserve une copie de retour arrière.
+11. Un ZIP, un export Pyto, un artefact Replit ou une copie locale est un moyen d’installation, de test, de transit ou de sauvegarde, jamais la livraison canonique.
+12. Tout changement durable effectué pendant un test Replit doit être reversé dans GitHub.
+13. Pour une conversation enregistrée, GitHub ne reçoit que l’index et la synthèse ; le verbatim et les fichiers vont directement dans `App-perso/ProjectOS/Conversation-Archives/<Projet>/<année>/<Session>/` sur Drive.
+14. Un runtime Replit doit être considéré comme jetable : il ne doit contenir aucun travail unique nécessaire à la continuité du projet.
+15. Un Replit `dirty`, `ahead` ou `diverged` n’est pas synchronisé tant que les changements locaux ne sont pas classés ; `Pull`, `Sync` et `Push` sont interdits par défaut jusqu’à résolution.
+16. `Open Artifact`, un Workflow manuel ou le panneau Validation ne remplacent jamais la vraie Preview/Webview du produit canonique sauf contrat explicite contraire.
+17. Un fichier généré par ChatGPT ou un outil ProjectOS qui n’a pas encore de destination durable est classé après téléchargement dans `30_OUTPUT/<Projet>` ; s’il sert uniquement de transit vers un autre outil, utiliser `20_EXCHANGE`.
+18. `00_INBOX`, `20_EXCHANGE` et `90_TRASH_7D` ne sont jamais des sources de vérité et ne sont pas sauvegardés par défaut par ProjectOS Backup.
 
 ## Routage des développements
 
@@ -43,6 +48,8 @@ Appliquer `CODE_WORK_ROUTING.md` et `TOOLCHAIN_POLICY.md` avant toute implément
 Codex travaille contre le dépôt et la branche canoniques. Sa sortie attendue est une livraison GitHub vérifiable, pas un texte à recopier manuellement.
 
 Pour un nouveau projet destiné à Replit, le `REPLIT_RUNTIME_CONTRACT.md` spécifique au projet doit être créé avant la première recette Replit. Pour une évolution qui modifie build, serveur, port, PWA, service worker, racine monorepo ou configuration Replit, ce contrat doit être relu et éventuellement mis à jour dans la même livraison.
+
+Pour toute tâche créant, téléchargeant, transmettant ou nettoyant des fichiers locaux, appliquer `WORKSPACE_AND_FILE_LIFECYCLE.md` avant de choisir un emplacement iCloud, Drive ou GitHub.
 
 ## Maîtrise des crédits Replit
 
