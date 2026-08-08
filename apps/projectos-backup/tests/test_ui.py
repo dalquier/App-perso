@@ -1,9 +1,72 @@
+import tempfile
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 
-from projectos_backup.ui import progress_copy, progress_percent, progress_ratio, should_emit_progress
+from projectos_backup.ui import (
+    backup_summary,
+    compact_summary_copy,
+    compact_filter_summary,
+    compact_stage_name,
+    error_copy,
+    load_result,
+    filter_summary,
+    filter_editor_rows,
+    normalize_filter_item,
+    overall_progress,
+    parse_filter_text,
+    progress_copy,
+    progress_color,
+    progress_percent,
+    progress_ratio,
+    progress_stages,
+    responsive_layout,
+    save_result,
+    should_emit_progress,
+    summary_copy,
+)
 
 
 class ProgressTests(unittest.TestCase):
+    def test_stage_names_fit_the_narrow_iphone_cards(self):
+        self.assertEqual(compact_stage_name("En attente"), "Attente")
+        self.assertEqual(compact_stage_name("À reprendre"), "Reprise")
+        self.assertEqual(compact_stage_name("À vérifier"), "Vérif.")
+        self.assertEqual(compact_stage_name("En cours"), "En cours")
+
+    def test_overall_progress_tracks_full_backup_without_reset(self):
+        events=[
+            {'phase':'scan','completed':1,'total':2},
+            {'phase':'mirror','completed':5,'total':10},
+            {'phase':'complete','scope':'local','completed':10,'total':10},
+            {'phase':'drive_wake'},
+            {'phase':'upload_prepare','completed':1,'total':4},
+            {'phase':'upload','completed':2,'total':4},
+            {'phase':'publish'},
+            {'phase':'complete','completed':4,'total':4},
+        ]
+        values=[overall_progress(event) for event in events]
+        self.assertEqual(values,sorted(values))
+        self.assertEqual(values[-1],1.0)
+
+    def test_filter_copy_and_summary(self):
+        self.assertEqual(parse_filter_text('LOG, .tmp, log',extensions=True),['.log','.tmp'])
+        self.assertIn('toutes extensions incluses',filter_summary({
+            'ignoredDirectories':['.git'],'ignoredFiles':['.DS_Store'],'ignoredExtensions':[],
+        }))
+        self.assertEqual(compact_filter_summary({
+            'ignoredDirectories':['.git'],'ignoredFiles':['.DS_Store'],'ignoredExtensions':[],
+        }), '1 dossiers · 1 fichiers · 0 extensions')
+
+    def test_responsive_layout_never_overlaps_sources_and_actions(self):
+        for height in (600, 667, 736, 820, 932):
+            frames = responsive_layout(390, height)
+            table = frames["table"]
+            actions = frames["actions"]
+            self.assertLessEqual(table[1] + table[3], actions[1])
+            self.assertLessEqual(actions[1] + actions[3], max(600, height))
+            self.assertGreaterEqual(table[3], 96)
+
     def test_ratio_is_clamped(self):
         self.assertEqual(progress_ratio(-1, 10), 0.0)
         self.assertEqual(progress_ratio(5, 10), 0.5)
@@ -18,14 +81,33 @@ class ProgressTests(unittest.TestCase):
             {"phase": "upload", "completed": 2, "total": 4, "path": "/tmp/example.py"}
         )
         self.assertEqual(title, "Envoi vers Google Drive")
-        self.assertEqual(counter, "50 %   ·   2 / 4")
+        self.assertEqual(counter, "2 / 4   ·   50 % de cette étape")
         self.assertEqual(filename, "example.py")
         self.assertEqual(ratio, 0.5)
+
+    def test_upload_preparation_has_real_progress(self):
+        title, counter, filename, ratio = progress_copy({
+            "phase": "upload_prepare", "completed": 3, "total": 10, "path": "Pyto/example.py",
+        })
+        self.assertEqual(title, "Préparation des envois")
+        self.assertEqual(counter, "3 / 10   ·   30 % de cette étape")
+        self.assertEqual(filename, "example.py")
+        self.assertEqual(ratio, 0.3)
 
     def test_progress_copy_for_indeterminate_phase(self):
         title, counter, _, ratio = progress_copy({"phase": "drive_prepare"})
         self.assertEqual(title, "Connexion à Google Drive")
         self.assertEqual(counter, "Préparation en cours")
+        self.assertEqual(ratio, 0.0)
+
+    def test_preflight_progress_is_graphical_and_shows_attempt(self):
+        title, counter, filename, ratio = progress_copy({
+            "phase": "drive_retry", "attempt": 2, "maxAttempts": 3,
+            "message": "Le service se réveille",
+        })
+        self.assertEqual(title, "Nouvelle tentative de connexion")
+        self.assertEqual(counter, "Tentative 2 / 3")
+        self.assertEqual(filename, "Le service se réveille")
         self.assertEqual(ratio, 0.0)
 
     def test_throttle_keeps_phase_percent_and_completion(self):
@@ -35,6 +117,62 @@ class ProgressTests(unittest.TestCase):
         self.assertTrue(should_emit_progress(previous, {"phase": "delete", "completed": 0, "total": 5}, 10.05))
         self.assertTrue(should_emit_progress(previous, {"phase": "upload", "completed": 100, "total": 100}, 10.05))
         self.assertTrue(should_emit_progress(previous, {"phase": "upload", "completed": 10, "total": 100}, 10.13))
+
+    def test_progress_stages_distinguish_local_and_drive(self):
+        self.assertEqual(progress_stages({"phase": "mirror"}), ("En cours", "En attente"))
+        self.assertEqual(progress_stages({"phase": "upload"}), ("Terminé", "En cours"))
+        self.assertEqual(progress_stages({"phase": "drive_wake"}), ("En attente", "Connexion"))
+        self.assertEqual(progress_stages({"phase": "archive_upload"}), ("En attente", "Archives"))
+        self.assertEqual(progress_stages({"phase": "drive_wake", "localComplete": True}), ("Terminé", "Connexion"))
+
+    def test_progress_colors_identify_the_active_pipeline(self):
+        self.assertEqual(progress_color({"phase": "mirror"}), "SYSTEM_BLUE")
+        self.assertEqual(progress_color({"phase": "archive_upload"}), "SYSTEM_PURPLE")
+        self.assertEqual(progress_color({"phase": "upload"}), "SYSTEM_TEAL")
+        self.assertEqual(progress_color({"phase": "complete"}), "SYSTEM_GREEN")
+
+    def test_filter_editor_normalizes_individual_rows(self):
+        self.assertEqual(normalize_filter_item(" log, ", "ignoredExtensions"), ".log")
+        self.assertEqual(normalize_filter_item(".git", "ignoredDirectories"), ".git")
+        self.assertEqual(filter_editor_rows({"ignoredFiles": ["a", "A", "b"]}, "ignoredFiles"), ["a", "b"])
+
+    def test_summary_is_serialisable_and_readable(self):
+        local = SimpleNamespace(copied_files=3, resumed_files=2, deleted_files=1)
+        local.unchanged_files = 5
+        result = backup_summary(
+            local,
+            {"uploaded_files": 4, "deleted_files": 1, "verified_files": 9, "resumed_files": 2, "unchanged_files": 5},
+            local_seconds=1.25,
+            drive_seconds=2.75,
+        )
+        local_line, drive_line = summary_copy(result)
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["drive"]["resumed"], 2)
+        self.assertEqual(result["local"]["unchanged"], 5)
+        self.assertEqual(result["drive"]["durationSeconds"], 2.8)
+        self.assertIn("3 copiés", local_line)
+        self.assertIn("9 vérifiés", drive_line)
+        headline, compact_drive, compact_local = compact_summary_copy(result)
+        self.assertIn("9 fichiers vérifiés", headline)
+        self.assertIn("4 envoyés", compact_drive)
+        self.assertIn("3 copiés", compact_local)
+
+    def test_result_round_trip_and_invalid_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "last.json"
+            save_result(path, {"status": "complete", "local": {"copied": 1}})
+            self.assertEqual(load_result(path)["status"], "complete")
+            path.write_text("not-json", encoding="utf-8")
+            self.assertIsNone(load_result(path))
+
+    def test_error_copy_does_not_truncate_detail(self):
+        try:
+            raise RuntimeError("Google Drive a dépassé le délai de réponse")
+        except RuntimeError as exc:
+            headline, detail = error_copy(exc)
+        self.assertEqual(headline, "Google Drive a dépassé le délai de réponse")
+        self.assertIn("RuntimeError", detail)
+        self.assertIn("dépassé le délai", detail)
 
 
 if __name__ == "__main__":

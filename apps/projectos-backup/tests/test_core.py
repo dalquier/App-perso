@@ -5,9 +5,22 @@ import unittest
 from unittest.mock import patch
 from helpers import ROOT  # noqa: F401
 from projectos_backup import core
-from projectos_backup.core import BackupError, Source, SourceAccessError, UnsafeLayoutError, run_backup
+from projectos_backup.core import BackupError, FilterRules, Source, SourceAccessError, UnsafeLayoutError, run_backup
 
 class MirrorTests(unittest.TestCase):
+    def test_configurable_filters_default_to_all_extensions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); source=root/'source'; source.mkdir()
+            (source/'keep.py').write_text('code'); (source/'skip.log').write_text('log')
+            (source/'cache').mkdir(); (source/'cache'/'inside.py').write_text('cached')
+            default_names=[relative for _,relative in core.iter_source_files(source)]
+            self.assertEqual(set(default_names),{'cache/inside.py','keep.py','skip.log'})
+            rules=FilterRules.from_config({
+                'ignoredDirectories':['cache'], 'ignoredFiles':[], 'ignoredExtensions':['log'],
+            })
+            filtered=[relative for _,relative in core.iter_source_files(source,rules)]
+            self.assertEqual(filtered,['keep.py'])
+
     def test_incremental_copy_delete_and_prefetch(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp); source=root/'source'; dest=root/'backup'; source.mkdir()

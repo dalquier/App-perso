@@ -15,6 +15,11 @@ import unicodedata
 
 SCHEMA_VERSION = 1
 STATE_ENV = "PROJECTOS_BACKUP_STATE_DIR"
+DEFAULT_FILTERS = {
+    "ignoredDirectories": [".git", "__pycache__", ".pytest_cache", ".mypy_cache"],
+    "ignoredFiles": [".DS_Store"],
+    "ignoredExtensions": [],
+}
 
 
 def default_state_directory() -> Path:
@@ -61,6 +66,7 @@ class ConfigStore:
             "schemaVersion": SCHEMA_VERSION,
             "destinationBookmark": None,
             "sources": [],
+            "filters": {key: list(value) for key, value in DEFAULT_FILTERS.items()},
             "suggestedLabels": [
                 "Pyto", "Pyto data", "Scriptable", "Scriptable Data", "Équilibre",
                 "Runestone", "Maestro", "Maestro 2", "Backup Script", "Scripts 260717",
@@ -73,6 +79,12 @@ class ConfigStore:
         payload = json.loads(self.path.read_text(encoding="utf-8"))
         if payload.get("schemaVersion") != SCHEMA_VERSION or not isinstance(payload.get("sources"), list):
             raise ValueError("Configuration ProjectOS Backup incompatible")
+        if not isinstance(payload.get("filters"), dict):
+            payload["filters"] = {key: list(value) for key, value in DEFAULT_FILTERS.items()}
+        else:
+            for key, value in DEFAULT_FILTERS.items():
+                if not isinstance(payload["filters"].get(key), list):
+                    payload["filters"][key] = list(value)
         return payload
 
     def save(self, payload: dict) -> None:
@@ -133,3 +145,34 @@ class ConfigStore:
 
     def sources(self) -> list[SourceConfig]:
         return [SourceConfig(**raw) for raw in self.load()["sources"]]
+
+    def filters(self) -> dict[str, list[str]]:
+        payload = self.load()
+        return {key: list(payload["filters"].get(key, [])) for key in DEFAULT_FILTERS}
+
+    def set_filters(
+        self,
+        ignored_directories: list[str],
+        ignored_files: list[str],
+        ignored_extensions: list[str],
+    ) -> dict[str, list[str]]:
+        def cleaned(items: list[str], extensions: bool = False) -> list[str]:
+            result = []
+            for item in items:
+                value = str(item).strip()
+                if not value:
+                    continue
+                if extensions and not value.startswith("."):
+                    value = f".{value}"
+                if value.casefold() not in {entry.casefold() for entry in result}:
+                    result.append(value.casefold() if extensions else value)
+            return sorted(result, key=str.casefold)
+
+        payload = self.load()
+        payload["filters"] = {
+            "ignoredDirectories": cleaned(ignored_directories),
+            "ignoredFiles": cleaned(ignored_files),
+            "ignoredExtensions": cleaned(ignored_extensions, extensions=True),
+        }
+        self.save(payload)
+        return self.filters()
