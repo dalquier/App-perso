@@ -79,6 +79,28 @@ class FakeClient:
         return self.call(action, **payload)
 
 
+class AtomicStateTests(unittest.TestCase):
+    def test_atomic_state_retries_if_icloud_rematerialises_parent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "DriveState" / "STATE.json"
+            real_replace = drive_client.os.replace
+            calls = []
+
+            def flaky_replace(source, destination):
+                calls.append(Path(source).name)
+                if len(calls) == 1:
+                    Path(source).unlink()
+                    raise FileNotFoundError(source)
+                return real_replace(source, destination)
+
+            with mock.patch.object(drive_client.os, "replace", side_effect=flaky_replace):
+                drive_client._write_json_atomic(path, {"phase": "upload", "completed": 3})
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["completed"], 3)
+            self.assertEqual(len(calls), 2)
+            self.assertNotEqual(calls[0], calls[1])
+            self.assertEqual(list(path.parent.glob("*.part")), [])
+
+
 class ScriptedPreflightClient:
     def __init__(self, wake=None, health=None, manifests=None):
         self.wake = list(wake or [{"ok": True, "service": "ProjectOS Backup", "protocol": 2}])
