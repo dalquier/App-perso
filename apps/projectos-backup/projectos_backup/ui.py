@@ -192,6 +192,15 @@ def progress_stages(event: dict) -> tuple[str, str]:
     return "En attente", "En attente"
 
 
+def compact_stage_name(value: str) -> str:
+    """Keep the two pipeline labels inside narrow iPhone cards."""
+    return {
+        "En attente": "Attente",
+        "À reprendre": "Reprise",
+        "À vérifier": "Vérif.",
+    }.get(value, value)
+
+
 def responsive_layout(width: float, height: float) -> dict[str, tuple[int, int, int, int]]:
     """Return non-overlapping frames for the scrollable source area and fixed action card."""
     page_width = max(320, int(width))
@@ -546,6 +555,132 @@ class SourceSettingsController:
         self.view.hidden = False
 
 
+class DriveTestController:
+    """Dedicated connection screen; it never closes the whole application."""
+
+    def __init__(self, app, parent):
+        self.app, self.ui, self.parent = app, app.ui, parent
+        self.view = self.ui.View()
+        self.view.size = app.root.size
+        self.view.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_HEIGHT]
+        self.view.background_color = self.ui.SystemColors.SYSTEM_BACKGROUND
+        title = self.ui.Label("☁️  Google Drive")
+        title.frame = (18, 14, 245, 34)
+        back = self.ui.Button(title="Retour")
+        back.frame = (276, 12, 96, 38)
+        back.action = self._back
+        self.status = self.ui.Label("Connexion non testée")
+        self.status.frame = (24, 92, 342, 36)
+        self.status.number_of_lines = 2
+        self.phase = self.ui.Label("Le test vérifie le service, le jeton et l’index distant.")
+        self.phase.frame = (24, 140, 342, 64)
+        self.phase.number_of_lines = 3
+        self.message = self.ui.Label("Aucun fichier n’est ajouté, modifié ou supprimé pendant ce test.")
+        self.message.frame = (24, 220, 342, 72)
+        self.message.number_of_lines = 4
+        self.test = self.ui.Button(title="Tester la connexion")
+        self.test.frame = (18, 326, 354, 52)
+        self.test.action = self._test
+        self.diagnostic = self.ui.Button(title="Afficher le diagnostic")
+        self.diagnostic.frame = (18, 392, 354, 44)
+        self.diagnostic.action = self.app._show_error_detail
+        self.diagnostic.hidden = True
+        for item in (title, back, self.status, self.phase, self.message, self.test, self.diagnostic):
+            self.view.add_subview(item)
+        blue, white = app._color("SYSTEM_BLUE", "LABEL"), _solid_white(self.ui)
+        _set_button_appearance(back, app._color("TERTIARY_SYSTEM_BACKGROUND", "SYSTEM_BACKGROUND"), blue)
+        _set_button_appearance(self.test, blue, white, radius=13)
+        _set_button_appearance(self.diagnostic, app._color("TERTIARY_SYSTEM_BACKGROUND", "SYSTEM_BACKGROUND"), blue)
+
+    def _test(self, sender=None):
+        self.test.enabled = False
+        self.status.text = "TEST EN COURS"
+        self.phase.text = "Réveil du service…"
+        self.message.text = "Patientez quelques secondes."
+        self.diagnostic.hidden = True
+        self.app._test_drive()
+
+    def update_progress(self, title, counter, filename):
+        self.phase.text = title
+        self.message.text = f"{counter}\n{filename}"
+
+    def finish(self, success, message):
+        self.status.text = "DRIVE PRÊT" if success else "CONNEXION IMPOSSIBLE"
+        self.status.text_color = self.app._color("SYSTEM_GREEN" if success else "SYSTEM_RED", "LABEL")
+        self.phase.text = "Connexion et index vérifiés" if success else "Le test n’a pas abouti"
+        self.message.text = message
+        self.test.title = "Tester à nouveau"
+        self.test.enabled = True
+        self.diagnostic.hidden = success or not bool(self.app._last_error_detail)
+
+    def _back(self, sender=None):
+        if self.app._running:
+            return
+        self.view.hidden = True
+        self.parent.refresh()
+        self.parent.view.hidden = False
+
+    def show(self):
+        self.app.root.add_subview(self.view)
+        self.view.hidden = False
+
+
+class HelpController:
+    """Compact in-app guide and storage map."""
+
+    def __init__(self, app):
+        self.app, self.ui = app, app.ui
+        self.view = self.ui.View()
+        self.view.size = app.root.size
+        self.view.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_HEIGHT]
+        self.view.background_color = self.ui.SystemColors.SYSTEM_BACKGROUND
+        title = self.ui.Label("❓  Aide et stockage")
+        title.frame = (18, 14, 245, 34)
+        done = self.ui.Button(title="Terminé")
+        done.frame = (276, 12, 96, 38)
+        done.action = self._close
+        self.table = self.ui.TableView(style=self.ui.TableViewStyle.INSET_GROUPED)
+        self.table.frame = (0, 62, 390, 690)
+        self.table.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_HEIGHT]
+        self.rows = (
+            ("▶️  Sauvegarder", "Miroir local puis différences Drive", "Crée d’abord un miroir local vérifié, puis synchronise uniquement les fichiers ajoutés, modifiés ou supprimés vers Google Drive."),
+            ("■  Arrêter", "Arrêt propre et reprise sans doublon", "L’étape en cours s’achève proprement. Le lancement suivant réutilise les fichiers validés et les reçus Drive déjà confirmés."),
+            ("📂  Sources", "Dossiers choisis dans Fichiers", "Chaque dossier choisi devient une source indépendante et garde son propre sous-dossier pour éviter d’écraser les fichiers homonymes."),
+            ("📍  Miroir local", "Destination choisie / Current", "La destination choisie contient Current, copie locale structurée et vérifiée de toutes les sources actives."),
+            ("☁️  Google Drive", "ProjectOS-Backups / Current", "Le miroir distant est dans Drive/App-perso/ProjectOS-Backups/Current. MANIFEST.json est publié seulement après validation."),
+            ("🐍  Application Pyto", "iCloud Drive / Pyto / projectos-backup", "Ce dossier contient le programme Python exécuté sur l’iPhone. Il est remplacé lors d’une mise à jour depuis Working Copy."),
+            ("⚙️  Configuration", "Pyto Documents / ProjectOSBackup", "Ce dossier privé Pyto conserve les sources, favoris d’accès, filtres, dernier résultat et configuration Drive. Il n’est pas remplacé avec le programme."),
+            ("💬  Tampon conversations", "Destination / ConversationBuffer", "Le tampon iCloud conserve les conversations et pièces jointes tant que leur archivage Drive n’est pas confirmé."),
+            ("🗄️  Archives Drive", "Drive / ConversationArchives", "ConversationArchives contient les conversations intégrales et leurs pièces jointes. Les index et synthèses restent dans GitHub."),
+            ("🐙  GitHub", "Working Copy / App-perso", "GitHub reste la source de vérité du code ProjectOS, des documents, index et synthèses. Seuls les dossiers configurés sont inclus dans ce backup."),
+            ("🩺  Diagnostic", "Détail technique sans secret", "Visible après un échec. Copier permet de transmettre le détail technique sans exposer le jeton Drive."),
+        )
+        cells = []
+        for heading, summary, _detail in self.rows:
+            cell = self.ui.TableViewCell(text=heading)
+            cell.detail_text_label.text = summary
+            cell.accessory_type = self.ui.AccessoryType.DISCLOSURE_INDICATOR
+            cells.append(cell)
+        self.table.set_cells(cells)
+        self.table.did_select_cell = self._selected
+        self.view.add_subview(title); self.view.add_subview(done); self.view.add_subview(self.table)
+        _set_button_appearance(done, app._color("SYSTEM_BLUE", "LABEL"), _solid_white(self.ui))
+
+    def _close(self, sender=None):
+        self.view.hidden = True
+        self.app._help_controller = None
+
+    def _selected(self, section, index):
+        section.table_view.deselect_row()
+        if 0 <= index < len(self.rows):
+            heading, _summary, detail = self.rows[index]
+            self.app.alert(heading, detail)
+
+    def show(self):
+        self.app.root.add_subview(self.view)
+        self.view.hidden = False
+
+
 class SettingsController:
     """Dedicated compact settings sheet for storage, sources, filters and Drive."""
 
@@ -617,7 +752,9 @@ class SettingsController:
         elif index == 2:
             self.view.hidden = True; self.app._show_filter_settings(parent=self)
         elif index == 3:
-            self.view.hidden = True; self.app._test_drive()
+            self.view.hidden = True
+            self.app._drive_controller = DriveTestController(self.app, self)
+            self.app._drive_controller.show()
         elif index == 4:
             self.app.alert("Archives Codex", "Les archives non confirmées restent dans iCloud. Après vérification Drive, elles sont conservées 30 jours.")
 
@@ -647,6 +784,8 @@ class BackupApplication:
         self._settings_controller = None
         self._filter_controller = None
         self._source_controller = None
+        self._drive_controller = None
+        self._help_controller = None
         self._result_path = self.store.directory / RESULT_FILE
 
         self.root = self.ui.View()
@@ -659,14 +798,18 @@ class BackupApplication:
         self.header.frame = (16, 12, 358, 82)
         self.header.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.state_label = self.ui.Label("ProjectOS Backup")
-        self.state_label.frame = (16, 9, 205, 25)
+        self.state_label.frame = (16, 9, 160, 25)
         self.state_label.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.message_label = self.ui.Label("Configurez vos sources puis lancez la mise à jour.")
         self.message_label.frame = (16, 36, 326, 40)
         self.message_label.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.message_label.number_of_lines = 3
+        self.help_button = self.ui.Button(title="❓")
+        self.help_button.frame = (184, 6, 38, 34)
+        self.help_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN]
+        self.help_button.action = self._show_help
         self.settings_button = self.ui.Button(title="⚙️")
-        self.settings_button.frame = (224, 6, 40, 34)
+        self.settings_button.frame = (226, 6, 38, 34)
         self.settings_button.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN]
         self.settings_button.action = self._show_settings
         self.close_button = self.ui.Button(title="Fermer")
@@ -675,6 +818,7 @@ class BackupApplication:
         self.close_button.action = self._close
         self.header.add_subview(self.state_label)
         self.header.add_subview(self.message_label)
+        self.header.add_subview(self.help_button)
         self.header.add_subview(self.settings_button)
         self.header.add_subview(self.close_button)
         self.status = self.message_label
@@ -698,7 +842,7 @@ class BackupApplication:
         self.local_stage = self.ui.Label("📱 Local · En attente")
         self.local_stage.frame = (16, 96, 157, 24)
         self.local_stage.flex = [self.ui.AutoResizing.FLEXIBLE_RIGHT_MARGIN]
-        self.drive_stage = self.ui.Label("☁️ Drive · En attente")
+        self.drive_stage = self.ui.Label("☁️ Drive · Attente")
         self.drive_stage.frame = (181, 96, 161, 24)
         self.drive_stage.flex = [self.ui.AutoResizing.FLEXIBLE_LEFT_MARGIN]
         self.file_label.frame = (16, 128, 326, 50)
@@ -717,12 +861,12 @@ class BackupApplication:
         self.action_bar.frame = layout["actions"]
         self.action_bar.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH, self.ui.AutoResizing.FLEXIBLE_TOP_MARGIN]
 
-        self.add_source_button = self.ui.Button(title="＋")
-        self.add_source_button.frame = (12, 12, 52, 56)
+        self.add_source_button = self.ui.Button(title="＋ Dossier")
+        self.add_source_button.frame = (12, 12, 94, 56)
         self.add_source_button.action = self._add_source
 
         self.backup_button = self.ui.Button(title="Mettre à jour la sauvegarde")
-        self.backup_button.frame = (72, 12, 274, 56)
+        self.backup_button.frame = (114, 12, 232, 56)
         self.backup_button.flex = [self.ui.AutoResizing.FLEXIBLE_WIDTH]
         self.backup_button.action = self._backup
 
@@ -766,6 +910,7 @@ class BackupApplication:
         white = _solid_white(self.ui)
         secondary = self._color("TERTIARY_SYSTEM_BACKGROUND", "SYSTEM_BACKGROUND")
         _set_button_appearance(self.settings_button, secondary, blue)
+        _set_button_appearance(self.help_button, secondary, blue)
         _set_button_appearance(self.close_button, secondary, blue)
         _set_button_appearance(self.detail_button, secondary, blue)
         _set_button_appearance(self.add_source_button, secondary, blue)
@@ -801,6 +946,7 @@ class BackupApplication:
         # authoritative double-tap guard and the title explains the state.
         self.backup_button.enabled = True
         self.settings_button.enabled = enabled
+        self.help_button.enabled = enabled
         self.add_source_button.enabled = enabled
 
     def _set_state_color(self, state: str) -> None:
@@ -818,13 +964,19 @@ class BackupApplication:
         elif self._running:
             self.backup_button.frame = (12, 12, 334, 56)
         else:
-            self.backup_button.frame = (72, 12, 274, 56)
+            self.backup_button.frame = (114, 12, 232, 56)
 
     def _show_settings(self, sender=None) -> None:
         if self._running:
             return
         self._settings_controller = SettingsController(self)
         self._settings_controller.show()
+
+    def _show_help(self, sender=None) -> None:
+        if self._running:
+            return
+        self._help_controller = HelpController(self)
+        self._help_controller.show()
 
     def _show_filter_settings(self, sender=None, parent=None) -> None:
         if self._running:
@@ -848,17 +1000,18 @@ class BackupApplication:
             self.drive_stage.text = "☁️ Drive · Vérifié"
             self._set_progress_fill(1.0)
         elif result.get("status") == "interrupted":
-            self.state_label.text = "REPRISE DISPONIBLE"
+            self.state_label.text = "REPRISE PRÊTE"
             self._set_state_color("warning")
-            self.message_label.text = result.get("message", "Une opération reste à reprendre.")
-            self.phase_label.text = "Sauvegarde interrompue"
+            self.message_label.text = "La dernière exécution s’est arrêtée sans perdre le travail validé."
+            self.phase_label.text = "Sauvegarde prête à reprendre"
             local_complete = bool(result.get("localComplete"))
-            self.counter_label.text = "Le miroir local valide est conservé" if local_complete else "Le miroir local devra reprendre"
-            self.file_label.text = "Relancez pour reprendre les éléments non confirmés."
-            self.local_stage.text = f"📱 Local · {'Terminé' if local_complete else 'À reprendre'}"
-            self.drive_stage.text = "☁️ Drive · À reprendre"
+            self.counter_label.text = "Touchez Reprendre la sauvegarde"
+            self.file_label.text = "Seules les opérations restantes seront traitées"
+            self.local_stage.text = f"📱 Local · {'Prêt' if local_complete else 'Reprise'}"
+            self.drive_stage.text = "☁️ Drive · Reprise"
             self._last_error_detail = result.get("detail", "")
-            self._set_diagnostic_visible(bool(self._last_error_detail))
+            self._set_diagnostic_visible(False)
+            self.backup_button.title = "Reprendre la sauvegarde"
 
     def _sources_with_repaired_labels(self):
         config = self.store.load()
@@ -1035,12 +1188,14 @@ class BackupApplication:
                 self.counter_label.text = "Service, jeton et index accessibles" if success else "Diagnostic disponible"
                 self.file_label.text = "Aucun fichier n’a été modifié."
                 self.local_stage.text = "📱 Local · Non lancé"
-                self.drive_stage.text = f"☁️ Drive · {'Prêt' if success else 'À vérifier'}"
+                self.drive_stage.text = f"☁️ Drive · {'Prêt' if success else 'Vérif.'}"
                 self._set_progress_fill(1.0 if success else 0.0)
                 self._set_diagnostic_visible(not success)
                 self._set_controls_enabled(True)
                 self.backup_button.title = "Mettre à jour la sauvegarde"
                 self.refresh()
+                if self._drive_controller:
+                    self._drive_controller.finish(success, message)
 
             mainthread.run_async(finish)
 
@@ -1066,9 +1221,11 @@ class BackupApplication:
             self.file_label.text = filename
             self.progress_fill.background_color = self._color(progress_color(event), "SYSTEM_BLUE")
             local_state, drive_state = progress_stages(event)
-            self.local_stage.text = f"📱 Local · {local_state}"
-            self.drive_stage.text = f"☁️ Drive · {drive_state}"
+            self.local_stage.text = f"📱 Local · {compact_stage_name(local_state)}"
+            self.drive_stage.text = f"☁️ Drive · {compact_stage_name(drive_state)}"
             self._set_progress_fill(ratio)
+            if self._drive_controller and self._operation == "drive_test":
+                self._drive_controller.update_progress(title, counter, filename)
 
         mainthread.run_async(update)
 
@@ -1195,8 +1352,8 @@ class BackupApplication:
                 else:
                     self.counter_label.text = "La reprise est sécurisée"
                     self.file_label.text = "Diagnostic disponible · reprise sans doublon"
-                    self.local_stage.text = f"📱 Local · {'Terminé' if local_complete else 'À reprendre'}"
-                    self.drive_stage.text = "☁️ Drive · À reprendre"
+                    self.local_stage.text = f"📱 Local · {'Terminé' if local_complete else 'Reprise'}"
+                    self.drive_stage.text = "☁️ Drive · Reprise"
                     self._set_diagnostic_visible(True)
                 self._set_progress_fill(1.0 if success else 0.0)
                 self.backup_button.title = "Mettre à jour la sauvegarde" if success else "Réessayer la sauvegarde"
