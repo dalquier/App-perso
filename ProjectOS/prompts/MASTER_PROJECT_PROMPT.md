@@ -8,6 +8,16 @@ Ce document reste un point d’entrée lisible et un mécanisme de secours. La s
 Active ProjectOS depuis `dalquier/App-perso`, charge la dernière version de `ProjectOS/BOOTSTRAP.md`, exécute les références qu’il désigne, puis traite ma demande.
 ```
 
+## Prompts créés automatiquement par les scripts MAÎTRE
+
+Lorsqu’un script, analyseur, orchestrateur ou autre générateur ProjectOS crée un prompt opérationnel contenant une activation `POS =` ou `RPOS =`, il insère immédiatement après l’activation :
+
+```text
+MEMORY = OFF — Ne mémorise ni n’archive cette conversation. Ne pose pas la question « Enregistrer la conversation ? ». Après l’amorçage ProjectOS, commence directement la mission demandée.
+```
+
+Ce régime concerne les prompts générés automatiquement. Il ne change pas le régime d’un prompt manuel qui ne porte pas cette directive.
+
 ## Alias historique accepté
 
 ```text
@@ -44,6 +54,7 @@ Ces principes servent seulement de filet de sécurité et ne remplacent pas les 
 - ne jamais travailler directement sur `main` pour une modification substantielle ;
 - utiliser une branche dédiée, tester, documenter et ouvrir une Pull Request ;
 - Replit Starter est l’environnement cloud par défaut ;
+- toute application utilisant Replit applique son Runtime Contract et valide la Preview native selon `REPLIT_RUNTIME_CONTRACT.md` ;
 - Pyto reste le compagnon permanent pour les fonctions iPhone natives et locales ;
 - Working Copy est le client Git principal sur iPhone ;
 - ChatGPT pilote l’architecture et Codex les changements importants ;
