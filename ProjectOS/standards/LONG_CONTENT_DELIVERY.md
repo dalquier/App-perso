@@ -52,6 +52,8 @@ Formats privilégiés :
 - `.json`, `.csv` ou `.xlsx` pour données structurées ;
 - `.zip` uniquement pour regrouper plusieurs fichiers, installer ou fournir une récupération de secours.
 
+Lorsqu’un fichier téléchargeable n’a pas encore de destination durable, appliquer `WORKSPACE_AND_FILE_LIFECYCLE.md` : après téléchargement, un livrable final va dans `ProjectOS Workspace/30_OUTPUT/<Projet>` et un fichier de transit vers un autre outil va dans `ProjectOS Workspace/20_EXCHANGE`.
+
 ### 3.3 Code produit par Codex
 
 Pour Codex, un fichier joint ou un long bloc de code dans la conversation ne remplace jamais la livraison canonique.
@@ -64,7 +66,7 @@ Le code substantiel doit être :
 4. livré dans une Pull Request vérifiable ;
 5. résumé brièvement dans la conversation.
 
-Un fichier téléchargeable, un ZIP ou un patch peut compléter cette livraison pour l’installation, le transfert ou la récupération, mais ne devient pas la source de vérité.
+Un fichier téléchargeable, un ZIP ou un patch peut compléter cette livraison pour l’installation, le transfert ou la récupération, mais ne devient pas la source de vérité. S’il est téléchargé sur iPhone uniquement pour être réimporté ailleurs, il relève de `ProjectOS Workspace/20_EXCHANGE`.
 
 ## 4. Livraison à deux niveaux
 
@@ -77,6 +79,8 @@ Lorsqu’un fichier est produit, la réponse visible doit conserver un résumé 
 - les limites, risques ou actions restantes.
 
 Le contenu complet est placé dans le fichier. La conversation ne doit pas recopier intégralement le même contenu, sauf nécessité explicite.
+
+Lorsque le fichier doit être conservé localement sur iPhone, la réponse indique en plus sa destination Workspace recommandée. L’agent ne prétend jamais avoir copié le fichier dans iCloud si la plateforme ne dispose pas d’un accès réel à cet emplacement.
 
 ## 5. Seuils et jugement
 
@@ -114,8 +118,10 @@ Un fichier n’est déclaré livré que si :
 - le lien ou canal de récupération a été vérifié ;
 - les fichiers canoniques restent versionnés dans GitHub lorsque le contenu appartient au projet.
 
+Le classement local ultérieur applique `WORKSPACE_AND_FILE_LIFECYCLE.md` ; la présence d’une copie dans le Workspace ne remplace aucune preuve de publication GitHub ou d’archivage Drive.
+
 ## 8. Formulation opérationnelle
 
 Règle ProjectOS :
 
-> Réponse courte dans la conversation pour comprendre et décider ; fichier téléchargeable pour conserver, transmettre ou exécuter un contenu volumineux ; dépôt GitHub, branche et Pull Request pour tout code substantiel produit par Codex.
+> Réponse courte dans la conversation pour comprendre et décider ; fichier téléchargeable pour conserver, transmettre ou exécuter un contenu volumineux ; Workspace iCloud pour son transit ou classement local ; dépôt GitHub, branche et Pull Request pour tout code substantiel produit par Codex.
