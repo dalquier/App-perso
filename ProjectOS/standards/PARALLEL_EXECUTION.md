@@ -6,6 +6,8 @@ Ce standard impose à ProjectOS de détecter les flux de travail réellement ind
 
 La parallélisation visible reste sous le contrôle de Damien. Les lectures et vérifications internes sans effet de bord peuvent être exécutées en parallèle automatiquement.
 
+Toute parallélisation susceptible de produire plusieurs branches ou Pull Requests dans un dépôt GitHub applique également `GITHUB_MERGE_COORDINATION.md`. Les développements peuvent être parallèles ; leur convergence vers une branche canonique reste séquentielle, fraîchement revalidée et explicitement autorisée.
+
 ## 2. Question canonique
 
 Lorsqu’au moins deux flux visibles satisfont tous les critères du présent standard, ProjectOS envoie une réponse décisionnelle dédiée contenant exactement :
@@ -99,6 +101,8 @@ Reconnaître notamment `oui`, `go`, `vas-y`, `parallélise` et toute formulation
 
 ProjectOS présente alors un plan concis indiquant pour chaque flux : identifiant, objectif, entrées, livrable, critères d’acceptation, outil, branche éventuelle, canal de livraison et coordinateur. Les branches, fichiers et ressources mutables restent exclusifs à un seul flux. Aucune fusion n’est automatique.
 
+Si ces flux produisent plusieurs Pull Requests destinées à une branche canonique, chaque PR entre ensuite dans le processus `DRAFT → READY_FOR_QA → READY_FOR_MERGE → MERGED` défini par `GITHUB_MERGE_COORDINATION.md`. Une fusion dans `main` invalide la qualification `READY_FOR_MERGE` des autres candidates jusqu’à leur nouveau Freshness Gate.
+
 ### Réponse négative
 
 Reconnaître notamment `non`, `séquentiel` et `continue normalement`.
@@ -122,6 +126,8 @@ Lorsqu’une parallélisation est autorisée, utiliser une matrice de ce type :
 
 Une même Pull Request ne devient jamais un point de concurrence entre plusieurs agents. La réconciliation est réalisée après livraison des flux sur une branche ou dans une Pull Request explicitement désignée.
 
+Pour les PR GitHub concurrentes, le coordinateur d’intégration applique `GITHUB_MERGE_COORDINATION.md` et les fusionne une par une. Après chaque fusion, les PR restantes doivent être revérifiées contre le nouveau `main` avant toute autorisation suivante.
+
 ## 10. Coût et outils
 
 Chaque flux applique `CREDIT_OPTIMIZATION.md`. Une parallélisation ne justifie ni la duplication d’agents, ni une exception implicite à la politique Replit. L’agent IA Replit reste interdit par défaut et ne travaille jamais en parallèle avec Codex ou un humain sur les mêmes fichiers ou ressources.
@@ -133,10 +139,12 @@ Chaque flux applique `CREDIT_OPTIMIZATION.md`. Une parallélisation ne justifie 
 3. Préparer une spécification UX, un plan QA et un contrat de données indépendants : poser la question canonique.
 4. Diagnostiquer puis corriger un bug : séquentiel jusqu’au diagnostic.
 5. Deux tâches doivent modifier `BOOTSTRAP.md` : coordinateur unique, pas de concurrence.
-6. Deux Builds indépendants dans des applications et branches distinctes : proposer la parallélisation.
+6. Deux Builds indépendants dans des applications et branches distinctes : proposer la parallélisation ; s’ils produisent deux PR vers `main`, les développements restent parallèles mais les fusions sont séquentielles avec Freshness Gate entre les deux.
 7. Nouvelle conversation ChatGPT avec demande parallélisable : résoudre d’abord `Enregistrer la conversation ?`, puis poser la question canonique.
 8. Damien répond `non` : poursuivre séquentiellement sans reposer la question pour le même périmètre.
 
 ## 12. Conformité
 
 Une exécution parallèle est conforme lorsque les critères sont vérifiés avant lancement, les périmètres sont exclusifs, le coût marginal est évalué, un coordinateur est désigné, les livrables sont traçables et la réconciliation finale est explicitement prévue.
+
+Lorsqu'elle produit plusieurs Pull Requests, la conformité finale exige en plus que leur convergence applique `GITHUB_MERGE_COORDINATION.md` : Resource Locks, Freshness Gate global, preuve CI sur le SHA relu, fusion séquentielle et révalidation des candidates restantes après chaque évolution de `main`.
