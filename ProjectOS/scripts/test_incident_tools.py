@@ -97,6 +97,9 @@ class IncidentAnalyzerTests(unittest.TestCase):
         self.assertIn("P0", prompt)
         self.assertIn("INC-A", prompt)
         self.assertIn("NO_ACTION", prompt)
+        self.assertIn("MEMORY = OFF", prompt)
+        self.assertIn("Ne pose pas la question « Enregistrer la conversation ? »", prompt)
+        self.assertLess(prompt.index("MEMORY = OFF"), prompt.index("MISSION"))
 
 
 if __name__ == "__main__":

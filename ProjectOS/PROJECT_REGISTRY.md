@@ -10,6 +10,7 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 - Le manifeste du projet complète ce registre sans le contredire.
 - Toute migration doit mettre à jour ce fichier et le manifeste associé.
 - Tous les projets logiciels appliquent `standards/TOOLCHAIN_POLICY.md` sauf exception explicitement documentée.
+- Tout projet logiciel utilisant Replit applique `standards/REPLIT_RUNTIME_CONTRACT.md` dès son initialisation et avant sa première recette Replit.
 
 ## Workflow standard commun
 
@@ -17,8 +18,9 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 2. Codex réalise les Builds et changements substantiels sur une branche GitHub dédiée.
 3. GitHub reste la source de vérité et le lieu canonique de livraison.
 4. Replit Starter importe le dépôt pour l’exécution, les tests fonctionnels, l’hébergement et le déploiement, sauf exception projet explicitement documentée par ADR.
-5. Pyto, Scriptable et Working Copy assurent les besoins iPhone et locaux selon leur périmètre.
-6. L’agent IA Replit n’est utilisé qu’en exception justifiée pour une capacité propre à Replit.
+5. Pour tout projet utilisant Replit, le Runtime Contract, le Runtime Preflight, le Direct Run Smoke et la Preview native sont vérifiés selon `standards/REPLIT_RUNTIME_CONTRACT.md`.
+6. Pyto, Scriptable et Working Copy assurent les besoins iPhone et locaux selon leur périmètre.
+7. L’agent IA Replit n’est utilisé qu’en exception justifiée pour une capacité propre à Replit.
 
 ## Projets connus
 
@@ -43,6 +45,7 @@ Ce registre permet d’identifier les projets, leurs alias et leurs références
 Un nouveau projet requiert au minimum :
 - une ligne dans ce registre ;
 - un dossier `ProjectOS/projects/<Nom>/` ;
-- un `PROJECT_MANIFEST.md` ;
+- un `PROJECT_MANIFEST.md` basé sur `ProjectOS/templates/PROJECT_MANIFEST.md` ;
 - un dépôt ou dossier applicatif canonique vérifié ;
+- si Replit est prévu pour exécuter, tester, prévisualiser, héberger ou déployer l’application, un Runtime Contract basé sur `ProjectOS/templates/REPLIT_RUNTIME_CONTRACT.md`, avec mode Replit choisi, commande de lancement versionnée, Direct Run Smoke et Preview native vérifiée avant `RUNTIME READY` ;
 - un statut et un prochain jalon.
