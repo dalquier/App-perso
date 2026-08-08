@@ -18,6 +18,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 ## Standards transverses
 
 - `standards/TOOLCHAIN_POLICY.md` : politique obligatoire de développement frugal et rôle de chaque outil.
+- `standards/REPLIT_RUNTIME_CONTRACT.md` : contrat obligatoire pour toute application utilisant Replit ; mode runtime, Git hygiene, lancement direct, Preview native, Direct Run Smoke et récupération d’un workspace contaminé.
 - `standards/CREDIT_OPTIMIZATION.md` : optimisation obligatoire des crédits, quotas et appels payants, avec recommandation d’outil avant chaque prompt opérationnel.
 - `standards/PARALLEL_EXECUTION.md` : détection, autorisation et orchestration des flux de travail indépendants.
 - `standards/PROGRESS_COMMUNICATION.md` : mises à jour factuelles sur les tâches réalisées, l’action en cours et le temps restant estimé.
@@ -37,6 +38,8 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `standards/CONVERSATION_NAMING.md` : convention obligatoire de nommage des discussions ChatGPT et Codex.
 - `standards/CONVERSATION_MEMORY.md` : consentement, indexation et synthèse de la mémoire conversationnelle.
 - `standards/CONVERSATION_ARCHIVE_PIPELINE.md` : capture incrémentale directe de la transcription visible et des fichiers dans Google Drive.
+
+`standards/REPLIT_RUNTIME_CONTRACT.md` doit être chargé dès qu’une demande concerne Replit, Preview/Webview, Artifact, Workflow de lancement, port, serveur runtime, PWA exécutée dans Replit, import GitHub dans Replit ou création d’une nouvelle application destinée à y être exécutée.
 
 ## Décisions transverses
 
@@ -80,6 +83,7 @@ Le registre central détermine quels projets disposent déjà d’un dossier Pro
 ## Modèles
 
 - `templates/PROJECT_MANIFEST.md` : manifeste type.
+- `templates/REPLIT_RUNTIME_CONTRACT.md` : contrat type obligatoire pour une application utilisant Replit comme runtime, Preview, hébergement ou environnement de recette.
 - `templates/DELIVERY_MANIFEST.md` : preuve type de construction, export, publication, livraison et récupération.
 - `templates/AGENT_TASK_RECORD.json` : exemple anonymisé de tâche Codex ou Work suivie.
 - `templates/INCIDENT_OCCURRENCE.json.example` : modèle machine-readable d’une occurrence d’incident.
