@@ -22,6 +22,22 @@ Le bouton unique `Mettre à jour la sauvegarde` enchaîne le miroir local et sa 
 
 Copier `apps/projectos-backup/` dans le dossier Pyto de l’iPhone puis lancer `run.py`. La configuration existante est conservée.
 
+## ProjectOS Workspace
+
+`iCloud Drive/ProjectOS Workspace` est l’espace de travail local défini par ProjectOS pour les téléchargements, fichiers intermédiaires, échanges et livrables locaux.
+
+ProjectOS Backup ne sauvegarde pas automatiquement cette racine. La configuration recommandée consiste à ajouter séparément, uniquement lorsque nécessaire :
+
+- `ProjectOS Workspace/10_WORK` ;
+- `ProjectOS Workspace/30_OUTPUT`.
+
+Ne pas sélectionner la racine `ProjectOS Workspace`, ni sauvegarder par défaut `00_INBOX`, `20_EXCHANGE`, `80_TO_ARCHIVE` ou `90_TRASH_7D`. Les sources dynamiques existantes suffisent : aucune modification du moteur n’est nécessaire.
+
+Références :
+
+- `ProjectOS/standards/WORKSPACE_AND_FILE_LIFECYCLE.md` ;
+- `ProjectOS/guides/WORKSPACE_IPHONE.md`.
+
 ## Transfert vers Google Drive
 
 Google Drive apparaît dans l’app Fichiers mais ne permet pas à Pyto de sélectionner durablement un dossier fournisseur. La destination Drive n’est donc jamais configurée dans l’interface Pyto.
