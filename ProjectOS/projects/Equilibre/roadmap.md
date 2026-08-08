@@ -48,7 +48,7 @@ Statut : **intégré dans `main`**.
 
 BUILD-04 apporte deux protocoles actifs versionnés, une navigation principale à cinq destinations avec `Protocoles`, le stockage v4 et ses migrations/garanties anti-résurrection, des gates de sécurité avant mutation, la mémoire uniquement explicite et le cache PWA `equilibre-shell-v6`.
 
-Le lancement Replit versionné utilise `./start-equilibre.sh`, le build Vite de production et un serveur statique Node dédié. Le direct-run smoke CI vérifie ce chemin et le HTTP 200. La validation runtime/iPhone post-intégration est régie par le contrat Replit dédié en cours de consolidation dans ProjectOS.
+Le lancement Replit versionné utilise `./start-equilibre.sh`, le build Vite de production et un serveur statique Node dédié. Le direct-run smoke CI vérifie ce chemin et le HTTP 200. La validation runtime/iPhone post-intégration est désormais régie par le contrat canonique `ProjectOS/projects/Equilibre/docs/REPLIT_RUNTIME_CONTRACT.md` et reste à rattacher au SHA effectivement exécuté.
 
 ## Jalon G — Convergence Équilibre conversationnelle
 
