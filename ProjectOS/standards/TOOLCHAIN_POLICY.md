@@ -6,7 +6,7 @@ Préserver durablement l’usage du plan gratuit Replit Starter en séparant str
 
 ## 2. Principe directeur
 
-> Le code est conçu et produit avec ChatGPT et Codex, versionné et livré dans GitHub. Replit Starter reçoit le résultat versionné pour l’exécuter, le tester, le stocker comme environnement de travail et le déployer **uniquement lorsqu’un chemin de runtime compatible a été qualifié**. Les crédits IA Replit sont une ressource exceptionnelle soumise à une autorisation ponctuelle.
+> Le code est conçu et produit avec ChatGPT et Codex, versionné et livré dans GitHub. Chaque projet conserve une seule application Replit canonique : elle est créée par un import initial qualifié, puis reçoit les versions suivantes par synchronisation Git pour les tester et les publier sans réimport. Les crédits IA Replit sont une ressource exceptionnelle soumise à une autorisation ponctuelle.
 
 Cette règle s’applique à tous les projets logiciels pilotés par ProjectOS, sauf exception explicite, temporaire et documentée.
 
@@ -41,8 +41,10 @@ Dans Codex Cloud, le sandbox terminal et l’interface de publication sont deux 
 
 Usage normal autorisé sans agent IA **après qualification du runtime conformément à `REPLIT_RUNTIME_CONTRACT.md`** :
 
-- réutiliser un runtime Replit déjà qualifié et propre ;
-- cloner ou importer le dépôt GitHub canonique uniquement si le `REPLIT IMPORT/SETUP CAPABILITY GATE` est `ADMISSIBLE` ;
+- réutiliser l’application Replit canonique déjà qualifiée et propre ;
+- effectuer l’unique import initial du dépôt GitHub canonique uniquement si le `REPLIT IMPORT/SETUP CAPABILITY GATE` est `ADMISSIBLE` ;
+- synchroniser ensuite les branches/SHA par le Git pane ou une commande Git déterminée, sans nouvel import ;
+- conserver la version publiée stable pendant la validation d’une candidate en Preview avec données fictives ou isolées ;
 - installer les dépendances et exécuter l’application lorsque la commande canonique reste effectivement gouvernante ;
 - utiliser le Shell pour des commandes déterminées et non exploratoires ;
 - consulter les logs, reproduire une anomalie et relever les preuves ;
@@ -51,7 +53,7 @@ Usage normal autorisé sans agent IA **après qualification du runtime conformé
 - redémarrer, héberger ou déployer une application lorsque pertinent ;
 - stocker l’espace de travail d’exécution temporaire.
 
-Un import ou setup Replit n’est **pas** considéré comme une opération mécanique gratuite par défaut. Avant un nouvel import GitHub, ZIP, une app vierge ou toute recréation de runtime, appliquer le `REPLIT IMPORT/SETUP CAPABILITY GATE`. Si le setup démarre/requiert Agent ou si refuser Agent bloque le Run/Preview nominal, ce chemin est incompatible avec l’usage normal sans Agent.
+Un import ou setup Replit n’est **pas** considéré comme une opération mécanique gratuite par défaut. Le `REPLIT IMPORT/SETUP CAPABILITY GATE` s’applique avant la création initiale ou une recréation exceptionnelle, pas à chaque version. Si le setup démarre/requiert Agent ou si refuser Agent bloque le Run/Preview nominal, ce chemin est incompatible avec l’usage normal sans Agent. Une fois l’application canonique créée, une mise à jour ordinaire passe exclusivement par Git ; l’apparition de `Set up the imported project` impose un arrêt et un diagnostic, jamais un réimport réflexe.
 
 L’import ZIP ne doit jamais être utilisé comme contournement improvisé d’un import GitHub : il possède son propre comportement de setup et doit être qualifié séparément. En août 2026, le flux ZIP Replit observé/documenté est incompatible par défaut avec la politique sans Agent ; toute évolution ultérieure doit être re-vérifiée avant usage.
 
@@ -79,16 +81,17 @@ Une utilisation de l’agent IA Replit n’est admise que si toutes les conditio
 
 L’autorisation est ponctuelle : elle ne vaut ni pour une tâche suivante, ni pour une relance, ni pour une extension du périmètre. Toute relance payante exige une nouvelle évaluation et une nouvelle autorisation.
 
-### Canal de QA/runtime alternatif
+### Canal temporaire de continuité QA
 
-Lorsqu’un besoin de validation ne dépend pas spécifiquement de Replit et que le chemin Replit disponible est `INCOMPATIBLE` ou `UNKNOWN`, ProjectOS ne doit pas bloquer ni multiplier les imports. Il peut utiliser un canal de Preview/QA alternatif si :
+Lorsqu’un besoin de validation ne dépend pas spécifiquement de Replit et que la création/récupération Replit disponible est `INCOMPATIBLE` ou `UNKNOWN`, ProjectOS ne doit pas bloquer le Build ni multiplier les imports. Il peut utiliser temporairement un autre canal de Preview/QA si :
 
 - GitHub reste la source canonique ;
 - le SHA ou l’inventaire exact reproduit est connu ;
 - le périmètre de preuve est annoncé (par exemple QA visuelle uniquement) ;
 - ce résultat n’est jamais présenté comme `REPLIT VALIDATED` ;
 - les éléments de chrome injectés par la plateforme sont distingués de l’application ;
-- tout changement durable repasse par ChatGPT/Codex → GitHub.
+- tout changement durable repasse par ChatGPT/Codex → GitHub ;
+- ce canal ne devient ni la cible opérationnelle ni un substitut silencieux à l’application Replit canonique.
 
 ### Pyto et Scriptable
 
@@ -121,24 +124,27 @@ Lorsqu’un besoin de validation ne dépend pas spécifiquement de Replit et que
 4. Codex exécute les tests et prépare le handoff ainsi que le texte de Pull Request.
 5. Damien publie la branche et la Pull Request par le menu GitHub natif de Codex.
 6. ChatGPT vérifie la livraison dans GitHub.
-7. Si une validation Replit est requise, ChatGPT applique d’abord `REPLIT_RUNTIME_CONTRACT.md` et le `REPLIT IMPORT/SETUP CAPABILITY GATE`.
-8. Si un runtime Replit déjà qualifié existe, il récupère mécaniquement le SHA/branche attendu sans agent IA et exécute l’application.
-9. Si un nouveau runtime/import est nécessaire, il n’est créé que par un chemin `ADMISSIBLE`; un chemin `INCOMPATIBLE` ne doit pas être répété.
-10. Les tests réels, mobiles, fonctionnels ou de déploiement sont réalisés dans Replit sans agent IA lorsque Replit est réellement le canal pertinent et qualifié.
-11. Si Replit n’est pas requis pour la preuve et que son setup est incompatible, utiliser un canal alternatif borné sans présenter le résultat comme validation Replit.
-12. Les observations de runtime fournissent uniquement les faits utiles : parcours reproduit, captures, logs, commande exécutée, SHA/version et résultat.
-13. Les anomalies repartent vers ChatGPT pour diagnostic ou Codex pour correction.
-14. Le correctif revient par GitHub, puis le runtime qualifié le récupère et le reteste.
+7. Si une validation Replit est requise, ChatGPT applique `REPLIT_RUNTIME_CONTRACT.md`.
+8. Si l’application Replit canonique existe, elle récupère mécaniquement le SHA/branche attendu par Git, sans Agent et sans nouvel import.
+9. Si elle n’existe pas ou doit exceptionnellement être recréée, appliquer d’abord le `REPLIT IMPORT/SETUP CAPABILITY GATE` ; un chemin `INCOMPATIBLE` ne doit pas être répété.
+10. La candidate s’exécute dans la Preview de l’application canonique avec données fictives ou isolées ; la version publiée stable et ses données réelles restent inchangées.
+11. Après CI, recette, sauvegarde/migration applicable et rollback prouvé sur le même SHA, publier dans cette même application et enregistrer le nouveau Last Known Good.
+12. Si la récupération Replit est bloquée, utiliser seulement un canal temporaire borné sans présenter le résultat comme validation Replit ni changer de cible opérationnelle.
+13. Les observations de runtime fournissent uniquement les faits utiles : parcours reproduit, captures, logs, commande exécutée, SHA/version et résultat.
+14. Les anomalies repartent vers ChatGPT pour diagnostic ou Codex pour correction.
+15. Le correctif revient par GitHub, puis l’application canonique le récupère et le reteste.
 
-Le cycle normal ne contient aucun prompt adressé à l’agent Replit. Il ne contient pas non plus de boucle d’import/recréation Replit non qualifiée.
+Le cycle normal ne contient aucun prompt adressé à l’agent Replit. Il contient un import initial au maximum, puis des synchronisations Git ; aucune mise à jour par réimport ou recréation.
 
 ## 5. Règles de maîtrise des coûts et de sécurité
 
 - Ne jamais lancer l’agent Replit pour explorer une idée encore mal définie.
 - Ne jamais utiliser l’agent Replit pour demander seulement un avis, un plan ou une analyse.
 - Ne jamais demander à Replit de reconstruire un projet déjà présent dans GitHub.
-- Ne jamais supposer qu’un nouvel import Replit sera passif ou respectera immédiatement le `.replit` versionné ; vérifier le Capability Gate.
+- Ne jamais supposer que l’import initial Replit sera passif ou respectera immédiatement le `.replit` versionné ; vérifier le Capability Gate.
+- Ne jamais utiliser un nouvel import pour mettre à jour une application canonique existante.
 - Ne jamais répéter un import `INCOMPATIBLE` pour essayer de contourner le setup automatique.
+- Ne jamais remplacer la version publiée stable avant validation du même SHA, de la conservation des données et du rollback.
 - Préférer une livraison complète et testée par Codex à une série de petites générations Replit.
 - Préférer un test manuel déterminé à un test généré par l’agent lorsque le parcours est déjà connu.
 - Ne jamais placer un jeton GitHub ou un secret dans un prompt Codex ou Replit.
@@ -153,7 +159,10 @@ Le cycle normal ne contient aucun prompt adressé à l’agent Replit. Il ne con
 Une livraison respecte cette politique lorsque :
 
 - le code complet existe dans GitHub ;
-- le canal Replit, lorsqu’il est utilisé, possède un Capability Gate admissible ou une exception Agent explicitement autorisée ;
+- une seule application Replit canonique est identifiée par projet ;
+- le canal Replit, lors de sa création ou recréation, possède un Capability Gate admissible ou une exception Agent explicitement autorisée ;
+- les versions ordinaires arrivent dans cette application par Git sans réimport ;
+- une version publiée stable, un SHA/tag Last Known Good, une frontière de données et un rollback sont documentés ;
 - Replit peut être supprimé puis recréé depuis le dépôt sans perte du projet **lorsqu’un chemin de recréation admissible existe** ; sinon la limitation est documentée sans dégrader GitHub ;
 - aucun changement durable n’existe uniquement dans l’espace de travail Replit ;
 - les tests et limites sont documentés ;

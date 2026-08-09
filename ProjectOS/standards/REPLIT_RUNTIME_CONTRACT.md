@@ -25,8 +25,14 @@ Le contrat déclare au minimum :
 - branche/référence canonique ;
 - chemin applicatif dans le dépôt ;
 - mode Replit choisi ;
-- méthode d’entrée/création du runtime ;
+- application Replit canonique (nom et identifiant) ;
+- URL publiée stable ;
+- méthode d’entrée initiale ou de recréation exceptionnelle ;
+- méthode de mise à jour ordinaire sans réimport ;
 - statut du contrôle de capacité d’import/setup ;
+- séparation entre version publiée stable et candidate de Preview ;
+- SHA/tag Last Known Good et procédure de rollback ;
+- frontière de données entre usage réel et tests ;
 - commande de lancement canonique ;
 - comportement attendu du port ;
 - surface utilisateur de validation attendue ;
@@ -79,8 +85,11 @@ Avant de créer, importer ou recréer un runtime Replit, effectuer un contrôle 
 REPLIT IMPORT/SETUP CAPABILITY GATE
 Project:
 Intended runtime mode: GITHUB_IMPORTED_RUNTIME | REPLIT_NATIVE_RUNTIME
-Ingress/setup method: EXISTING_RUNTIME | GITHUB_IMPORT | ZIP_IMPORT | BLANK_APP | OTHER
+Lifecycle action: INITIAL_CREATION | EXCEPTIONAL_RECREATION
+Ingress/setup method: GITHUB_IMPORT | ZIP_IMPORT | BLANK_APP | OTHER
+Canonical Replit app name/id:
 Canonical repository/ref/SHA:
+Ordinary update method after creation: GIT_SYNC
 Replit behavior verified from current UI/docs: YES | NO
 Agent automatically started or required: YES | NO | UNKNOWN
 Can Agent be declined without blocking nominal Run/Preview: YES | NO | UNKNOWN
@@ -98,8 +107,27 @@ Règles :
 3. Ne jamais utiliser un import ZIP comme contournement d’un import GitHub problématique sans refaire ce gate. La présence d’un `.replit` dans l’archive ne garantit pas que Replit utilisera immédiatement cette commande.
 4. Si l’import crée un Artifact, un checkpoint ou une tâche Agent, ces éléments ne deviennent jamais une preuve du produit canonique.
 5. Une exception Agent suit obligatoirement `TOOLCHAIN_POLICY.md` et requiert l’autorisation ponctuelle explicite de Damien avant exécution.
-6. Lorsque le chemin Replit est `INCOMPATIBLE`, ne pas multiplier les imports ou setups. Réutiliser un runtime déjà qualifié si disponible ; sinon basculer vers un canal d’exécution/QA alternatif adapté au besoin et documenter que ce canal ne constitue pas une preuve Replit.
-7. Refaire ce gate si l’interface ou le comportement d’import Replit change matériellement.
+6. Lorsque le chemin Replit est `INCOMPATIBLE`, ne pas multiplier les imports ou setups. Réutiliser l’application canonique déjà qualifiée si elle existe ; sinon garder l’activation Replit en `BLOCKED` et n’utiliser qu’un canal temporaire de continuité pour les preuves non spécifiques à Replit.
+7. Ce gate porte sur la création initiale ou une recréation exceptionnelle. Il ne s’exécute pas à chaque version : une application canonique existante est mise à jour par synchronisation Git, jamais par un nouvel import.
+8. Un projet ne possède qu’une application Replit canonique. L’import initial est unique ; un doublon d’essai, ZIP ou GitHub ne devient pas canonique par simple création.
+9. Une recréation est une opération de récupération motivée par un incident, pas une méthode de mise à jour. L’ancienne application n’est ni supprimée ni déclassée avant validation de la remplaçante et conservation des données/preuves utiles.
+10. Refaire ce gate si l’interface ou le comportement d’import Replit change matériellement.
+
+## 4.2. Application canonique, version stable et candidate
+
+Chaque projet déclare **une seule application Replit canonique**. Cette même application porte deux états distincts :
+
+- `STABLE_PUBLISHED` : version utilisable à l’URL publiée stable, rattachée à un SHA et à un tag Last Known Good ; elle conserve les données réelles et reste inchangée pendant la préparation d’une candidate ;
+- `CANDIDATE_PREVIEW` : branche/SHA en cours de validation dans l’éditeur et la Preview de la même application ; elle utilise des données fictives ou un stockage explicitement isolé.
+
+Règles :
+
+1. La création de la candidate ne déclenche ni nouvel import ni nouvelle application Replit.
+2. Les mises à jour ordinaires utilisent le Git pane ou une commande Git déterminée dans l’application canonique, avec worktree propre et SHA vérifié.
+3. L’apparition de `Set up the imported project` pendant une mise à jour est un incident de runtime : arrêter, ne pas accepter Agent par réflexe et ne pas réimporter.
+4. La publication stable n’est remplacée qu’après CI, Preview, recette applicable, sauvegarde/migration de données si nécessaire et preuve de rollback sur le même SHA.
+5. Les données réelles sont utilisées uniquement par `STABLE_PUBLISHED`. Une candidate ne réutilise pas silencieusement le stockage réel.
+6. Le fallback externe éventuel maintient la continuité de QA ; il ne remplace ni l’application Replit canonique ni l’objectif de rétablir son flux nominal.
 
 ### État observé en août 2026
 
@@ -109,7 +137,7 @@ Conséquence : **`ZIP_IMPORT` est `INCOMPATIBLE` par défaut avec le mode normal
 
 ## 5. Replit Runtime Preflight
 
-Le Runtime Preflight n’est exécuté qu’après un Import/Setup Capability Gate `ADMISSIBLE` ou après une exception Agent explicitement autorisée et terminée.
+Pour une création initiale ou une recréation exceptionnelle, le Runtime Preflight n’est exécuté qu’après un Import/Setup Capability Gate `ADMISSIBLE` ou après une exception Agent explicitement autorisée et terminée. Pour une application canonique existante, le gate vaut `NOT_REQUIRED_EXISTING` et le Preflight vérifie la synchronisation Git sur le SHA attendu.
 
 Avant tout test manuel, recette iPhone ou diagnostic Replit, exécuter ce preflight.
 
@@ -121,9 +149,14 @@ Canonical ref:
 Expected SHA:
 Application path:
 Runtime mode: GITHUB_IMPORTED_RUNTIME | REPLIT_NATIVE_RUNTIME
-Ingress/setup method:
-Import/Setup Capability Gate: ADMISSIBLE | AGENT_EXCEPTION_AUTHORIZED
-Replit app name:
+Replit app name/id:
+Runtime lifecycle: EXISTING_CANONICAL | INITIAL_CREATION | EXCEPTIONAL_RECREATION
+Ingress/setup method: GIT_SYNC | GITHUB_IMPORT | ZIP_IMPORT | BLANK_APP | OTHER
+Import/Setup Capability Gate: NOT_REQUIRED_EXISTING | ADMISSIBLE | AGENT_EXCEPTION_AUTHORIZED
+Published stable URL:
+Stable LKG SHA/tag:
+Candidate ref/SHA:
+Candidate data isolated or fictitious: YES | NO | UNKNOWN
 Workspace clean: YES | NO | UNKNOWN
 Local ref equals canonical ref: YES | NO | UNKNOWN
 Local commits ahead: 0 | <n> | UNKNOWN
@@ -196,15 +229,16 @@ Un Workflow manuel peut servir au diagnostic ou à une tâche de validation, mai
 
 Les commandes de validation/test ne remplacent pas le runtime produit. Un bouton `Run` dans un panneau de validation ne vaut pas démarrage applicatif.
 
-### Preview externe de QA
+### Canal temporaire de continuité QA
 
-Lorsque Replit est indisponible ou incompatible avec la politique d’outil, un hébergement ou miroir temporaire peut servir à une **QA visuelle ou fonctionnelle explicitement bornée**, à condition de :
+Lorsque Replit est momentanément indisponible ou que sa création reste `BLOCKED`, un hébergement ou miroir temporaire peut servir à une **QA visuelle ou fonctionnelle explicitement bornée**, à condition de :
 
 - conserver GitHub comme source canonique ;
 - rattacher la QA à un SHA ou à un inventaire exact des éléments reproduits ;
 - annoncer clairement qu’il ne s’agit pas d’une preuve `REPLIT VALIDATED` ;
 - ne pas promouvoir dans GitHub un changement issu uniquement du miroir sans repasser par le flux canonique ;
-- distinguer le chrome injecté par la plateforme de Preview du produit testé.
+- distinguer le chrome injecté par la plateforme de Preview du produit testé ;
+- ne pas déclarer ce canal comme nouvelle cible opérationnelle ni abandonner silencieusement l’application Replit canonique.
 
 ## 9. Gate CI — Direct Run Smoke
 
@@ -229,13 +263,16 @@ Un Direct Run Smoke vert prouve la commande hors Replit ; il ne prouve pas que l
 Après une évolution modifiant le runtime, le build, `.replit`, le serveur, le service worker, le manifeste ou la navigation de démarrage :
 
 1. fusionner uniquement après CI verte sur le SHA exact ;
-2. relever le nouveau SHA `main` ;
-3. réévaluer le Import/Setup Capability Gate si le runtime doit être recréé ;
-4. réaligner/recréer le runtime Replit depuis ce SHA uniquement si le chemin reste admissible ;
-5. exécuter le Replit Runtime Preflight ;
-6. ouvrir la Preview native ;
-7. réaliser le smoke produit ;
-8. seulement ensuite considérer la version comme `REPLIT VALIDATED`.
+2. relever le nouveau SHA `main` et conserver le SHA/tag Last Known Good actuellement publié ;
+3. synchroniser ce SHA dans l’application Replit canonique par Git, sans nouvel import ;
+4. exécuter le Replit Runtime Preflight ;
+5. ouvrir la Preview native avec données fictives ou isolées ;
+6. réaliser le smoke produit et la recette applicable ;
+7. exécuter sauvegarde, migration et contrôle de rollback si les données ou le schéma changent ;
+8. publier la candidate dans la même application et vérifier l’URL stable ;
+9. seulement ensuite enregistrer le nouveau Last Known Good et considérer la version comme `REPLIT VALIDATED`.
+
+Si une recréation est réellement nécessaire, elle suit séparément le Capability Gate et la politique de récupération ; elle ne se substitue pas à l’étape normale de synchronisation Git.
 
 Une ancienne Preview encore ouverte ne constitue pas une preuve post-merge.
 
@@ -260,9 +297,10 @@ Lorsqu’un workspace accumule des Artifacts, Workflows, commits locaux, changem
 4. conserver uniquement une preuve si nécessaire ;
 5. nettoyer/réaligner le runtime si aucune donnée unique n’existe ;
 6. avant toute recréation, refaire le Import/Setup Capability Gate ;
-7. si le chemin de recréation est incompatible, ne pas répéter l’import : choisir un autre canal de QA/runtime ;
+7. si le chemin de recréation est incompatible, ne pas répéter l’import : garder la récupération Replit en `BLOCKED` et utiliser seulement un canal temporaire de continuité pour les preuves compatibles ;
 8. si l’état reste ambigu, recréer un runtime neuf seulement par un chemin admissible plutôt que poursuivre un débogage cumulatif ;
-9. ne supprimer l’ancien runtime qu’après validation du nouveau ou après décision explicite qu’aucune preuve utile n’y réside.
+9. ne promouvoir le nouveau runtime comme application canonique qu’après validation du même SHA, de l’URL stable, des données et du rollback ;
+10. ne supprimer l’ancien runtime qu’après cette promotion ou après décision explicite qu’aucune donnée ni preuve utile n’y réside.
 
 La recréation doit être une procédure normale et peu coûteuse lorsqu’un chemin admissible existe ; elle ne doit pas devenir une boucle d’import Agent incontrôlée.
 
@@ -273,17 +311,19 @@ Lorsqu’un nouveau projet prévoit Replit :
 - définir le Runtime Contract au même moment que le manifeste ;
 - décider dès le départ du mode Replit ;
 - sélectionner et qualifier la méthode d’entrée/setup avec le Import/Setup Capability Gate ;
-- choisir le nom stable de l’app Replit ;
+- créer une seule application Replit canonique et consigner son nom, son identifiant et son URL publiée stable ;
+- définir `GIT_SYNC` comme méthode de mise à jour après l’import initial unique ;
+- définir les voies `STABLE_PUBLISHED` et `CANDIDATE_PREVIEW`, leur frontière de données et le rollback ;
 - versionner la commande de lancement avant la première recette ;
 - ajouter le Direct Run Smoke avant le premier jalon déclaré intégrable ;
 - vérifier la Preview native sur iPhone avant de considérer l’environnement prêt ;
 - interdire la création spontanée d’Artifact/Workflow parallèle au produit sans besoin explicite.
 
-Si aucun chemin Replit admissible sans Agent n’existe et qu’aucune exception n’est autorisée, **Replit n’est pas un prérequis bloquant du Build** : le projet utilise un canal alternatif pour les validations qui peuvent l’être et conserve `REPLIT VALIDATION = PENDING/BLOCKED` pour les preuves réellement spécifiques à Replit.
+Si aucun chemin Replit admissible sans Agent n’existe et qu’aucune exception n’est autorisée, **Replit n’est pas un prérequis bloquant du Build** : le projet utilise un canal temporaire de continuité pour les validations qui peuvent l’être, conserve `REPLIT VALIDATION = PENDING/BLOCKED` et maintient Replit comme cible opérationnelle à rétablir sauf décision explicite contraire.
 
 ## 14. Évolution d’une application existante
 
-Une évolution qui ne change pas le runtime réutilise le contrat vivant et privilégie le runtime déjà qualifié plutôt qu’un nouvel import.
+Une évolution qui ne change pas le runtime réutilise l’application canonique et le contrat vivant. Elle se synchronise par Git dans cette application, ne crée aucun doublon et ne remplace pas la version publiée stable avant les gates.
 
 Une évolution qui touche build, serveur, port, PWA, service worker, hébergement, racine du monorepo ou configuration Replit doit :
 
@@ -300,7 +340,11 @@ Un projet Replit est conforme lorsque :
 - GitHub est incontestablement canonique ;
 - le Runtime Contract existe ;
 - le mode Replit est unique et explicite ;
+- une seule application Replit canonique est identifiée ;
+- l’import initial est unique et les mises à jour ordinaires utilisent Git sans réimport ;
 - la méthode d’entrée/setup est qualifiée ;
+- l’URL publiée stable, le SHA/tag Last Known Good et le rollback sont connus ;
+- la candidate de Preview est séparée de la version publiée et de ses données réelles ;
 - le lancement est versionné ;
 - le runtime peut être recréé par un chemin admissible, ou la limitation est explicitement `BLOCKED` sans dégrader la source canonique ;
 - le worktree est propre avant recette ;
@@ -312,4 +356,4 @@ Un projet Replit est conforme lorsque :
 
 ## 16. Règle permanente
 
-**Ne jamais déboguer le produit tant que l’identité du runtime, son SHA, son mode Replit, sa méthode d’entrée/setup et son chemin de lancement ne sont pas prouvés. Ne jamais répéter un import Replit dont le Capability Gate est `INCOMPATIBLE` pour tenter de contourner le setup de la plateforme.**
+**Ne jamais déboguer le produit tant que l’identité du runtime, son SHA, son mode Replit, son application canonique et son chemin de lancement ne sont pas prouvés. Importer une fois pour créer ; synchroniser par Git pour mettre à jour ; publier seulement après les gates ; ne jamais répéter un import `INCOMPATIBLE` pour contourner le setup de la plateforme.**
