@@ -1,0 +1,25 @@
+{
+  "name": "@projectos/design-system-playground",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "tokens:generate": "node scripts/generate-tokens.mjs",
+    "prestorybook": "npm run tokens:generate",
+    "storybook": "storybook dev --host 0.0.0.0",
+    "prebuild-storybook": "npm run tokens:generate",
+    "build-storybook": "storybook build",
+    "pretest": "npm run tokens:generate",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run test && npm run build-storybook"
+  },
+  "dependencies": {"react":"19.1.1","react-dom":"19.1.1"},
+  "devDependencies": {
+    "@storybook/addon-a11y":"10.5.7","@storybook/react-vite":"10.5.7","storybook":"10.5.7",
+    "@testing-library/jest-dom":"6.6.4","@testing-library/react":"16.3.0","@testing-library/user-event":"14.6.1",
+    "@types/node":"26.1.2","@types/react":"19.1.9","@types/react-dom":"19.1.7","@vitejs/plugin-react":"4.7.0",
+    "jsdom":"26.1.0","typescript":"5.8.3","vite":"7.1.1","vitest":"3.2.4"
+  },
+  "engines":{"node":"20.20.2","npm":"11.4.2"},"packageManager":"npm@11.4.2"
+}
