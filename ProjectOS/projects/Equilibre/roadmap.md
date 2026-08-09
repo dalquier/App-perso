@@ -48,13 +48,15 @@ Statut : **intégré dans `main`**.
 
 BUILD-04 apporte deux protocoles actifs versionnés, une navigation principale à cinq destinations avec `Protocoles`, le stockage v4 et ses migrations/garanties anti-résurrection, des gates de sécurité avant mutation, la mémoire uniquement explicite et le cache PWA `equilibre-shell-v6`.
 
-Le lancement Replit versionné utilise `./start-equilibre.sh`, le build Vite de production et un serveur statique Node dédié. Le direct-run smoke CI vérifie ce chemin et le HTTP 200. La validation runtime/iPhone post-intégration est désormais régie par le contrat canonique `ProjectOS/projects/Equilibre/docs/REPLIT_RUNTIME_CONTRACT.md` et reste à rattacher au SHA effectivement exécuté.
+Le lancement Replit versionné utilise `./start-equilibre.sh`, le build Vite de production et un serveur statique Node dédié. Le direct-run smoke CI vérifie ce chemin et le HTTP 200. La PR #122 a stabilisé la configuration native. La Preview et le smoke iPhone ont été vérifiés sur le SHA `d9b91b9531b77b2c8f04e713465d69beb06f9bac`.
 
 ## Jalon G — Convergence Équilibre conversationnelle
 
+Statut : **convergé et versionné**.
+
 Objectif : préparer la version réellement conversationnelle d’Équilibre avant tout nouveau Build substantiel.
 
-Flux analytiques à faire converger :
+Flux analytiques convergés :
 
 - `CLINICAL-ROLE-01` — rôle, posture, compétences et limites ;
 - `AI-BACKEND-01` — backend sécurisé et fournisseur OpenAI réel ;
@@ -65,6 +67,8 @@ Flux analytiques à faire converger :
 - `V4-QA-AUTO-01` — QA automatisée du socle V4.
 
 Sortie attendue : spécification consolidée des interfaces entre rôle, safety, contexte, mémoire, provider, protocoles courts, séances longues et modalités futures, puis découpage en Builds non concurrents.
+
+Sortie canonique : `ProjectOS/projects/Equilibre/docs/CONVERSATIONAL_ARCHITECTURE_CONVERGENCE.md`, complétée par l'ADR-006.
 
 Aucune implémentation semi-structurée ou spécialisée à risque ne commence avant cette convergence.
 
@@ -107,7 +111,7 @@ Le premier incrément doit valider le cœur métier sans LLM : phases, temps act
 7. **SESSION-30-G — Domaines renforcés** : travail/RPS puis prévention de rechute après revue sécurité dédiée.
 8. **SESSION-30-H — Voix** : dictée, TTS, tour par tour, puis temps réel sans modifier le moteur métier.
 
-### Gates avant implémentation
+### Gates avant les incréments concernés
 
 Avant le code correspondant, trancher explicitement :
 
@@ -115,6 +119,8 @@ Avant le code correspondant, trancher explicitement :
 - extension contrôlée du stockage v4 ou migration storage-v5 / IndexedDB ;
 - contrat du provider semi-structuré ;
 - extension du modèle de sécurité pour conversations longues.
+
+Le contrat exact `LongSessionDefinition` est l'objet de `SESSION-30-A`. La décision stockage est requise avant `SESSION-30-C`, le contrat provider avant `SESSION-30-E` et l'extension safety complète avant tout dialogue long génératif. Ces décisions ne bloquent pas le domaine pur de `SESSION-30-A`.
 
 Le dialogue semi-structuré ne doit pas précéder la validation du moteur structuré local.
 

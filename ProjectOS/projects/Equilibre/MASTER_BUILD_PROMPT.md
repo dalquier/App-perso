@@ -6,7 +6,7 @@
 - **Gouvernance** : `ProjectOS/projects/Equilibre/`
 - **Application** : `apps/equilibre/`
 - **Prototype historique** : `dalquier/Scriptable`, en lecture seule
-- **Dernière mise à jour** : 2026-08-07
+- **Dernière mise à jour** : 2026-08-09
 
 ## 1. Identité et vision
 
@@ -75,7 +75,7 @@ Le dossier `ProjectOS/projects/Equilibre/` ne contient pas les dépendances, art
 - `safety` : règles déterministes et formulations ;
 - `export` : export, suppression et restauration contrôlée.
 
-La base intégrée jusqu’à BUILD-02 est local-first, sans synchronisation sensible. Les messages originaux restent les sources primaires. Les données dérivées restent reliées à leurs sources. Recherche structurée et plein texte avant embeddings. Toute migration est versionnée, testée et réversible.
+La base intégrée jusqu'à BUILD-04 est local-first, sans synchronisation sensible. Les messages originaux restent les sources primaires. Les données dérivées restent reliées à leurs sources. Recherche structurée et plein texte avant embeddings. Toute migration est versionnée, testée et réversible.
 
 ## 7. Rôle des outils
 
@@ -112,11 +112,12 @@ Le prototype `dalquier/Scriptable/TCC_Budy` est chargé uniquement pour inventai
 - BUILD-02 intégré par la PR #29 au commit `b115989fadd0f3e9f6b503c1b933df4d2b179827` ;
 - conversations locales persistantes, historique, reprise, renommage, suppression et modes conversationnels opérationnels ;
 - BUILD-03 intégré par la PR #53 : séances structurées et mémoire locale contrôlée ;
-- V4 / BUILD-04 construite sur `equilibre/build-04-main-integration`, mais non intégrée à `main` tant que sa Draft PR n'est pas fusionnée ;
-- la candidate BUILD-04 porte le stockage version 4, deux protocoles actifs versionnés, les gates de sécurité avant mutation et le cache PWA `equilibre-shell-v5` ;
+- V4 / BUILD-04 intégrée dans `main` : stockage version 4, deux protocoles actifs versionnés, gates de sécurité avant mutation et cache PWA `equilibre-shell-v6` ;
+- runtime Replit natif stabilisé par la PR #122 et vérifié au SHA `d9b91b9531b77b2c8f04e713465d69beb06f9bac` ;
+- convergence conversationnelle du Jalon G versionnée dans `docs/CONVERSATIONAL_ARCHITECTURE_CONVERGENCE.md` ;
 - génération locale progressive, interruption et isolation par conversation ;
-- les 48 tests et la recette physique iPhone mentionnés historiquement se rapportent à BUILD-02 ; les preuves BUILD-04 sont consignées dans sa Draft PR et la recette iPhone BUILD-04 reste à exécuter sur son SHA final ;
-- aucun fournisseur OpenAI réel et aucune donnée distante dans BUILD-02.
+- les 181 tests automatisés, le build, le lancement racine, le HTTP 200 et le smoke iPhone du socle sont verts au SHA de stabilisation ;
+- aucun fournisseur OpenAI réel, backend conversationnel ou stockage distant n'est encore implémenté.
 
 ## 10. Décisions prises
 
@@ -133,15 +134,15 @@ Le prototype `dalquier/Scriptable/TCC_Budy` est chargé uniquement pour inventai
 
 ## 11. Décisions ouvertes
 
-- stack PWA précise ;
-- stockage local exact ;
-- stratégie backend future pour OpenAI ;
-- contenu final du premier protocole guidé ;
-- règles et formulations sensibles exhaustives ;
-- politique de chiffrement, export et synchronisation future ;
-- éléments historiques à adapter ou réécrire.
+- stratégie storage-v5 / IndexedDB avant la persistance des séances longues ;
+- contrat exécutable détaillé de `ClinicalRolePolicy` ;
+- taxonomie temporelle et sensible de la mémoire contextuelle ;
+- modèle OpenAI, paramètres, budgets et timeouts à sélectionner par evals ;
+- niveau de conservation OpenAI standard ou Zero Data Retention si éligible ;
+- extension safety des dialogues longs et des domaines renforcés ;
+- politique de chiffrement, export et synchronisation future.
 
-Ces choix sont arbitrés dans BUILD-01 uniquement lorsqu’ils sont nécessaires au parcours minimal.
+Ces décisions sont prises dans les Builds qui en dépendent. Elles ne bloquent pas `SESSION-30-A`, limité aux contrats de domaine.
 
 ## 12. Fonctions historiques à préserver
 
@@ -159,7 +160,8 @@ Préserver signifie comparer et documenter, pas copier aveuglément du Python da
 
 ## 13. Dettes connues
 
-- mémoire contrôlée et séances enrichies non construites ;
+- utilisation contextuelle des mémoires confirmées non construite ;
+- séances longues non construites ;
 - fournisseur OpenAI réel et backend sécurisé non construits ;
 - chiffrement, export et synchronisation future à cadrer ;
 - protocoles TCC et règles sensibles à étendre avant diffusion ;
@@ -219,14 +221,14 @@ Le dépôt `dalquier/App-perso` est public. Sont interdits : données personnell
 
 ## 18. Prochaine étape exacte
 
-Valider la candidate V4 / BUILD-04 au SHA exact de sa Draft PR : CI, lancement Replit reproductible, puis recette iPhone physique couvrant les deux protocoles, la reprise, la mémoire explicite, le garde-fou, l'effacement anti-résurrection et le mode hors ligne. Appliquer ensuite le Merge Gate ProjectOS ; ne jamais fusionner automatiquement.
+Préparer `SESSION-30-A — Contrats` depuis le `main` vivant. Le Build reste limité au domaine pur : `LongSessionDefinition`, `LongSessionRun`, phases, timing, états, sécurité et relation future avec `sessionRecord`, avec tests unitaires. Il exclut moteur, stockage, migration, UI, provider, LLM, mémoire enrichie et voix.
 
 ## 19. Historique des Builds intégrés
 
 - BUILD-01 : socle PWA minimal, séance guidée, confidentialité locale et garde-fou.
 - BUILD-02 : conversations persistantes locales, streaming interruptible, historique multi-conversations, migration versionnée et validation iPhone.
 - BUILD-03 : séances structurées et mémoire contrôlée, intégré par la PR #53.
-- V4 / BUILD-04 : candidate reconstruite sur la `main` vivante ; non intégrée tant que sa Draft PR n'est pas fusionnée.
+- V4 / BUILD-04 : intégrée dans `main` ; runtime natif stabilisé ensuite par la PR #122.
 - Les anciens prompts d’exécution BUILD-01/BUILD-02 sont historiques et ne doivent plus être utilisés comme instructions actives.
 
 ## 20. Ne pas faire

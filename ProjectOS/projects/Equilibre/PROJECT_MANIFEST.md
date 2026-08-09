@@ -5,7 +5,7 @@
 - ID stable : `equilibre`
 - Nom produit : Équilibre
 - Alias historiques : TCC Budy, TCC Buddy, TCC_Budy, compagnon TCC
-- Statut : BUILD-01, BUILD-02, BUILD-03 et BUILD-04 intégrés dans `main` ; runtime Replit natif et recette iPhone finale encore à stabiliser selon le contrat dédié
+- Statut : BUILD-01 à BUILD-04 intégrés dans `main` ; runtime Replit natif stabilisé et smoke iPhone rattaché au SHA `d9b91b9531b77b2c8f04e713465d69beb06f9bac` ; préparation de `SESSION-30-A`
 - Propriétaire : Damien
 
 ## Vision
@@ -30,6 +30,7 @@
 - Gouvernance, manifeste, ADR et spécifications : `ProjectOS/projects/Equilibre/`.
 - Script maître : `ProjectOS/projects/Equilibre/MASTER_BUILD_PROMPT.md`.
 - Contrat runtime Replit : `ProjectOS/projects/Equilibre/docs/REPLIT_RUNTIME_CONTRACT.md`.
+- Architecture conversationnelle consolidée : `ProjectOS/projects/Equilibre/docs/CONVERSATIONAL_ARCHITECTURE_CONVERGENCE.md`.
 - Code applicatif : `apps/equilibre/`.
 - Prototype historique en lecture seule : `dalquier/Scriptable`, dossiers `TCC_Budy` et instantanés horodatés associés.
 - Branche de reprise documentaire : `equilibre/recovery-master-build-clean`.
@@ -57,7 +58,7 @@
 
 ## Conception et convergence
 
-Les cinq axes suivants restent obligatoires dans chaque revue : produit et UX ; mémoire et données ; moteur TCC ; architecture PWA/Replit/Pyto ; qualité, sécurité et validation. Ils convergent dans un livrable commun piloté par `MASTER_BUILD_PROMPT.md`.
+La convergence conversationnelle du Jalon G est canonique dans `docs/CONVERSATIONAL_ARCHITECTURE_CONVERGENCE.md`. Elle relie rôle, sécurité, backend, contexte, mémoire, protocoles courts, séances longues, évaluations, QA et voix future. Les décisions durables de frontière sont consignées dans l'ADR-006.
 
 Toute évolution touchant build, serveur, port, service worker, PWA, racine monorepo ou configuration Replit doit relire `docs/REPLIT_RUNTIME_CONTRACT.md`, exécuter le `REPLIT RUNTIME PREFLIGHT` et conserver le Direct Run Smoke.
 
@@ -70,7 +71,7 @@ Toute évolution touchant build, serveur, port, service worker, PWA, racine mono
 
 ## Prochain jalon
 
-Stabiliser le runtime Replit natif `Équilibre` depuis `main` conformément au contrat dédié, obtenir une Preview native sans Artifact ni Workflow manuel, rattacher la recette iPhone au SHA canonique, puis préparer les évolutions conversationnelles, protocoles longs et voix selon les analyses dédiées.
+Préparer puis construire `SESSION-30-A — Contrats` dans un périmètre de domaine pur : contrats des séances longues, phases, timing, états, sécurité et relation future avec `sessionRecord`. Le moteur, le stockage, l'UI, le provider et la voix restent hors de cet incrément.
 
 ## Définition de terminé de la reprise
 
@@ -87,7 +88,7 @@ Stabiliser le runtime Replit natif `Équilibre` depuis `main` conformément au c
 - dépôt `dalquier/App-perso` public : interdiction stricte de versionner données réelles, secrets, historiques ou exports ;
 - exigences cliniques et réglementaires à préciser avant diffusion à des tiers ;
 - chiffrement et synchronisation sensible restent à cadrer avant toute diffusion ou stockage distant ;
-- runtime Replit natif encore à stabiliser sur iPhone selon le contrat dédié ;
-- recette iPhone physique post-BUILD-04 à rattacher au SHA canonique final ;
+- browser/offline/accessibilité automatisés à prouver dans un environnement disposant d'un navigateur réel ;
+- décision storage-v5/IndexedDB à prendre avant `SESSION-30-C`, sans bloquer `SESSION-30-A` ;
 - scénarios sensibles à valider par des tests dédiés ;
 - migration sélective du prototype Pyto à réaliser sans duplication inutile.
