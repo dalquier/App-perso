@@ -6,7 +6,8 @@ Ce dossier contient l’identité visuelle, les design tokens et les règles de 
 
 - `DESIGN_DNA.md` définit l’identité commune et les principes verrouillés.
 - `tokens/design-tokens.json` expose les fondations machine-readable.
-- `COMPONENT_ARCHITECTURE.md` définit la prochaine couche : composants, variantes, états et patterns UX.
+- `COMPONENT_ARCHITECTURE.md` définit les composants, variantes, états et patterns UX.
+- `PLAYGROUND_BUILD_SPEC.md` définit le Build C1 du Playground Storybook destiné à valider les composants sur iPhone avant toute bibliothèque partagée.
 
 GitHub `dalquier/App-perso`, branche `main`, reste la source de vérité après fusion explicite de la Pull Request correspondante.
 
@@ -17,7 +18,10 @@ GitHub `dalquier/App-perso`, branche `main`, reste la source de vérité après 
 - Les applications héritent du socle commun et peuvent ajouter une couleur secondaire, des illustrations et des éléments métier sans casser le langage commun.
 - Les décisions d’accessibilité et de comportement iPhone doivent rester conformes à `ProjectOS/standards/QUALITY_UX_SECURITY.md`.
 - Les évolutions durables passent par branche dédiée et Pull Request ; `main` n’est jamais modifiée directement.
+- Le Playground n’est pas une seconde source de vérité : il consomme les références canoniques de ce dossier et matérialise leurs conséquences visuelles.
 
 ## État v0.1
 
-Les fondations sont verrouillées. La phase suivante est la validation des composants et patterns UX avant toute bibliothèque de code partagée.
+Les fondations sont verrouillées. La phase active est `C1 — Core UI` via un Playground Storybook autonome sous `apps/design-system/`.
+
+Figma reste optionnel et n’est pas requis pour construire ou valider C1.
