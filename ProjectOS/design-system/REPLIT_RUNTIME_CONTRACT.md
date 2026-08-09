@@ -7,23 +7,26 @@
 - ProjectOS ID : `projectos-design-system`
 - Nom produit : `ProjectOS Design System Playground`
 - Replit app name : `ProjectOS Design System Playground`
-- Runtime mode : `GITHUB_IMPORTED_RUNTIME`
+- Runtime mode : `REPLIT_NATIVE_RUNTIME`
 
 ## Source canonique
 
 - Repository : `dalquier/App-perso`
-- Runtime ref : `runtime/design-system-c1-preview`
+- Runtime source ref : `runtime/design-system-c1-preview`
 - Product baseline ref : `codex/construire-playground-pour-design-system`
 - Product baseline SHA reviewed : `6d3ec28c0a6b953a3506d642b5099c395248765e`
 - Application path : `apps/design-system/`
-- Runtime version proof : relever le SHA GitHub exact de `runtime/design-system-c1-preview` immédiatement avant toute recette.
+- Runtime transport : snapshot ZIP généré uniquement depuis le SHA GitHub exact de `runtime/design-system-c1-preview`.
+- Runtime version proof : relever et conserver le SHA GitHub exact utilisé pour générer le ZIP immédiatement avant toute recette.
 
 Cette branche de runtime ajoute uniquement l'infrastructure nécessaire à la Preview C1. Elle ne doit pas être fusionnée dans `main` avec son `.replit` de Preview, car le `.replit` canonique de `main` appartient au runtime Équilibre.
+
+Le snapshot ZIP est un transport jetable vers Replit. Il n'est jamais une seconde source de vérité. Toute modification durable reste interdite dans Replit et toute nouvelle version doit être régénérée depuis GitHub.
 
 ## Lancement
 
 - Launch command : `bash ./start-design-system-preview.sh`
-- Working directory initial : racine du monorepo
+- Working directory initial : racine du snapshot
 - Application working directory après lancement : `apps/design-system/`
 - Installation : `npm ci`
 - Serveur : Storybook dev server
@@ -53,25 +56,24 @@ Cette branche de runtime ajoute uniquement l'infrastructure nécessaire à la Pr
 - Service worker : `N/A`
 - Cache version strategy : `N/A`
 - Old cache cleanup : `N/A`
-- Preview reset procedure : supprimer/recréer le runtime Replit depuis la branche `runtime/design-system-c1-preview` si l'identité du SHA ou le worktree devient ambigu.
+- Preview reset procedure : supprimer/recréer le runtime Replit depuis un nouveau snapshot du SHA GitHub attendu si l'identité du runtime devient ambiguë.
 
-## Synchronisation Git
+## Synchronisation / immutabilité du runtime
 
 Avant recette :
 
-- worktree clean ;
-- branche locale `runtime/design-system-c1-preview` vérifiée ;
-- SHA local = SHA GitHub attendu ;
-- `ahead = 0` ;
-- `behind = 0` ;
-- aucun changement durable propre à Replit.
+- SHA GitHub source du snapshot relevé ;
+- snapshot construit depuis ce SHA exact ;
+- aucun changement durable propre à Replit ;
+- aucun fichier Équilibre nécessaire au lancement du Playground ;
+- aucun Agent, Artifact ou Workflow manuel utilisé pour contourner le lancement nominal.
 
 Si divergence ou contamination :
 
 1. arrêter le test ;
-2. ne pas Pull/Sync/Push tant que l'état n'est pas compris ;
-3. préserver tout travail unique éventuel ;
-4. recréer de préférence un runtime neuf depuis GitHub ;
+2. ne conserver aucun changement fonctionnel uniquement dans Replit ;
+3. préserver une preuve si nécessaire ;
+4. recréer le runtime depuis un nouveau snapshot GitHub exact ;
 5. refaire le Replit Runtime Preflight.
 
 ## Fallbacks interdits
@@ -80,7 +82,7 @@ Si divergence ou contamination :
 - considérer `Open Artifact` comme preuve ;
 - créer un Workflow manuel pour contourner le bouton Run ;
 - utiliser une ancienne Preview comme preuve d'un nouveau SHA ;
-- pousser des changements depuis Replit ;
+- considérer le ZIP comme source canonique ;
 - modifier DeveloperOS ou Équilibre pour faire fonctionner ce Playground.
 
 ## Smoke manuel minimal iPhone — C1
@@ -100,13 +102,14 @@ Si divergence ou contamination :
 
 `RUNTIME READY` uniquement si :
 
-- SHA runtime exact connu ;
+- SHA runtime source exact connu ;
+- snapshot ZIP généré depuis ce SHA ;
 - Direct Run Smoke vert sur ce SHA ;
 - Replit Runtime Preflight = `READY` ;
 - Preview native fonctionne ;
 - aucun Artifact/Workflow manuel requis ;
-- aucun changement local Replit ;
-- runtime recréable depuis cette branche temporaire.
+- aucun changement durable Replit ;
+- runtime recréable depuis GitHub.
 
 ## Fin de vie
 
