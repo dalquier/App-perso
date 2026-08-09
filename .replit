@@ -1,1 +1,2 @@
-run = "./start-equilibre.sh"
+modules = ["nodejs-20"]
+run = "bash ./start-design-system-preview.sh"
