@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AppRouter } from "../routing";
+import { AppRouter, Link, RouterSwitch } from "../routing";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProjectsProvider } from "../data/ProjectsContext";
 import type { ProjectRepository } from "../data/repository";
@@ -57,6 +57,37 @@ beforeEach(() => {
 });
 
 describe("Settings import backup", () => {
+  it("returns to the previous logical screen with one action", async () => {
+    history.replaceState(null, "", "/#/");
+    const repository: ProjectRepository = {
+      list: async () => [],
+      get: async () => undefined,
+      save: vi.fn(),
+      replaceAll: vi.fn(),
+      clear: vi.fn(),
+    };
+    render(
+      <AppRouter>
+        <ProjectsProvider repository={repository}>
+          <Link to="/settings">Ouvrir les paramètres</Link>
+          <RouterSwitch
+            routes={{ "/": <h1>Accueil</h1>, "/settings": <Settings /> }}
+            fallback={<p>Introuvable</p>}
+          />
+        </ProjectsProvider>
+      </AppRouter>,
+    );
+
+    await userEvent.click(
+      screen.getByRole("link", { name: "Ouvrir les paramètres" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: /‹ Retour/ }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Accueil" }),
+    ).toBeVisible();
+  });
+
   it("offers a backup before replacement and can cancel without mutation", async () => {
     const replaceAll = vi.fn();
     setup({
