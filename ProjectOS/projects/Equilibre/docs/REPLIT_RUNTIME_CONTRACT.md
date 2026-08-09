@@ -19,6 +19,8 @@ GitHub reste l’unique source de vérité. Replit est un runtime remplaçable.
 ## Lancement
 
 - Launch command canonique : `./start-equilibre.sh`
+- Runtime module canonique : `nodejs-24`
+- Configuration racine autorisée : `modules = ["nodejs-24"]` et `run = "./start-equilibre.sh"`, sans section Workflow.
 - Working directory initial : racine du monorepo
 - Build : production Vite
 - Serveur : serveur statique Node dédié `apps/equilibre/scripts/replit-server.mjs`
@@ -74,6 +76,8 @@ Si le runtime est `dirty`, `ahead` ou `diverged`, ne pas faire `Pull`, `Sync` ou
 - `Open Artifact` comme preuve de fonctionnement ;
 - panneau `Validation` comme démarrage produit ;
 - création d’un Workflow manuel permanent pour contourner un runtime mal configuré ;
+- `runButton = "Project"`, tâche `Start application` ou section `[workflows]` ajoutée par un setup Agent ;
+- `replit.md` généré par Agent comme condition de lancement ;
 - changement métier par Replit Agent pour corriger un problème de Preview/port ;
 - utilisation d’une ancienne Preview comme preuve du nouveau SHA ;
 - push de commits locaux générés par setup Agent sans revue.
@@ -101,3 +105,12 @@ Après tout changement touchant le runtime ou avant validation d’un jalon impo
 - la Preview native exécute réellement Équilibre ;
 - aucun Artifact ni Workflow manuel n’est nécessaire au lancement nominal ;
 - le runtime peut être recréé depuis ce contrat sans dépendre d’un ancien workspace.
+
+## Recréation propre depuis GitHub
+
+1. supprimer ou archiver tout runtime divergent uniquement après avoir vérifié qu'il ne contient aucun travail unique ;
+2. importer une seule fois `dalquier/App-perso` depuis GitHub ;
+3. refuser ou fermer tout setup Agent proposant un Artifact, un Workflow ou un fichier `replit.md` ;
+4. vérifier que `.replit` ne contient que le module Node canonique et la commande `run` ;
+5. relever le SHA GitHub exécuté, puis lancer la Preview native ;
+6. exécuter le smoke manuel iPhone et consigner le verdict du Replit Runtime Preflight.
