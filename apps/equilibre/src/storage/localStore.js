@@ -6,11 +6,14 @@ export const BUILD01_BACKUP_KEY = `${STORAGE_KEY}.build01.backup`;
 export const V2_BACKUP_KEY = `${STORAGE_KEY}.v2.backup`;
 export const V3_BACKUP_KEY = `${STORAGE_KEY}.v3.backup`;
 export const V4_ROLLBACK_BACKUP_KEY = `${STORAGE_KEY}.v4.rollback.backup`;
+export const V4_RESTORE_BACKUP_KEY = `${STORAGE_KEY}.v4.restore.backup`;
+export const V5_ACTIVATION_MARKER_KEY = `${STORAGE_KEY}.v5.active`;
 export const BACKUP_KEYS = Object.freeze([
   BUILD01_BACKUP_KEY,
   V2_BACKUP_KEY,
   V3_BACKUP_KEY,
   V4_ROLLBACK_BACKUP_KEY,
+  V4_RESTORE_BACKUP_KEY,
 ]);
 
 const MIGRATION_EPOCH = "2026-01-01T00:00:00.000Z";
@@ -198,6 +201,19 @@ export function createStore(storage = globalThis.localStorage) {
   let externallyInvalidated = false;
   let allowBlankReactivationAfterClear = false;
 
+  const v5FenceActive = () => storage.getItem(V5_ACTIVATION_MARKER_KEY) !== null;
+  const fenceV4Writer = (loadedState) => {
+    writesBlocked = true;
+    externallyInvalidated = true;
+    allowBlankReactivationAfterClear = false;
+    return {
+      ...loadedState,
+      storageError: "Une version de stockage plus récente est active. Cette version d’Équilibre reste en lecture seule.",
+      writesBlocked: true,
+      futureStorageActive: true,
+    };
+  };
+
   const observeRevisionFromSerialized = (serialized) => {
     const parsed = parseStoredState(serialized);
     if (parsed.kind !== "state" || parsed.value.version !== STORAGE_VERSION) return null;
@@ -229,6 +245,7 @@ export function createStore(storage = globalThis.localStorage) {
   const load = () => {
     const serialized = storage.getItem(STORAGE_KEY);
     if (serialized === null) {
+      if (v5FenceActive()) return fenceV4Writer(defaultState());
       writesBlocked = false;
       externallyInvalidated = false;
       allowBlankReactivationAfterClear = false;
@@ -246,6 +263,11 @@ export function createStore(storage = globalThis.localStorage) {
 
     const raw = parsed.value;
     try {
+      if (v5FenceActive()) {
+        const readable = [1, 2, 3, STORAGE_VERSION].includes(raw.version) ? migrateState(raw) : defaultState();
+        if (raw.version === STORAGE_VERSION && validRevision(raw.storageRevision)) observedRevision = raw.storageRevision;
+        return fenceV4Writer(readable);
+      }
       if (raw.version === 1) return persistLegacyAsV4(raw, serialized, BUILD01_BACKUP_KEY);
       if (raw.version === 2) return persistLegacyAsV4(raw, serialized, V2_BACKUP_KEY);
       if (raw.version === 3) return persistLegacyAsV4(raw, serialized, V3_BACKUP_KEY);
@@ -265,6 +287,11 @@ export function createStore(storage = globalThis.localStorage) {
   };
 
   const save = (state) => {
+    if (v5FenceActive()) {
+      writesBlocked = true;
+      externallyInvalidated = true;
+      return false;
+    }
     if (writesBlocked || externallyInvalidated || state?.storageError || state?.writesBlocked) return false;
     if (!state?.settings?.saveLocally) {
       clear();
@@ -314,6 +341,11 @@ export function createStore(storage = globalThis.localStorage) {
   };
 
   const clear = () => {
+    if (v5FenceActive()) {
+      writesBlocked = true;
+      externallyInvalidated = true;
+      return false;
+    }
     const currentSerialized = storage.getItem(STORAGE_KEY);
     observeRevisionFromSerialized(currentSerialized);
 
@@ -323,6 +355,55 @@ export function createStore(storage = globalThis.localStorage) {
     writesBlocked = false;
     externallyInvalidated = false;
     allowBlankReactivationAfterClear = true;
+    return true;
+  };
+
+  const restore = (candidateState) => {
+    if (v5FenceActive()) {
+      writesBlocked = true;
+      externallyInvalidated = true;
+      return false;
+    }
+
+    let restored;
+    try {
+      restored = migrateState(candidateState);
+    } catch {
+      return false;
+    }
+    if (restored.version !== STORAGE_VERSION) return false;
+
+    const currentSerialized = storage.getItem(STORAGE_KEY);
+    const current = parseStoredState(currentSerialized);
+    if (current.kind === "corrupt") return false;
+    if (current.kind === "missing" && observedRevision > 0) return false;
+    if (current.kind === "state") {
+      if (current.value.version !== STORAGE_VERSION || !validRevision(current.value.storageRevision)) return false;
+      if (current.value.storageRevision !== observedRevision) return false;
+    }
+    const nextRevision = Math.max(observedRevision, validRevision(restored.storageRevision) ? restored.storageRevision : 0) + 1;
+    const nextState = {
+      ...restored,
+      version: STORAGE_VERSION,
+      storageRevision: nextRevision,
+      settings: { ...restored.settings, saveLocally: true },
+      storageError: undefined,
+      writesBlocked: undefined,
+      futureStorageActive: undefined,
+    };
+
+    try {
+      if (currentSerialized !== null) storage.setItem(V4_RESTORE_BACKUP_KEY, currentSerialized);
+      storage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    } catch {
+      return false;
+    }
+
+    observedRevision = nextRevision;
+    writesBlocked = false;
+    externallyInvalidated = false;
+    allowBlankReactivationAfterClear = false;
+    return true;
   };
 
   const handleStorageEvent = (event = {}) => {
@@ -369,5 +450,5 @@ export function createStore(storage = globalThis.localStorage) {
     }
   };
 
-  return { load, save, clear, handleStorageEvent, rollbackToV3 };
+  return { load, save, clear, restore, handleStorageEvent, rollbackToV3 };
 }

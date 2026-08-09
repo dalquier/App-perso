@@ -117,6 +117,25 @@ describe("Équilibre BUILD-04C1 — structure visible", () => {
   });
 });
 
+describe("Équilibre SESSION-30-C0 — sécurité des données visible", () => {
+  it("expose export, restauration, avertissement privé et identité de release dans les réglages", () => {
+    for (const token of [
+      "Exporter mes données",
+      "Restaurer une sauvegarde",
+      "données privées en clair",
+      "EQUILIBRE_RELEASE.label",
+      "inspectStateInventory(state)",
+    ]) expect(appSource).toContain(token);
+  });
+
+  it("ne restaure qu'après sélection de fichier, validation d'intégrité et confirmation", () => {
+    expect(appSource).toContain('event.target.id === "restore-data"');
+    expect(appSource).toContain("parsePortableBackup(await file.text())");
+    expect(appSource).toContain("if (!accepted)");
+    expect(appSource).toContain("store.restore(parsed.state)");
+  });
+});
+
 describe("Équilibre BUILD-04C1 — validation et moteur existant", () => {
   it("respecte validation obligatoire et facultative via textGate", () => {
     expect(gateProtocolText("", { required: true, maxLength: 20 })).toMatchObject({ ok: false, code: "required" });

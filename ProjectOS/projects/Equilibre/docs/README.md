@@ -7,6 +7,7 @@ Références actives :
 - `SESSION_30_A_CONTRACTS.md` — contrats de domaine intégrés par la PR #125 ;
 - `SESSION_30_B_STRUCTURED_ENGINE.md` — moteur local déterministe et première définition S30-02 intégrés par la PR #129 ;
 - `SESSION_30_C_STABLE_RELEASE_AND_DATA_PRESERVATION.md` — préparation du stockage v5, des releases stables Replit et du découpage C0–C4 ;
+- `SESSION_30_C0_DATA_SAFETY.md` — candidate C0 : identité de release, inventaire, export/restauration v4 et verrou d'écriture futur v5 ;
 - `REPLIT_RUNTIME_CONTRACT.md` — contrat d’exécution et de recette Replit.
 
 Les livrables historiques du Jalon A restent régis par `../PARALLEL_WORK_CONTRACT.md`. Toute nouvelle décision durable est transférée dans le manifeste, la roadmap, une ADR ou une référence active de ce dossier.

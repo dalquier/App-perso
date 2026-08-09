@@ -261,7 +261,7 @@ describe("BUILD-04B — stockage local v4 cumulatif", () => {
     expect(shared.backing.get(V4_ROLLBACK_BACKUP_KEY)).toBe(sentinel);
   });
 
-  it("clear() supprime la clé principale et exactement les quatre backups", () => {
+  it("clear() supprime la clé principale et les cinq backups v4 connus", () => {
     const shared = createSharedStorage();
     shared.backing.set(STORAGE_KEY, JSON.stringify({ ...defaultState(), storageRevision: 3 }));
     for (const key of BACKUP_KEYS) shared.backing.set(key, `fixture-${key}`);
@@ -271,7 +271,7 @@ describe("BUILD-04B — stockage local v4 cumulatif", () => {
     store.clear();
 
     expect(shared.backing.has(STORAGE_KEY)).toBe(false);
-    expect(BACKUP_KEYS).toHaveLength(4);
+    expect(BACKUP_KEYS).toHaveLength(5);
     for (const key of BACKUP_KEYS) expect(shared.backing.has(key)).toBe(false);
   });
 

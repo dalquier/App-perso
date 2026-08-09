@@ -72,7 +72,7 @@ h1 em { color:var(--accent); font-weight:400; }
 .session-complete dt,.protocol-summary dt { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
 .session-complete dd,.protocol-summary dd { margin:5px 0 0; overflow-wrap:anywhere; white-space:pre-wrap; }
 .text-button { border:0; background:transparent; color:var(--accent); min-height:48px; margin-top:8px; cursor:pointer; }
-.settings-list,.danger-zone { border:1px solid var(--line); background:var(--surface); border-radius:20px; overflow:hidden; }
+.settings-list,.data-safety-zone,.danger-zone { border:1px solid var(--line); background:var(--surface); border-radius:20px; overflow:hidden; }
 .setting { min-height:82px; padding:16px; display:flex; align-items:center; justify-content:space-between; gap:18px; border-bottom:1px solid var(--line); }
 .setting:last-child { border:0; }
 .setting strong,.setting small { display:block; }
@@ -80,6 +80,17 @@ h1 em { color:var(--accent); font-weight:400; }
 .setting input { width:48px; height:28px; accent-color:var(--accent); }
 .setting select { max-width:105px; padding:10px 5px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); }
 .danger-zone { margin-top:24px; padding:20px; }
+.data-safety-zone { margin-top:24px; padding:20px; }
+.data-safety-zone h2 { font-family:Georgia,serif; font-weight:400; margin:0; }
+.data-safety-zone > p:not(.eyebrow) { color:var(--muted); line-height:1.5; font-size:14px; }
+.data-actions { display:grid; gap:10px; margin:18px 0 12px; }
+.data-actions .button { display:flex; align-items:center; justify-content:center; margin:0; color:var(--ink); font-weight:600; }
+.file-button { cursor:pointer; }
+.privacy-warning { padding:12px; border-radius:12px; background:color-mix(in srgb,var(--danger) 8%,var(--bg)); }
+.data-transfer-status { padding:12px; border-radius:12px; background:var(--bg); }
+.data-transfer-status.success { color:var(--accent); }
+.data-transfer-status.error { color:var(--danger); }
+.release-id { display:block; margin-top:14px; color:var(--muted); overflow-wrap:anywhere; }
 .danger-zone h2 { font-family:Georgia,serif; font-weight:400; margin:0; }
 .danger-zone p { color:var(--muted); line-height:1.5; font-size:14px; }
 .danger-button { min-height:48px; width:100%; color:var(--danger); background:transparent; border:1px solid color-mix(in srgb,var(--danger) 40%,var(--line)); border-radius:14px; font-weight:600; }
