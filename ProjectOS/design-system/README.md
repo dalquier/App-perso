@@ -28,9 +28,10 @@ Séquence :
 
 1. construire C1 avec Codex sur une branche dédiée basée sur `projectos/design-system-v0-1` tant que la PR #121 n’est pas intégrée ;
 2. publier une Draft PR C1 empilée ;
-3. exécuter Storybook dans Replit Starter sans IA depuis le SHA publié ;
-4. valider les composants sur iPhone ;
-5. promouvoir seulement ensuite les valeurs candidates réellement validées ;
-6. décider le mode de publication permanent après validation C1.
+3. valider le build Storybook et la conformité du diff ;
+4. choisir séparément un canal de Preview iPhone qui ne modifie ni ne concurrence le runtime racine d’Équilibre ;
+5. valider visuellement les composants sur iPhone ;
+6. promouvoir seulement ensuite les valeurs candidates réellement validées ;
+7. décider le mode de publication permanent après validation C1.
 
-Figma reste optionnel et n’est pas requis pour construire ou valider C1.
+Le `.replit` racine est une ressource logique partagée liée au runtime Équilibre et reste hors périmètre C1. Figma reste optionnel et n’est pas requis pour construire ou valider C1.
