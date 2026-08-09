@@ -1,6 +1,6 @@
 # Équilibre — SESSION-30-B — Moteur structuré local
 
-- Statut : candidate de Build, à relire avant intégration
+- Statut : intégré par la PR #129
 - Base : `dalquier/App-perso@2eaa9425a421967558fd64d1b1f6822f626d872c`
 - Dépendance intégrée : `SESSION-30-A`, PR #125
 - Périmètre : domaine pur, protocole local déterministe, sans stockage, UI, provider, LLM, mémoire ni voix

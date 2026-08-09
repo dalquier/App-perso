@@ -76,7 +76,7 @@ Aucune implémentation semi-structurée ou spécialisée à risque ne commence a
 
 Référence normative de travail : `ProjectOS/projects/Equilibre/docs/SESSION_30_REFERENCE.md`.
 
-État vivant : `SESSION-30-A` intégré par la PR #125 ; `SESSION-30-B` est le candidat courant.
+État vivant : `SESSION-30-A` intégré par la PR #125 ; `SESSION-30-B` intégré par la PR #129 ; `SESSION-30-C` est le prochain incrément à préparer.
 
 Verdict analytique : `READY FOR 30-MIN SESSION CONVERGENCE`.
 
@@ -105,8 +105,8 @@ Le premier moteur doit valider le cœur métier sans LLM : phases, temps actif, 
 ### Découpage SESSION-30
 
 1. **SESSION-30-A — Contrats** : intégré par la PR #125 ; `LongSessionDefinition`, `LongSessionRun`, phases, timing, relation `ProtocolRun`, sécurité, forme future du `sessionRecord`.
-2. **SESSION-30-B — Moteur structuré** : candidat courant ; premier protocole local et déterministe, sans persistance ni UI.
-3. **SESSION-30-C — Persistance et UX iPhone** : décision stockage, migration/rollback, interface longue, background/foreground.
+2. **SESSION-30-B — Moteur structuré** : intégré par la PR #129 ; premier protocole local et déterministe, sans persistance ni UI.
+3. **SESSION-30-C — Persistance et UX iPhone** : prochain incrément ; décision stockage, migration/rollback, interface longue, background/foreground.
 4. **SESSION-30-D — SessionRecord / action / mémoire** : provenance, résumé, action facultative, proposition mémoire explicite, historique.
 5. **SESSION-30-E — Dialogue semi-structuré** : provider, orchestrateur, intents, génération interruptible, validation des sorties et fallback structuré.
 6. **SESSION-30-F — Bibliothèque faible/moyen risque** : clarification complexe, ambivalence, affirmation de soi, activation légère.
