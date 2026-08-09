@@ -172,29 +172,25 @@ Au minimum :
 - `npm run typecheck` ;
 - `npm run check` regroupant les validations pertinentes.
 
-Le serveur Storybook doit pouvoir écouter sur `0.0.0.0` et recevoir un port explicite pour la future Preview Replit.
+Le serveur Storybook doit pouvoir écouter sur `0.0.0.0` et recevoir un port explicite. Cette capacité reste générique : C1 ne choisit ni ne configure aucun runtime externe.
 
-## 12. Replit
+## 12. Runtime externe / Replit
 
-C1 ne déploie rien et n'utilise pas l'agent IA Replit.
+**Hors périmètre C1.**
 
-Après publication du Build, Replit Starter sans IA pourra servir uniquement à exécuter Storybook et fournir la Preview iPhone.
+Le commit `main` `d9b91b9531b77b2c8f04e713465d69beb06f9bac` a stabilisé le runtime Replit racine pour Équilibre. Le fichier `.replit` racine constitue donc une ressource logique partagée réservée et ne doit pas être modifié par le Design System C1.
 
-Le Build doit donc créer :
+C1 doit seulement produire un Storybook exécutable localement et capable d'écouter sur `0.0.0.0` avec un port explicite.
 
-`ProjectOS/design-system/REPLIT_RUNTIME_CONTRACT.md`
+Interdictions C1 :
 
-basé sur le template ProjectOS vivant, avec :
+- ne pas modifier `.replit` ;
+- ne pas créer de `ProjectOS/design-system/REPLIT_RUNTIME_CONTRACT.md` ;
+- ne pas créer de Workflow Replit ;
+- ne pas utiliser Replit Agent ;
+- ne pas supposer que Replit sera le canal définitif de Preview.
 
-- mode `GITHUB_IMPORTED_RUNTIME` ;
-- application path `apps/design-system/` ;
-- commande de lancement versionnée ;
-- écoute `0.0.0.0` ;
-- politique de port explicite ;
-- Native Preview attendue ;
-- Artifact requis : NO ;
-- Workflow manuel requis : NO ;
-- aucun service worker/PWA dans C1.
+Après publication et validation technique de C1, ProjectOS décidera séparément du canal de Preview iPhone compatible avec les runtimes existants.
 
 ## 13. Déploiement permanent
 
@@ -202,7 +198,7 @@ Hors C1.
 
 Ne pas modifier `.github/workflows/developer-os-pages.yml` dans ce Build.
 
-Une stratégie de publication permanente sera décidée après validation C1, afin de ne pas créer de concurrence avec le site GitHub Pages DeveloperOS existant.
+Une stratégie de publication permanente sera décidée après validation C1.
 
 ## 14. Tests / preuves attendues
 
@@ -227,6 +223,7 @@ La recette visuelle réelle sur iPhone est un gate post-publication et ne doit p
 - migration de composants existants ;
 - GitHub Pages permanent ;
 - PWA/service worker ;
+- configuration Replit ;
 - agent IA Replit ;
 - C2 Navigation ;
 - C3 Feedback.
@@ -238,6 +235,8 @@ Travail substantiel obligatoire via Codex.
 Branche logique : `projectos/design-system-playground-c1`.
 
 Base : `projectos/design-system-v0-1` tant que PR #121 n'est pas intégrée.
+
+La branche Design System peut être derrière `main` sur des changements hors périmètre. Codex doit appliquer le Freshness Gate et confirmer que le commit `main` courant n'introduit pas de conflit matériel avec `apps/design-system/**` ou `ProjectOS/design-system/**`. Toute ressource logique partagée nouvellement touchée impose l'arrêt et la réconciliation avant modification.
 
 La Pull Request C1 reste Draft et cible la branche de base Design System tant que #121 est ouverte. Après intégration de #121, la PR C1 devra être retargetée vers `main`, réconciliée et repasser le Freshness/CI Gate avant toute fusion.
 
