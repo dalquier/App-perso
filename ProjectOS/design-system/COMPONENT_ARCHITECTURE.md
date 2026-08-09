@@ -9,6 +9,8 @@ Transformer le Design DNA en composants et patterns UX réutilisables par toutes
 
 Cette phase doit valider les tokens encore candidats à travers de vrais composants. Elle ne rouvre pas les fondations déjà verrouillées.
 
+Le support de validation C1 retenu est un **Playground Storybook autonome** défini dans `PLAYGROUND_BUILD_SPEC.md`. Figma reste optionnel et n’est pas une dépendance de cette phase.
+
 ## Principes permanents
 
 1. Un composant existe parce qu’un comportement ou une structure se répète, pas seulement parce qu’un visuel se ressemble.
@@ -242,6 +244,8 @@ Chaque composant doit être vérifié sur :
 5. Input
 6. Chip/Badge
 
+Support de validation : `apps/design-system/` avec Storybook, selon `PLAYGROUND_BUILD_SPEC.md`.
+
 Objectif : valider palette compagne, neutres, ombre, hauteurs, rayons dérivés et tailles d’icônes.
 
 ### Lot C2 — Navigation
@@ -266,7 +270,7 @@ Objectif : standardiser les états de système et les opérations longues.
 
 La bibliothèque de code partagée ne doit commencer qu’après :
 
-- validation visuelle du Lot C1 ;
+- validation visuelle du Lot C1 dans le Playground Storybook ;
 - stabilisation des tokens encore candidats ;
 - décision dark mode ;
 - définition de la stratégie d’icônes pour Web/PWA et plateformes natives ;
