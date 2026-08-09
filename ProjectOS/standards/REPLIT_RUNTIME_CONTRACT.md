@@ -102,16 +102,17 @@ Verdict: ADMISSIBLE | AGENT_EXCEPTION_REQUIRED | INCOMPATIBLE | UNKNOWN
 
 Règles :
 
-1. `UNKNOWN` n’autorise pas une recette : vérifier d’abord la capacité réelle.
-2. Si Agent est requis ou si le refus d’Agent empêche le lancement nominal, le chemin est `INCOMPATIBLE` avec la politique normale sans Agent.
-3. Ne jamais utiliser un import ZIP comme contournement d’un import GitHub problématique sans refaire ce gate. La présence d’un `.replit` dans l’archive ne garantit pas que Replit utilisera immédiatement cette commande.
-4. Si l’import crée un Artifact, un checkpoint ou une tâche Agent, ces éléments ne deviennent jamais une preuve du produit canonique.
-5. Une exception Agent suit obligatoirement `TOOLCHAIN_POLICY.md` et requiert l’autorisation ponctuelle explicite de Damien avant exécution.
-6. Lorsque le chemin Replit est `INCOMPATIBLE`, ne pas multiplier les imports ou setups. Réutiliser l’application canonique déjà qualifiée si elle existe ; sinon garder l’activation Replit en `BLOCKED` et n’utiliser qu’un canal temporaire de continuité pour les preuves non spécifiques à Replit.
-7. Ce gate porte sur la création initiale ou une recréation exceptionnelle. Il ne s’exécute pas à chaque version : une application canonique existante est mise à jour par synchronisation Git, jamais par un nouvel import.
-8. Un projet ne possède qu’une application Replit canonique. L’import initial est unique ; un doublon d’essai, ZIP ou GitHub ne devient pas canonique par simple création.
-9. Une recréation est une opération de récupération motivée par un incident, pas une méthode de mise à jour. L’ancienne application n’est ni supprimée ni déclassée avant validation de la remplaçante et conservation des données/preuves utiles.
-10. Refaire ce gate si l’interface ou le comportement d’import Replit change matériellement.
+1. Un verdict `ADMISSIBLE` exige `Replit behavior verified from current UI/docs: YES` et une preuve datée. Une valeur `NO` ou une preuve absente impose `UNKNOWN` ; elle ne peut jamais produire `ADMISSIBLE`.
+2. `UNKNOWN` n’autorise pas une création, une recréation ni une recette nominale : vérifier d’abord la capacité réelle.
+3. Si Agent est requis ou si le refus d’Agent empêche le lancement nominal, le chemin est `INCOMPATIBLE` avec la politique normale sans Agent.
+4. Ne jamais utiliser un import ZIP comme contournement d’un import GitHub problématique sans refaire ce gate. La présence d’un `.replit` dans l’archive ne garantit pas que Replit utilisera immédiatement cette commande.
+5. Si l’import crée un Artifact, un checkpoint ou une tâche Agent, ces éléments ne deviennent jamais une preuve du produit canonique.
+6. Une exception Agent suit obligatoirement `TOOLCHAIN_POLICY.md` et requiert l’autorisation ponctuelle explicite de Damien avant exécution.
+7. Lorsque le chemin Replit est `INCOMPATIBLE`, ne pas multiplier les imports ou setups. Réutiliser l’application canonique déjà qualifiée si elle existe ; sinon garder l’activation Replit en `BLOCKED` et n’utiliser qu’un canal temporaire de continuité pour les preuves non spécifiques à Replit.
+8. Ce gate porte sur la création initiale ou une recréation exceptionnelle. Il ne s’exécute pas à chaque version : une application canonique existante est mise à jour par synchronisation Git, jamais par un nouvel import.
+9. Un projet ne possède qu’une application Replit canonique. L’import initial est unique ; un doublon d’essai, ZIP ou GitHub ne devient pas canonique par simple création.
+10. Une recréation est une opération de récupération motivée par un incident, pas une méthode de mise à jour. L’ancienne application n’est ni supprimée ni déclassée avant validation de la remplaçante et conservation des données/preuves utiles.
+11. Refaire ce gate si l’interface ou le comportement d’import Replit change matériellement.
 
 ## 4.2. Application canonique, version stable et candidate
 
@@ -153,8 +154,9 @@ Replit app name/id:
 Runtime lifecycle: EXISTING_CANONICAL | INITIAL_CREATION | EXCEPTIONAL_RECREATION
 Ingress/setup method: GIT_SYNC | GITHUB_IMPORT | ZIP_IMPORT | BLANK_APP | OTHER
 Import/Setup Capability Gate: NOT_REQUIRED_EXISTING | ADMISSIBLE | AGENT_EXCEPTION_AUTHORIZED
-Published stable URL:
-Stable LKG SHA/tag:
+Published state: NOT_YET_PUBLISHED | STABLE_PUBLISHED
+Published stable URL: N/A_INITIAL | <URL>
+Stable LKG SHA/tag: N/A_INITIAL | <tag + SHA>
 Candidate ref/SHA:
 Candidate data isolated or fictitious: YES | NO | UNKNOWN
 Workspace clean: YES | NO | UNKNOWN
@@ -174,6 +176,8 @@ Verdict: READY | DIRTY_WORKTREE | DIVERGED | RUNTIME_CONFIG_MISSING | BLOCKED
 ```
 
 Aucune recette produit ne commence avec un verdict autre que `READY`.
+
+Pour `INITIAL_CREATION`, le Preflight peut retourner `READY` avec `Published state: NOT_YET_PUBLISHED` et les valeurs `N/A_INITIAL` pour l’URL stable et le Last Known Good. Cet état autorise uniquement la Preview et la recette de la première candidate. Après sa validation et sa première publication, relever immédiatement l’URL, le SHA/tag Last Known Good et passer à `STABLE_PUBLISHED` avant de déclarer le runtime `RUNTIME READY`.
 
 ## 6. Git hygiene dans Replit
 

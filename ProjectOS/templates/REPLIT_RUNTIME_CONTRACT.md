@@ -17,7 +17,7 @@
 - Canonical ref : `<main|branch>`
 - Application path : `<path>`
 - Runtime version proof : `SHA GitHub exact obligatoire`
-- Stable Last Known Good : `<tag + SHA>`
+- Stable Last Known Good : `<tag + SHA | N/A_INITIAL>`
 
 ## Replit Import/Setup Capability Gate
 
@@ -34,7 +34,7 @@
 - Capability Gate verdict : `ADMISSIBLE | AGENT_EXCEPTION_REQUIRED | INCOMPATIBLE | UNKNOWN`
 - Evidence/date : `<UI observation / current Replit documentation / date>`
 
-`UNKNOWN` et `INCOMPATIBLE` interdisent une création/recréation nominale. Une exception Agent exige l'autorisation ponctuelle prévue par `TOOLCHAIN_POLICY.md`. Un projet existant se met à jour par Git et ne relance pas ce gate à chaque version.
+Un verdict `ADMISSIBLE` exige `Replit behavior verified from current UI/docs: YES` et une preuve datée. `NO`, `UNKNOWN` et `INCOMPATIBLE` interdisent une création/recréation nominale. Une exception Agent exige l'autorisation ponctuelle prévue par `TOOLCHAIN_POLICY.md`. Un projet existant se met à jour par Git et ne relance pas ce gate à chaque version.
 
 ## Lancement
 
@@ -47,9 +47,10 @@
 
 ## Version stable, candidate et données
 
-- Stable published URL : `<https://...replit.app|custom domain>`
-- Stable deployment type : `<Static|Autoscale|Reserved VM|autre>`
-- Stable Last Known Good : `<tag + SHA>`
+- Published state : `NOT_YET_PUBLISHED | STABLE_PUBLISHED`
+- Stable published URL : `<https://...replit.app|custom domain|N/A_INITIAL>`
+- Stable deployment type : `<Static|Autoscale|Reserved VM|autre|N/A_INITIAL>`
+- Stable Last Known Good : `<tag + SHA|N/A_INITIAL>`
 - Candidate ref/SHA : `<branche + SHA>`
 - Candidate Preview URL : `<URL temporaire>`
 - Real data used only by stable published version : `YES`
@@ -58,7 +59,9 @@
 - Migration inventory before/after : `<procédure|N/A>`
 - Rollback code/data : `<procédure et compatibilité>`
 
-La candidate ne remplace pas la version publiée tant que CI, Preview, recette applicable, conservation des données et rollback ne sont pas prouvés sur le même SHA.
+Pour `INITIAL_CREATION`, utiliser `NOT_YET_PUBLISHED` et `N/A_INITIAL` jusqu’à la validation de la première candidate. Le Runtime Preflight peut alors être `READY` pour la Preview et la recette ; après la première publication, renseigner immédiatement l’URL et le Last Known Good puis passer à `STABLE_PUBLISHED`.
+
+Une candidate ultérieure ne remplace pas la version publiée tant que CI, Preview, recette applicable, conservation des données et rollback ne sont pas prouvés sur le même SHA.
 
 ## Surface d’exécution
 
@@ -91,7 +94,7 @@ Avant recette :
 - application Replit canonique et SHA attendus identifiés ;
 - `GIT_SYNC` utilisé pour une application existante, sans nouvel import ;
 - Capability Gate admissible uniquement si création/recréation ;
-- version publiée stable laissée inchangée ;
+- version publiée stable laissée inchangée, ou `NOT_YET_PUBLISHED` explicitement déclaré pour la création initiale ;
 - données de candidate fictives ou isolées ;
 - worktree clean ;
 - local ref vérifiée ;
@@ -136,6 +139,7 @@ Si divergence ou contamination :
 
 - source canonique et SHA connus ;
 - application Replit canonique, URL publiée stable et méthode `GIT_SYNC` connues ;
+- `Published state = STABLE_PUBLISHED` ; `NOT_YET_PUBLISHED` permet la première Preview/recette mais pas ce statut final ;
 - Import/Setup Capability Gate = `NOT_REQUIRED_EXISTING`, `ADMISSIBLE` ou exception Agent explicitement autorisée et terminée ;
 - version publiée stable, candidate, frontière de données et rollback documentés ;
 - Direct Run Smoke vert ;
