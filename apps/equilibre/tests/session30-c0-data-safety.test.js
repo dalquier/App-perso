@@ -87,7 +87,7 @@ describe("SESSION-30-C0 — identité et inventaire", () => {
 });
 
 describe("SESSION-30-C0 — export portable", () => {
-  it("produit un format versionné, inventorié et signé puis restaure le même état", async () => {
+  it("produit un format versionné avec empreinte d’intégrité puis restaure le même état", async () => {
     const state = fixtureState();
     const backup = await createPortableBackup(state, { now: new Date("2026-08-09T18:00:00.000Z") });
     expect(backup).toMatchObject({
@@ -185,7 +185,7 @@ describe("SESSION-30-C0 — export portable", () => {
   });
 });
 
-describe("SESSION-30-C0 — restauration atomique v4", () => {
+describe("SESSION-30-C0 — restauration contrôlée v4", () => {
   it("sauvegarde l’état courant avant remplacement et augmente la révision", async () => {
     const storage = sharedStorage();
     const store = createStore(storage);
