@@ -105,6 +105,20 @@ describe("ProjectForm", () => {
     expect(source).toHaveValue("dalquier/Autre-projet");
   });
 
+  it("moves from the name to aliases on Enter without submitting", async () => {
+    const repository = makeRepository();
+    renderApp(repository);
+    const name = await screen.findByLabelText(/Nom/);
+
+    await userEvent.type(name, "Nouveau{Enter}");
+
+    expect(repository.save).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/Alias/)).toHaveFocus();
+    expect(
+      screen.getByRole("heading", { name: "Créer un projet" }),
+    ).toBeVisible();
+  });
+
   it("keeps the existing canonical source while editing", async () => {
     const existing = {
       ...baseProject,

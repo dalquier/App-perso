@@ -7,9 +7,10 @@ import {
   parseCodexExport,
   type CodexConversationStatus,
 } from "../domain/codexConversation";
-import { Link } from "../routing";
+import { Link, useNavigate } from "../routing";
 
 export function CodexList() {
+  const nav = useNavigate();
   const { conversations, loading, error, reload, merge } = useCodex();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<
@@ -73,6 +74,9 @@ export function CodexList() {
 
   return (
     <section>
+      <button className="back" type="button" onClick={() => nav(-1)}>
+        ‹ Retour
+      </button>
       <p className="eyebrow">Historique local</p>
       <div className="module-title">
         <h1>Codex</h1>

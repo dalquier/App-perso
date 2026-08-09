@@ -1,5 +1,35 @@
 import { expect, test } from "@playwright/test";
 
+test("mobile navigation uses one history entry and Codex returns to its origin", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await page.getByRole("link", { name: "Paramètres" }).click();
+  await page.getByRole("link", { name: "Paramètres" }).click();
+  await page.getByRole("button", { name: "‹ Retour" }).click();
+  await expect(page.getByRole("heading", { name: "Mes projets" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Codex" }).click();
+  await expect(page.getByRole("button", { name: "‹ Retour" })).toBeVisible();
+  await page.getByRole("button", { name: "‹ Retour" }).click();
+  await expect(page.getByRole("heading", { name: "Mes projets" })).toBeVisible();
+});
+
+test("mobile project name Enter advances without saving and keeps the default source", async ({
+  page,
+}) => {
+  await page.goto("./#/projects/new");
+  const name = page.getByLabel(/Nom/);
+  await name.fill("Saisie volontaire");
+  await name.press("Enter");
+
+  await expect(page.getByRole("heading", { name: "Créer un projet" })).toBeVisible();
+  await expect(page.getByLabel(/Alias/)).toBeFocused();
+  await expect(page.getByLabel("Source", { exact: true })).toHaveValue(
+    "dalquier/App-perso",
+  );
+});
+
 test("hash routes survive refresh and browser Back/Forward under the Pages subpath", async ({
   page,
 }) => {
