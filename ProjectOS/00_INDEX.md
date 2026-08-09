@@ -53,6 +53,7 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 - `design-system/DESIGN_DNA.md` : identité visuelle et comportementale commune, fondations verrouillées et valeurs encore candidates.
 - `design-system/tokens/design-tokens.json` : fondations machine-readable destinées aux prototypes, à Figma et aux futures bibliothèques de composants.
 - `design-system/COMPONENT_ARCHITECTURE.md` : composants, variantes, états, patterns UX et ordre de prototypage.
+- `design-system/PLAYGROUND_BUILD_SPEC.md` : spécification du Build C1 du Playground Storybook autonome destiné à valider les composants sur iPhone.
 
 Les applications ProjectOS doivent charger ces références lorsqu’une demande concerne leur identité visuelle, leurs composants partagés ou l’homogénéité UX transverse.
 
