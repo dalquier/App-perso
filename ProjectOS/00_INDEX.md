@@ -47,6 +47,15 @@ Ce dossier est la référence commune de tous les projets personnels. GitHub `da
 
 `standards/GITHUB_MERGE_COORDINATION.md` doit être chargé dès qu'une demande concerne la préparation, la revue, la coordination ou la fusion d'une Pull Request vers une branche canonique, ainsi que lorsqu'une parallélisation produit plusieurs PR concurrentes dans le même dépôt.
 
+## Design System transverse
+
+- `design-system/README.md` : autorité, périmètre et gouvernance du Design System ProjectOS.
+- `design-system/DESIGN_DNA.md` : identité visuelle et comportementale commune, fondations verrouillées et valeurs encore candidates.
+- `design-system/tokens/design-tokens.json` : fondations machine-readable destinées aux prototypes, à Figma et aux futures bibliothèques de composants.
+- `design-system/COMPONENT_ARCHITECTURE.md` : composants, variantes, états, patterns UX et ordre de prototypage.
+
+Les applications ProjectOS doivent charger ces références lorsqu’une demande concerne leur identité visuelle, leurs composants partagés ou l’homogénéité UX transverse.
+
 ## Décisions transverses
 
 - `ADR/ADR-001-FRUGAL-DEVELOPMENT-TOOLCHAIN.md` : ChatGPT et Codex développent ; Replit Starter exécute, teste, stocke et déploie.
