@@ -16,17 +16,20 @@ Vérification de production : `npm test` puis `npm run build`.
 
 ## Replit — lancement direct
 
-Importer `dalquier/App-perso`, puis utiliser directement le bouton **Run**. Aucun Workflow manuel et aucun Artifact ne sont requis.
+Importer `dalquier/App-perso` depuis GitHub, sans lancer de setup Agent, puis utiliser directement le lancement natif **Run**. Aucun Workflow manuel et aucun Artifact ne sont requis.
 
-La configuration versionnée `.replit` contient uniquement :
+La configuration versionnée `.replit` déclare uniquement le runtime Node pris en charge par Replit et la commande canonique :
 
-```bash
-./start-equilibre.sh
+```toml
+modules = ["nodejs-24"]
+run = "./start-equilibre.sh"
 ```
+
+Replit peut normaliser cette déclaration de module lors de l'import. Cette normalisation est compatible avec le runtime ; l'ajout de sections `workflows`, d'un `runButton = "Project"`, d'une tâche `Start application`, d'un Artifact ou d'un `replit.md` généré par Agent ne l'est pas.
 
 Ce script exécute un `npm ci` déterministe, construit la PWA avec Vite, puis sert `dist/` avec le serveur statique Node dédié `scripts/replit-server.mjs`. Le serveur écoute sur `0.0.0.0:${PORT:-5000}` ; Replit peut donc détecter automatiquement le premier port HTTP ouvert et l'exposer dans Preview. Le même chemin est exécuté par GitHub Actions dans le smoke `Replit direct-run smoke`.
 
-Aucun ancien workspace, Workflow, Artifact, Secret Replit, `.env` ou Agent IA Replit n'est requis pour lancer Équilibre.
+Aucun ancien workspace, Workflow, Artifact, Secret Replit, `.env`, `replit.md` ou Agent IA Replit n'est requis pour lancer Équilibre.
 
 ## Données et confidentialité
 

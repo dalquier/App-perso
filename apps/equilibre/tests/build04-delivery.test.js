@@ -24,7 +24,18 @@ describe("BUILD-04 delivery contract", () => {
 
   it("provides a root Replit Run command and leaves port routing to Replit auto-detection", () => {
     const replit = readRepo(".replit");
-    expect(replit.trim()).toBe('run = "./start-equilibre.sh"');
+    const activeLines = replit
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#"))
+      .sort();
+
+    expect(activeLines).toEqual([
+      'modules = ["nodejs-24"]',
+      'run = "./start-equilibre.sh"',
+    ]);
+    expect(replit).not.toMatch(/^\s*\[+workflows?\b/im);
+    expect(replit).not.toMatch(/runButton|Start application|shell\.exec|waitForPort|outputType/i);
     expect(replit).not.toContain("[[ports]]");
     expect(replit).not.toContain("localPort");
     expect(replit).not.toContain("externalPort");
