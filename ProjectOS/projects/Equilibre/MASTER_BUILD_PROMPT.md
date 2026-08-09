@@ -115,6 +115,8 @@ Le prototype `dalquier/Scriptable/TCC_Budy` est chargé uniquement pour inventai
 - V4 / BUILD-04 intégrée dans `main` : stockage version 4, deux protocoles actifs versionnés, gates de sécurité avant mutation et cache PWA `equilibre-shell-v6` ;
 - runtime Replit natif stabilisé par la PR #122 et vérifié au SHA `d9b91b9531b77b2c8f04e713465d69beb06f9bac` ;
 - convergence conversationnelle du Jalon G versionnée dans `docs/CONVERSATIONAL_ARCHITECTURE_CONVERGENCE.md` ;
+- contrats SESSION-30-A intégrés par la PR #125 au commit `2eaa9425a421967558fd64d1b1f6822f626d872c` ;
+- moteur structuré local SESSION-30-B intégré par la PR #129 ;
 - génération locale progressive, interruption et isolation par conversation ;
 - les 181 tests automatisés, le build, le lancement racine, le HTTP 200 et le smoke iPhone du socle sont verts au SHA de stabilisation ;
 - aucun fournisseur OpenAI réel, backend conversationnel ou stockage distant n'est encore implémenté.
@@ -142,7 +144,7 @@ Le prototype `dalquier/Scriptable/TCC_Budy` est chargé uniquement pour inventai
 - extension safety des dialogues longs et des domaines renforcés ;
 - politique de chiffrement, export et synchronisation future.
 
-Ces décisions sont prises dans les Builds qui en dépendent. Elles ne bloquent pas `SESSION-30-A`, limité aux contrats de domaine.
+Ces décisions sont prises dans les Builds qui en dépendent. La décision de stockage ne bloque pas `SESSION-30-B`, qui reste un moteur de domaine pur sans persistance.
 
 ## 12. Fonctions historiques à préserver
 
@@ -161,7 +163,7 @@ Préserver signifie comparer et documenter, pas copier aveuglément du Python da
 ## 13. Dettes connues
 
 - utilisation contextuelle des mémoires confirmées non construite ;
-- séances longues non construites ;
+- contrats et moteur structuré des séances longues intégrés ; persistance et UI encore non intégrées ;
 - fournisseur OpenAI réel et backend sécurisé non construits ;
 - chiffrement, export et synchronisation future à cadrer ;
 - protocoles TCC et règles sensibles à étendre avant diffusion ;
@@ -221,7 +223,7 @@ Le dépôt `dalquier/App-perso` est public. Sont interdits : données personnell
 
 ## 18. Prochaine étape exacte
 
-Préparer `SESSION-30-A — Contrats` depuis le `main` vivant. Le Build reste limité au domaine pur : `LongSessionDefinition`, `LongSessionRun`, phases, timing, états, sécurité et relation future avec `sessionRecord`, avec tests unitaires. Il exclut moteur, stockage, migration, UI, provider, LLM, mémoire enrichie et voix.
+Préparer `SESSION-30-C — Persistance et UX iPhone` depuis le `main` vivant. Commencer par arbitrer explicitement l’extension contrôlée du stockage v4 ou une migration storage-v5 / IndexedDB, puis spécifier migration, rollback, reprise foreground/background et branchement UI du moteur structuré. Ne pas introduire de provider ou de dialogue semi-structuré.
 
 ## 19. Historique des Builds intégrés
 
@@ -229,6 +231,8 @@ Préparer `SESSION-30-A — Contrats` depuis le `main` vivant. Le Build reste li
 - BUILD-02 : conversations persistantes locales, streaming interruptible, historique multi-conversations, migration versionnée et validation iPhone.
 - BUILD-03 : séances structurées et mémoire contrôlée, intégré par la PR #53.
 - V4 / BUILD-04 : intégrée dans `main` ; runtime natif stabilisé ensuite par la PR #122.
+- SESSION-30-A : contrats de domaine intégrés par la PR #125.
+- SESSION-30-B : moteur structuré local et définition S30-02 intégrés par la PR #129.
 - Les anciens prompts d’exécution BUILD-01/BUILD-02 sont historiques et ne doivent plus être utilisés comme instructions actives.
 
 ## 20. Ne pas faire

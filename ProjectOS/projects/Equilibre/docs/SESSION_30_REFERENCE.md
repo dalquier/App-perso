@@ -551,15 +551,15 @@ Une séance longue ne doit jamais être « un chatbot auquel on demande de faire
 
 Le moteur de séance possède l’objectif, le temps, les phases, les règles, les données, les limites, la sécurité et les effets métier. Lorsqu’une IA est utilisée, elle reste un moteur de dialogue contraint à l’intérieur de cet espace et ne possède aucun pouvoir direct sur les règles permanentes, la persistance, la mémoire ou les transitions métier.
 
-## 22. Gate de passage à l’implémentation
+## 22. Gates de passage aux incréments
 
-Aucune implémentation longue ne commence avant :
+`SESSION-30-A/B`, limités aux contrats et au moteur de domaine sans persistance, peuvent commencer lorsque :
 
-- convergence avec `CLINICAL-ROLE-01` ;
-- convergence avec l’architecture backend/IA réelle ;
-- convergence avec mémoire contextuelle ;
-- convergence avec les evals de sécurité/comportement ;
-- arbitrage du stockage pour les longs transcripts ;
-- plan de Build publié et périmètres non concurrents.
+- les convergences Clinical Role, backend/IA, mémoire contextuelle et evals sont versionnées ;
+- le plan de Build est publié ;
+- les périmètres ne concurrencent aucun autre Build ;
+- les contrats SESSION-30-A sont intégrés avant le moteur B.
 
-Le premier Build doit privilégier le moteur **structuré, local et déterministe** avant toute couche générative.
+L’arbitrage du stockage des longs transcripts est obligatoire avant `SESSION-30-C`, pas avant le moteur pur de `SESSION-30-B`. Le provider semi-structuré et l’extension safety générative sont requis avant `SESSION-30-E`.
+
+Le premier moteur privilégie le mode **structuré, local et déterministe** avant toute couche générative.

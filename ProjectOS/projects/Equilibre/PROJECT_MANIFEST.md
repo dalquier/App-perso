@@ -5,7 +5,7 @@
 - ID stable : `equilibre`
 - Nom produit : Équilibre
 - Alias historiques : TCC Budy, TCC Buddy, TCC_Budy, compagnon TCC
-- Statut : BUILD-01 à BUILD-04 intégrés dans `main` ; runtime Replit natif stabilisé et smoke iPhone rattaché au SHA `d9b91b9531b77b2c8f04e713465d69beb06f9bac` ; préparation de `SESSION-30-A`
+- Statut : BUILD-01 à BUILD-04 et SESSION-30-A/B intégrés dans `main` ; runtime Replit natif stabilisé ; préparation de `SESSION-30-C`
 - Propriétaire : Damien
 
 ## Vision
@@ -68,10 +68,12 @@ Toute évolution touchant build, serveur, port, service worker, PWA, racine mono
 - BUILD-02 : intégré, conversations persistantes locales ; recette iPhone historique validée.
 - BUILD-03 : intégré par la PR #53 ; séances structurées et mémoire locale explicitement proposée, confirmable, corrigeable et supprimable.
 - BUILD-04 : intégré dans `main` ; deux protocoles versionnés, stockage v4, gates de sécurité transverses, cache `equilibre-shell-v6`, Run Replit versionné, serveur statique Node dédié, Direct Run Smoke CI et polish UX compact.
+- SESSION-30-A : contrats de domaine des séances longues intégrés par la PR #125 au commit `2eaa9425a421967558fd64d1b1f6822f626d872c`.
+- SESSION-30-B : moteur structuré local, sept phases, temps actif, pause/reprise, safety et définition S30-02 intégrés par la PR #129, sans persistance ni UI.
 
 ## Prochain jalon
 
-Préparer puis construire `SESSION-30-A — Contrats` dans un périmètre de domaine pur : contrats des séances longues, phases, timing, états, sécurité et relation future avec `sessionRecord`. Le moteur, le stockage, l'UI, le provider et la voix restent hors de cet incrément.
+Préparer `SESSION-30-C — Persistance et UX iPhone` : arbitrer le stockage des longs transcripts, définir migration et rollback, puis brancher le moteur structuré dans une interface iPhone avec reprise foreground/background. `SessionRecord`, mémoire, provider et voix restent hors de cet incrément.
 
 ## Définition de terminé de la reprise
 

@@ -1,7 +1,8 @@
 # Équilibre — SESSION-30-A — Contrats de domaine
 
-- Statut : candidate de Build, à relire avant intégration
-- Base : `dalquier/App-perso@868aa4fe376c02a6e5c3921241a054242e3213bf`
+- Statut : intégré par la PR #125
+- Base de construction : `dalquier/App-perso@868aa4fe376c02a6e5c3921241a054242e3213bf`
+- Commit d’intégration : `2eaa9425a421967558fd64d1b1f6822f626d872c`
 - Dépendances : `SESSION_30_REFERENCE.md`, `CONVERSATIONAL_ARCHITECTURE_CONVERGENCE.md`, ADR-006
 - Périmètre : domaine pur, sans moteur, stockage, UI, provider, LLM, mémoire enrichie ni voix
 
