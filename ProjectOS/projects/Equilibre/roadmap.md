@@ -76,7 +76,7 @@ Aucune implémentation semi-structurée ou spécialisée à risque ne commence a
 
 Référence normative de travail : `ProjectOS/projects/Equilibre/docs/SESSION_30_REFERENCE.md`.
 
-État vivant : `SESSION-30-A` intégré par la PR #125 ; `SESSION-30-B` intégré par la PR #129 ; `SESSION-30-C-PREP` formalise la candidate storage-v5 et les releases stables C0–C4.
+État vivant : `SESSION-30-A` intégré par la PR #125 ; `SESSION-30-B` intégré par la PR #129 ; `SESSION-30-C-PREP` formalise storage-v5 et les releases stables C0–C4 acceptés par l'ADR-007.
 
 Verdict analytique : `READY FOR 30-MIN SESSION CONVERGENCE`.
 
@@ -118,11 +118,11 @@ Le premier moteur doit valider le cœur métier sans LLM : phases, temps actif, 
 Avant le code correspondant, trancher explicitement :
 
 - contrat exact `LongSessionDefinition` ;
-- acceptation de storage-v5 / IndexedDB et de sa migration transactionnelle selon l'ADR-007 ;
+- intégration de C0 avant la migration storage-v5 / IndexedDB transactionnelle définie par l'ADR-007 ;
 - contrat du provider semi-structuré ;
 - extension du modèle de sécurité pour conversations longues.
 
-Le contrat exact `LongSessionDefinition` est l'objet de `SESSION-30-A`. La candidate storage-v5/IndexedDB est portée par l'ADR-007 et doit être acceptée avant C0/C1. Le contrat provider reste requis avant `SESSION-30-E` et l'extension safety complète avant tout dialogue long génératif.
+Le contrat exact `LongSessionDefinition` est l'objet de `SESSION-30-A`. Storage-v5/IndexedDB est accepté par l'ADR-007 ; C0 doit être intégré avant C1. Le contrat provider reste requis avant `SESSION-30-E` et l'extension safety complète avant tout dialogue long génératif.
 
 ### Règle de stabilité C0–C4
 

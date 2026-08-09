@@ -2,7 +2,7 @@
 
 ## Versions stables Replit et préservation des données
 
-- Statut : préparation candidate, sans implémentation
+- Statut : préparation acceptée, sans implémentation
 - Base auditée : `dalquier/App-perso@5140570c7796b4f8a5a32f318666e047087db47c`
 - Dépendances intégrées : SESSION-30-A, PR #125 ; SESSION-30-B, PR #129
 - Décision associée : ADR-007
@@ -247,7 +247,7 @@ Le travail de développement ne demande donc jamais de supprimer l'app stable, d
 
 ## 12. Prochaine action
 
-Après acceptation de cette préparation : construire **C0 — Sécurité des données** comme premier incrément applicatif. C0 ne rend pas encore SESSION-30 visible ; il sécurise toutes les montées de version suivantes.
+Construire **C0 — Sécurité des données** comme premier incrément applicatif. C0 ne rend pas encore SESSION-30 visible ; il sécurise toutes les montées de version suivantes.
 
 ## 13. Références runtime vérifiées
 

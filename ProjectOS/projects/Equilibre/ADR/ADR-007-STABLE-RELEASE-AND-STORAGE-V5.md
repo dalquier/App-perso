@@ -1,6 +1,6 @@
 # ADR-007 — Versions stables Replit et stockage local v5
 
-- Statut : proposé pour `SESSION-30-C-PREP`
+- Statut : accepté pour `SESSION-30-C-PREP`
 - Date : 2026-08-09
 - Référence : `../docs/SESSION_30_C_STABLE_RELEASE_AND_DATA_PRESERVATION.md`
 

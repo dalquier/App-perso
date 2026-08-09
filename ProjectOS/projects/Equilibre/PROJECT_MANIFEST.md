@@ -70,11 +70,11 @@ Toute évolution touchant build, serveur, port, service worker, PWA, racine mono
 - BUILD-04 : intégré dans `main` ; deux protocoles versionnés, stockage v4, gates de sécurité transverses, cache `equilibre-shell-v6`, Run Replit versionné, serveur statique Node dédié, Direct Run Smoke CI et polish UX compact.
 - SESSION-30-A : contrats de domaine des séances longues intégrés par la PR #125 au commit `2eaa9425a421967558fd64d1b1f6822f626d872c`.
 - SESSION-30-B : moteur structuré local, sept phases, temps actif, pause/reprise, safety et définition S30-02 intégrés par la PR #129, sans persistance ni UI.
-- SESSION-30-C-PREP : décision candidate de storage-v5 IndexedDB, origine publiée stable, migration transactionnelle et releases C0–C4 préservant les données ; aucune implémentation applicative dans ce lot.
+- SESSION-30-C-PREP : storage-v5 IndexedDB, origine publiée stable, migration transactionnelle et releases C0–C4 préservant les données acceptés par l'ADR-007 ; aucune implémentation applicative dans ce lot.
 
 ## Prochain jalon
 
-Faire accepter `SESSION-30-C-PREP`, puis construire `C0 — Sécurité des données` : identité de release, inventaire, export/restauration v4 et verrou d'écriture v5. La migration IndexedDB appartient à C1 et l'interface SESSION-30 à C3. `SessionRecord`, mémoire, provider et voix restent hors de C0–C4.
+Construire `C0 — Sécurité des données` : identité de release, inventaire, export/restauration v4 et verrou d'écriture v5. La migration IndexedDB appartient à C1 et l'interface SESSION-30 à C3. `SessionRecord`, mémoire, provider et voix restent hors de C0–C4.
 
 ## Définition de terminé de la reprise
 
@@ -92,6 +92,6 @@ Faire accepter `SESSION-30-C-PREP`, puis construire `C0 — Sécurité des donn�
 - exigences cliniques et réglementaires à préciser avant diffusion à des tiers ;
 - chiffrement et synchronisation sensible restent à cadrer avant toute diffusion ou stockage distant ;
 - browser/offline/accessibilité automatisés à prouver dans un environnement disposant d'un navigateur réel ;
-- storage-v5/IndexedDB proposé par l'ADR-007 ; acceptation et C0 requis avant toute migration C1 ;
+- storage-v5/IndexedDB accepté par l'ADR-007 ; C0 reste requis avant toute migration C1 ;
 - scénarios sensibles à valider par des tests dédiés ;
 - migration sélective du prototype Pyto à réaliser sans duplication inutile.
