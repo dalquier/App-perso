@@ -1,0 +1,55 @@
+name: Design System Preview Smoke
+
+on:
+  pull_request:
+    paths:
+      - '.replit'
+      - 'start-design-system-preview.sh'
+      - 'apps/design-system/**'
+      - 'ProjectOS/design-system/REPLIT_RUNTIME_CONTRACT.md'
+      - '.github/workflows/design-system-preview-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  direct-run-smoke:
+    name: Design System Direct Run Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.20.2'
+          cache: npm
+          cache-dependency-path: apps/design-system/package-lock.json
+
+      - name: Launch with Replit-equivalent command and verify Storybook
+        env:
+          PORT: '6006'
+        run: |
+          set -euo pipefail
+          bash ./start-design-system-preview.sh > /tmp/design-system-storybook.log 2>&1 &
+          PID=$!
+          cleanup() {
+            kill "$PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          READY=0
+          for _ in $(seq 1 90); do
+            if curl -fsS "http://127.0.0.1:${PORT}/" > /tmp/storybook-index.html; then
+              READY=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$READY" -ne 1 ]; then
+            cat /tmp/design-system-storybook.log
+            exit 1
+          fi
+
+          test -s /tmp/storybook-index.html
+          curl -fsS "http://127.0.0.1:${PORT}/iframe.html" > /dev/null
+          curl -fsS "http://127.0.0.1:${PORT}/index.json" > /dev/null
+          grep -qi 'storybook' /tmp/storybook-index.html
