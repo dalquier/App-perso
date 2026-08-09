@@ -113,6 +113,34 @@ function draftRunFixture() {
   };
 }
 
+function completedRunFixture() {
+  const completed = draftRunFixture();
+  completed.status = "completed";
+  completed.activityState = "paused";
+  completed.phaseProgress = completed.phaseProgress.map((phase) => ({
+    ...phase,
+    status: "completed",
+    startedAt: START,
+    completedAt: LATER,
+  }));
+  completed.timing = {
+    activeElapsedMs: 1_200_000,
+    activeSince: null,
+    pausedAt: LATER,
+    lastActivityAt: LATER,
+  };
+  completed.completedAt = LATER;
+  completed.result = {
+    completionMode: "early",
+    summary: "Synthèse fictive confirmée.",
+    actionPlan: null,
+    sourceTurnIds: [],
+    userConfirmed: true,
+    confirmedAt: LATER,
+  };
+  return completed;
+}
+
 describe("SESSION-30-A — LongSessionDefinition", () => {
   it("fige un contrat déclaratif versionné avec exactement sept phases", async () => {
     const validated = validateLongSessionDefinition(definitionFixture());
@@ -184,6 +212,12 @@ describe("SESSION-30-A — LongSessionRun", () => {
     expect(Object.isFrozen(validated)).toBe(true);
   });
 
+  it("interdit à un run long de référencer un protocole court", () => {
+    const invalid = draftRunFixture();
+    invalid.protocolId = "equilibre.protocol.clarify-situation";
+    expect(() => validateLongSessionRun(invalid)).toThrow(/Identité\/version du run invalide/);
+  });
+
   it("arrête l’horloge pendant une pause", () => {
     const paused = draftRunFixture();
     paused.activityState = "paused";
@@ -203,6 +237,12 @@ describe("SESSION-30-A — LongSessionRun", () => {
     const interrupted = draftRunFixture();
     interrupted.safetyState = "interrupted";
     expect(() => validateLongSessionRun(interrupted)).toThrow(/suspend nécessairement/);
+  });
+
+  it("refuse une séance terminée qui reste en interruption safety", () => {
+    const invalid = completedRunFixture();
+    invalid.safetyState = "interrupted";
+    expect(() => validateLongSessionRun(invalid)).toThrow(/Combinaison d’état/);
   });
 
   it("sépare les turns originaux des anchors confirmés", () => {
@@ -245,30 +285,7 @@ describe("SESSION-30-A — LongSessionRun", () => {
   });
 
   it("accepte une clôture anticipée sans action mais avec synthèse confirmée", () => {
-    const completed = draftRunFixture();
-    completed.status = "completed";
-    completed.activityState = "paused";
-    completed.phaseProgress = completed.phaseProgress.map((phase) => ({
-      ...phase,
-      status: "completed",
-      startedAt: START,
-      completedAt: LATER,
-    }));
-    completed.timing = {
-      activeElapsedMs: 1_200_000,
-      activeSince: null,
-      pausedAt: LATER,
-      lastActivityAt: LATER,
-    };
-    completed.completedAt = LATER;
-    completed.result = {
-      completionMode: "early",
-      summary: "Synthèse fictive confirmée.",
-      actionPlan: null,
-      sourceTurnIds: [],
-      userConfirmed: true,
-      confirmedAt: LATER,
-    };
+    const completed = completedRunFixture();
     const validated = validateLongSessionRun(completed);
     expect(validated.result).toMatchObject({ completionMode: "early", actionPlan: null });
   });
@@ -295,5 +312,24 @@ describe("SESSION-30-A — futur SessionRecord long", () => {
     expect(record.actionPlan).toBeNull();
     expect(record.protocolRef.definitionDigest).toBe(DIGEST);
     expect(Object.isFrozen(record)).toBe(true);
+  });
+
+  it("interdit à un record long de référencer un protocole court", () => {
+    expect(() => validateLongSessionRecord({
+      id: "record-fixture-invalid",
+      recordType: "long-session",
+      sourceSessionId: "long-run-fixture-1",
+      protocolRef: {
+        id: "equilibre.protocol.clarify-situation",
+        version: "1.0.0",
+        definitionDigest: DIGEST,
+      },
+      createdAt: START,
+      completedAt: LATER,
+      completionMode: "early",
+      summary: "Synthèse fictive confirmée.",
+      actionPlan: null,
+      sourceTurnIds: [],
+    })).toThrow(/protocolRef du SessionRecord long invalide/);
   });
 });

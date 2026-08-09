@@ -74,6 +74,7 @@ const isObject = (value) => Boolean(value) && typeof value === "object" && !Arra
 const isIsoDate = (value) => typeof value === "string" && !Number.isNaN(Date.parse(value));
 const isNullableIsoDate = (value) => value === null || isIsoDate(value);
 const isHexDigest = (value) => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+const isLongSessionProtocolId = (value) => nonEmptyString(value) && value.startsWith("equilibre.long-session.");
 
 function clone(value) {
   return structuredClone(value);
@@ -246,7 +247,7 @@ export function validateLongSessionRun(input) {
   if (run.schemaVersion !== LONG_SESSION_RUN_SCHEMA_VERSION) throw new TypeError("schemaVersion de run invalide.");
   if (run.definitionSchemaVersion !== LONG_SESSION_DEFINITION_SCHEMA_VERSION) throw new TypeError("definitionSchemaVersion invalide.");
   if (run.runKind !== LONG_SESSION_KIND) throw new TypeError(`runKind doit valoir ${LONG_SESSION_KIND}.`);
-  if (!nonEmptyString(run.id) || !nonEmptyString(run.protocolId) || !/^\d+\.\d+\.\d+$/.test(run.protocolVersion)) {
+  if (!nonEmptyString(run.id) || !isLongSessionProtocolId(run.protocolId) || !/^\d+\.\d+\.\d+$/.test(run.protocolVersion)) {
     throw new TypeError("Identité/version du run invalide.");
   }
   if (!isHexDigest(run.definitionDigest)) throw new TypeError("definitionDigest doit être un SHA-256 hexadécimal.");
@@ -262,6 +263,9 @@ export function validateLongSessionRun(input) {
   }
   if (run.safetyState === LONG_SESSION_SAFETY_STATE.interrupted && run.activityState !== LONG_SESSION_ACTIVITY_STATE.paused) {
     throw new TypeError("Une interruption safety suspend nécessairement la séance.");
+  }
+  if (!Object.prototype.hasOwnProperty.call(LONG_SESSION_TRANSITIONS, stateKey(run))) {
+    throw new TypeError("Combinaison d’état de séance longue invalide.");
   }
 
   validatePhaseProgress(run);
@@ -282,7 +286,7 @@ export function validateLongSessionRecord(input) {
     throw new TypeError("Identité du SessionRecord long invalide.");
   }
   if (!isObject(record.protocolRef)
-    || !nonEmptyString(record.protocolRef.id)
+    || !isLongSessionProtocolId(record.protocolRef.id)
     || !/^\d+\.\d+\.\d+$/.test(record.protocolRef.version)
     || !isHexDigest(record.protocolRef.definitionDigest)) {
     throw new TypeError("protocolRef du SessionRecord long invalide.");
