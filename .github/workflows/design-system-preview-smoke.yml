@@ -53,3 +53,26 @@ jobs:
           curl -fsS "http://127.0.0.1:${PORT}/iframe.html" > /dev/null
           curl -fsS "http://127.0.0.1:${PORT}/index.json" > /dev/null
           grep -qi 'storybook' /tmp/storybook-index.html
+
+      - name: Build immutable Replit ZIP snapshot
+        run: |
+          set -euo pipefail
+          rm -rf runtime-package projectos-design-system-c1-replit.zip
+          mkdir -p runtime-package/apps runtime-package/ProjectOS/design-system/tokens
+          cp .replit runtime-package/.replit
+          cp start-design-system-preview.sh runtime-package/start-design-system-preview.sh
+          cp -R apps/design-system runtime-package/apps/design-system
+          rm -rf runtime-package/apps/design-system/node_modules runtime-package/apps/design-system/storybook-static
+          cp ProjectOS/design-system/tokens/design-tokens.json runtime-package/ProjectOS/design-system/tokens/design-tokens.json
+          cp ProjectOS/design-system/REPLIT_RUNTIME_CONTRACT.md runtime-package/ProjectOS/design-system/REPLIT_RUNTIME_CONTRACT.md
+          printf '%s\n' "$GITHUB_SHA" > runtime-package/RUNTIME_SOURCE_SHA.txt
+          (cd runtime-package && zip -qr ../projectos-design-system-c1-replit.zip .)
+          test -s projectos-design-system-c1-replit.zip
+
+      - name: Upload Replit ZIP snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: projectos-design-system-c1-replit-${{ github.sha }}
+          path: projectos-design-system-c1-replit.zip
+          if-no-files-found: error
+          retention-days: 7
