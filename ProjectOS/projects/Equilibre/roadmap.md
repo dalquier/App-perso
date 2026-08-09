@@ -76,7 +76,7 @@ Aucune implémentation semi-structurée ou spécialisée à risque ne commence a
 
 Référence normative de travail : `ProjectOS/projects/Equilibre/docs/SESSION_30_REFERENCE.md`.
 
-État vivant : `SESSION-30-A` intégré par la PR #125 ; `SESSION-30-B` intégré par la PR #129 ; `SESSION-30-C` est le prochain incrément à préparer.
+État vivant : `SESSION-30-A` intégré par la PR #125 ; `SESSION-30-B` intégré par la PR #129 ; `SESSION-30-C-PREP` formalise la candidate storage-v5 et les releases stables C0–C4.
 
 Verdict analytique : `READY FOR 30-MIN SESSION CONVERGENCE`.
 
@@ -106,7 +106,7 @@ Le premier moteur doit valider le cœur métier sans LLM : phases, temps actif, 
 
 1. **SESSION-30-A — Contrats** : intégré par la PR #125 ; `LongSessionDefinition`, `LongSessionRun`, phases, timing, relation `ProtocolRun`, sécurité, forme future du `sessionRecord`.
 2. **SESSION-30-B — Moteur structuré** : intégré par la PR #129 ; premier protocole local et déterministe, sans persistance ni UI.
-3. **SESSION-30-C — Persistance et UX iPhone** : prochain incrément ; décision stockage, migration/rollback, interface longue, background/foreground.
+3. **SESSION-30-C — Persistance et UX iPhone** : préparation dans `SESSION_30_C_STABLE_RELEASE_AND_DATA_PRESERVATION.md`, puis cinq versions stables : C0 sécurité des données, C1 storage-v5, C2 persistance/reprise, C3 UX iPhone, C4 durcissement et promotion.
 4. **SESSION-30-D — SessionRecord / action / mémoire** : provenance, résumé, action facultative, proposition mémoire explicite, historique.
 5. **SESSION-30-E — Dialogue semi-structuré** : provider, orchestrateur, intents, génération interruptible, validation des sorties et fallback structuré.
 6. **SESSION-30-F — Bibliothèque faible/moyen risque** : clarification complexe, ambivalence, affirmation de soi, activation légère.
@@ -118,11 +118,15 @@ Le premier moteur doit valider le cœur métier sans LLM : phases, temps actif, 
 Avant le code correspondant, trancher explicitement :
 
 - contrat exact `LongSessionDefinition` ;
-- extension contrôlée du stockage v4 ou migration storage-v5 / IndexedDB ;
+- acceptation de storage-v5 / IndexedDB et de sa migration transactionnelle selon l'ADR-007 ;
 - contrat du provider semi-structuré ;
 - extension du modèle de sécurité pour conversations longues.
 
-Le contrat exact `LongSessionDefinition` est l'objet de `SESSION-30-A`. La décision stockage est requise avant `SESSION-30-C`, le contrat provider avant `SESSION-30-E` et l'extension safety complète avant tout dialogue long génératif. Ces décisions ne bloquent pas le domaine pur de `SESSION-30-A`.
+Le contrat exact `LongSessionDefinition` est l'objet de `SESSION-30-A`. La candidate storage-v5/IndexedDB est portée par l'ADR-007 et doit être acceptée avant C0/C1. Le contrat provider reste requis avant `SESSION-30-E` et l'extension safety complète avant tout dialogue long génératif.
+
+### Règle de stabilité C0–C4
+
+Chaque incrément conserve une version publiée utilisable sur la même origine Replit, passe les gates de migration et se termine par `STABLE IN REPLIT — DATA PRESERVED`. Les branches candidates restent hors de l'app stable jusqu'à validation ; aucun changement d'origine ne se fait sans export/import explicite.
 
 Le dialogue semi-structuré ne doit pas précéder la validation du moteur structuré local.
 

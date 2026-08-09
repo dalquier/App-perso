@@ -136,7 +136,7 @@ Le prototype `dalquier/Scriptable/TCC_Budy` est chargé uniquement pour inventai
 
 ## 11. Décisions ouvertes
 
-- stratégie storage-v5 / IndexedDB avant la persistance des séances longues ;
+- acceptation de l'ADR-007 puis stratégie storage-v5 / IndexedDB transactionnelle avant la persistance des séances longues ;
 - contrat exécutable détaillé de `ClinicalRolePolicy` ;
 - taxonomie temporelle et sensible de la mémoire contextuelle ;
 - modèle OpenAI, paramètres, budgets et timeouts à sélectionner par evals ;
@@ -223,7 +223,7 @@ Le dépôt `dalquier/App-perso` est public. Sont interdits : données personnell
 
 ## 18. Prochaine étape exacte
 
-Préparer `SESSION-30-C — Persistance et UX iPhone` depuis le `main` vivant. Commencer par arbitrer explicitement l’extension contrôlée du stockage v4 ou une migration storage-v5 / IndexedDB, puis spécifier migration, rollback, reprise foreground/background et branchement UI du moteur structuré. Ne pas introduire de provider ou de dialogue semi-structuré.
+Faire accepter `SESSION-30-C-PREP`, puis construire C0 à C4 depuis le `main` vivant selon `docs/SESSION_30_C_STABLE_RELEASE_AND_DATA_PRESERVATION.md`. Commencer par C0 — identité release, inventaire, export/restauration v4 et verrou d'écriture v5 — avant la migration IndexedDB C1. Chaque incrément doit laisser une version publiée stable sur la même origine Replit et prouver la conservation des données. Ne pas introduire de provider ou de dialogue semi-structuré.
 
 ## 19. Historique des Builds intégrés
 
