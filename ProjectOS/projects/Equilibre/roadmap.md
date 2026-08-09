@@ -76,6 +76,8 @@ Aucune implémentation semi-structurée ou spécialisée à risque ne commence a
 
 Référence normative de travail : `ProjectOS/projects/Equilibre/docs/SESSION_30_REFERENCE.md`.
 
+État vivant : `SESSION-30-A` intégré par la PR #125 ; `SESSION-30-B` est le candidat courant.
+
 Verdict analytique : `READY FOR 30-MIN SESSION CONVERGENCE`.
 
 ### Décisions de base
@@ -98,12 +100,12 @@ Verdict analytique : `READY FOR 30-MIN SESSION CONVERGENCE`.
 
 `S30-02 — Résoudre un problème concret`, d’abord en mode entièrement structuré, local et déterministe.
 
-Le premier incrément doit valider le cœur métier sans LLM : phases, temps actif, pause/reprise, fin anticipée, synthèse et `sessionRecord`.
+Le premier moteur doit valider le cœur métier sans LLM : phases, temps actif, pause/reprise, fin anticipée et synthèse. La création de `sessionRecord` reste réservée à `SESSION-30-D`.
 
 ### Découpage SESSION-30
 
-1. **SESSION-30-A — Contrats** : `LongSessionDefinition`, `LongSessionRun`, phases, timing, relation `ProtocolRun`, sécurité, `sessionRecord`.
-2. **SESSION-30-B — Moteur structuré** : premier protocole local et déterministe.
+1. **SESSION-30-A — Contrats** : intégré par la PR #125 ; `LongSessionDefinition`, `LongSessionRun`, phases, timing, relation `ProtocolRun`, sécurité, forme future du `sessionRecord`.
+2. **SESSION-30-B — Moteur structuré** : candidat courant ; premier protocole local et déterministe, sans persistance ni UI.
 3. **SESSION-30-C — Persistance et UX iPhone** : décision stockage, migration/rollback, interface longue, background/foreground.
 4. **SESSION-30-D — SessionRecord / action / mémoire** : provenance, résumé, action facultative, proposition mémoire explicite, historique.
 5. **SESSION-30-E — Dialogue semi-structuré** : provider, orchestrateur, intents, génération interruptible, validation des sorties et fallback structuré.
