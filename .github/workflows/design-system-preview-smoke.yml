@@ -16,6 +16,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Capture exact runtime source SHA
+        id: runtime-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse HEAD)"
+          printf 'sha=%s\n' "$SHA" >> "$GITHUB_OUTPUT"
+          test "$SHA" = "${{ github.event.pull_request.head.sha || github.sha }}"
 
       - uses: actions/setup-node@v4
         with:
@@ -55,6 +66,8 @@ jobs:
           grep -qi 'storybook' /tmp/storybook-index.html
 
       - name: Build immutable Replit ZIP snapshot
+        env:
+          RUNTIME_SOURCE_SHA: ${{ steps.runtime-source.outputs.sha }}
         run: |
           set -euo pipefail
           rm -rf runtime-package projectos-design-system-c1-replit.zip
@@ -65,14 +78,14 @@ jobs:
           rm -rf runtime-package/apps/design-system/node_modules runtime-package/apps/design-system/storybook-static
           cp ProjectOS/design-system/tokens/design-tokens.json runtime-package/ProjectOS/design-system/tokens/design-tokens.json
           cp ProjectOS/design-system/REPLIT_RUNTIME_CONTRACT.md runtime-package/ProjectOS/design-system/REPLIT_RUNTIME_CONTRACT.md
-          printf '%s\n' "$GITHUB_SHA" > runtime-package/RUNTIME_SOURCE_SHA.txt
+          printf '%s\n' "$RUNTIME_SOURCE_SHA" > runtime-package/RUNTIME_SOURCE_SHA.txt
           (cd runtime-package && zip -qr ../projectos-design-system-c1-replit.zip .)
           test -s projectos-design-system-c1-replit.zip
 
       - name: Upload Replit ZIP snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: projectos-design-system-c1-replit-${{ github.sha }}
+          name: projectos-design-system-c1-replit-${{ steps.runtime-source.outputs.sha }}
           path: projectos-design-system-c1-replit.zip
           if-no-files-found: error
           retention-days: 7
