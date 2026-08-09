@@ -98,4 +98,4 @@ Supprimer la définition S30-02, le moteur, les tests SESSION-30-B et ce documen
 
 ## 9. Étape suivante
 
-`SESSION-30-C — Persistance et UX iPhone` doit d’abord arbitrer explicitement l’extension contrôlée du stockage v4 ou une migration storage-v5 / IndexedDB. Il branchera ensuite le moteur validé sans déplacer les règles de domaine dans l’UI.
+`SESSION-30-C-PREP` a retenu storage-v5 / IndexedDB dans l'ADR-007 et découpe la suite en C0–C4. C0 sécurise la montée de version, C1 réalise la migration et C2/C3 branchent progressivement le moteur validé sans déplacer les règles de domaine dans l'UI.

@@ -37,6 +37,14 @@ GitHub reste l’unique source de vérité. Replit est un runtime remplaçable.
 
 `Open Artifact` ne valide jamais Équilibre. Un Workflow manuel peut être utilisé pour diagnostic ponctuel, mais ne fait pas partie du lancement nominal.
 
+## Origine stable et données locales
+
+- La Preview `.replit.dev` est une surface temporaire de développement et de QA. Elle ne constitue pas l'origine durable des données personnelles.
+- L'usage personnel stable doit se faire sur une version publiée à URL stable (`.replit.app` ou domaine dédié).
+- Republier une nouvelle version doit conserver cette origine. Créer une nouvelle app, changer de domaine ou utiliser une nouvelle URL exige un export depuis l'ancienne origine puis un import vérifié dans la nouvelle.
+- Une seule app Replit canonique porte la version stable. Les branches candidates ne remplacent cette version qu'après les gates GitHub, données, runtime et iPhone.
+- Le runtime Replit reste remplaçable comme environnement de code ; l'origine publiée contenant le stockage navigateur ne doit pas être remplacée sans plan de migration explicite.
+
 ## CI runtime gate
 
 Le workflow Équilibre doit conserver un `Replit direct-run smoke` exécutant le même chemin de lancement que Replit et vérifiant au minimum :
@@ -105,6 +113,8 @@ Après tout changement touchant le runtime ou avant validation d’un jalon impo
 - la Preview native exécute réellement Équilibre ;
 - aucun Artifact ni Workflow manuel n’est nécessaire au lancement nominal ;
 - le runtime peut être recréé depuis ce contrat sans dépendre d’un ancien workspace.
+
+Le statut renforcé `STABLE IN REPLIT — DATA PRESERVED` exige en plus une origine publiée stable, un SHA de release exact, les gates de migration applicables et la vérification des données avant/après définis dans `SESSION_30_C_STABLE_RELEASE_AND_DATA_PRESERVATION.md`.
 
 ## Recréation propre depuis GitHub
 
