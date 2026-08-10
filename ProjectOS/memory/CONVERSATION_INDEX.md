@@ -6,6 +6,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|---:|---:|
 | `SES-20260805-001` | 2026-08-05 | Codex | ProjectOS | ProjectOS — Mémoire Codex — Consentement permanent | Gouvernance de la mémoire | terminée | `agent/projectos-permanent-codex-memory` / PR #30 | `SESSION_SUMMARIES/SES-20260805-001.md` | — | non archivée | — | — |
 | `SES-20260805-002` | 2026-08-05 | Codex | ProjectOS | ProjectOS — Archive directe des conversations | Archivage conversationnel | terminée | `agent/projectos-direct-drive-conversation-archive` / PR #36 | `SESSION_SUMMARIES/SES-20260805-002.md` | [Drive](https://drive.google.com/drive/folders/1p-DbjbJ0TjDydgkay2r53g40Sv4JRk38) | partial | 3 | 0 |
+| `SES-20260809-001` | 2026-08-09 | Codex | ProjectOS | ProjectOS — Activation | Amorçage ProjectOS | active | `codex/memory-ses-20260809-001` | à déterminer | [Drive](https://drive.google.com/drive/folders/1l2DcM-f7Hp2N6oJMS3HyLxTOeU8-_gAg) | active | 7 | 0 |
 
 ## Statuts
 
