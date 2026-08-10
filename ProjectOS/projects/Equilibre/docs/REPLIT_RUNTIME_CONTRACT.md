@@ -4,7 +4,9 @@
 
 - ProjectOS ID : `equilibre`
 - Nom produit : `Équilibre`
-- Replit app name cible : `Équilibre`
+- Replit app canonique : `Repl Équilibre`
+- Replit app ID : `9501a7d7-5901-4445-b3fa-157497a8e0dd`
+- URL stable : `https://repl-equilibre.replit.app`
 - Runtime mode cible : `REPLIT_NATIVE_RUNTIME`
 
 ## Source canonique
@@ -20,13 +22,15 @@ GitHub reste l’unique source de vérité. Replit est un runtime remplaçable.
 
 - Launch command canonique : `./start-equilibre.sh`
 - Runtime module canonique : `nodejs-24`
-- Configuration racine autorisée : `modules = ["nodejs-24"]` et `run = "./start-equilibre.sh"`, sans section Workflow.
+- Configuration racine autorisée : module Node et commande `run` directe, bloc `[deployment]` Autoscale et unique routage `[[ports]]` de `5000` vers `80`, sans section Workflow.
 - Working directory initial : racine du monorepo
 - Build : production Vite
 - Serveur : serveur statique Node dédié `apps/equilibre/scripts/replit-server.mjs`
 - Bind address : `0.0.0.0`
-- Port policy : port fourni/détecté par Replit ; aucun port local historique ne doit être considéré comme invariant produit.
+- Port policy : le serveur continue d'honorer `$PORT` hors Replit ; dans l'application Replit canonique, le port interne `5000` est explicitement routé vers le port HTTP `80` afin d'exposer la Preview native et le déploiement sans Artifact.
 - Readiness : le lancement doit rendre l’application accessible et le smoke CI doit obtenir HTTP 200.
+
+La publication Autoscale utilise un build déterministe dans `apps/equilibre/`, puis lance seulement le serveur Node sur le bundle déjà construit. Cette configuration de déploiement est versionnée ; elle ne doit pas être recréée par Agent.
 
 ## Surface d’exécution
 
@@ -34,6 +38,8 @@ GitHub reste l’unique source de vérité. Replit est un runtime remplaçable.
 - Artifact required : `NO`
 - Manual Workflow required : `NO`
 - Validation tool required to start product : `NO`
+
+Résultat attendu dans l'interface Replit mobile : un bouton d'ouverture nommé pour l'application canonique et relié à la Preview native. Une page ou un bouton générique `Open Artifact` reste un état non conforme.
 
 `Open Artifact` ne valide jamais Équilibre. Un Workflow manuel peut être utilisé pour diagnostic ponctuel, mais ne fait pas partie du lancement nominal.
 
@@ -88,6 +94,7 @@ Si le runtime est `dirty`, `ahead` ou `diverged`, ne pas faire `Pull`, `Sync` ou
 - panneau `Validation` comme démarrage produit ;
 - création d’un Workflow manuel permanent pour contourner un runtime mal configuré ;
 - `runButton = "Project"`, tâche `Start application` ou section `[workflows]` ajoutée par un setup Agent ;
+- ajout automatique d'un module Python, d'un second port ou d'un routage différent du bloc `[[ports]]` canonique ;
 - `replit.md` généré par Agent comme condition de lancement ;
 - changement métier par Replit Agent pour corriger un problème de Preview/port ;
 - utilisation d’une ancienne Preview comme preuve du nouveau SHA ;
@@ -128,6 +135,6 @@ La mise à jour normale d’Équilibre utilise `GIT_SYNC` dans l’application R
 3. ne poursuivre que si le verdict est `ADMISSIBLE` ou si une exception Agent ponctuelle a été explicitement autorisée ;
 4. si le setup Agent est requis, si son refus bloque `Run/Preview` ou si le verdict reste `UNKNOWN`, arrêter, conserver `REPLIT VALIDATION = BLOCKED` et ne pas répéter l’import ;
 5. créer au maximum une candidate de remplacement, sans supprimer ni déclasser l’application canonique existante ;
-6. vérifier que `.replit` ne contient que le module Node canonique et la commande `run`, relever le SHA puis lancer la Preview avec données fictives ou isolées ;
+6. vérifier que `.replit` correspond exactement à la configuration versionnée — module Node, commande `run`, déploiement Autoscale et port `5000 → 80`, sans Workflow — relever le SHA puis lancer la Preview avec données fictives ou isolées ;
 7. exécuter le Runtime Preflight et le smoke iPhone ; vérifier l’origine stable, la conservation des données et le rollback selon `SESSION_30_C_STABLE_RELEASE_AND_DATA_PRESERVATION.md` ;
 8. promouvoir la remplaçante comme application canonique uniquement après ces preuves, puis archiver l’ancienne selon une décision explicite.
