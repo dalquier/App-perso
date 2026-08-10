@@ -22,7 +22,7 @@ describe("BUILD-04 delivery contract", () => {
     expect(readApp("public/sw.js")).toContain('const CACHE = "equilibre-shell-v6"');
   });
 
-  it("provides a root Replit Run command and leaves port routing to Replit auto-detection", () => {
+  it("provides direct Run, native Preview routing and Autoscale deployment without workflows", () => {
     const replit = readRepo(".replit");
     const activeLines = replit
       .split("\n")
@@ -31,14 +31,18 @@ describe("BUILD-04 delivery contract", () => {
       .sort();
 
     expect(activeLines).toEqual([
+      '[[ports]]',
+      '[deployment]',
+      'build = "cd apps/equilibre && npm ci && npm run build"',
+      'deploymentTarget = "autoscale"',
+      'externalPort = 80',
+      'localPort = 5000',
       'modules = ["nodejs-24"]',
       'run = "./start-equilibre.sh"',
+      'run = "cd apps/equilibre && node scripts/replit-server.mjs"',
     ]);
     expect(replit).not.toMatch(/^\s*\[+workflows?\b/im);
     expect(replit).not.toMatch(/runButton|Start application|shell\.exec|waitForPort|outputType/i);
-    expect(replit).not.toContain("[[ports]]");
-    expect(replit).not.toContain("localPort");
-    expect(replit).not.toContain("externalPort");
     expect(replit).not.toMatch(/BUILD-?0?3|Validation/i);
   });
 
