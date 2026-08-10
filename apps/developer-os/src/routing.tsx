@@ -50,6 +50,7 @@ export function AppRouter({ children }: { children: ReactNode }) {
       return;
     }
     const href = routeHref(to);
+    if (routeFromHash(href) === currentRoute()) return;
     if (options?.replace) history.replaceState(null, "", href);
     else history.pushState(null, "", href);
     setPath(routeFromHash(href));

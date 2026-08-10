@@ -28,8 +28,15 @@ describe("hash routing", () => {
     expect(location.hash).toBe("#/settings");
     expect(screen.getByText("Settings page")).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("link", { name: "Settings" }));
+
     history.back();
     await waitFor(() => expect(screen.getByText("Home")).toBeInTheDocument());
+
+    history.forward();
+    await waitFor(() =>
+      expect(screen.getByText("Settings page")).toBeInTheDocument(),
+    );
   });
 
   it("matches a dynamic route after refresh initialization", () => {

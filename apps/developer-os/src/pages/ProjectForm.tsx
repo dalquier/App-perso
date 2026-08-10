@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { useNavigate, useParams } from "../routing";
 import { useProjects } from "../data/ProjectsContext";
 import {
@@ -21,10 +27,12 @@ export function ProjectForm() {
     [saving, setSaving] = useState(false),
     [dirty, setDirty] = useState(false),
     [message, setMessage] = useState("");
-  const initialized = useRef(false);
+  const initializedFor = useRef<string | null | undefined>(undefined);
+  const aliasesInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (!initialized.current && !loading) {
-      if (existing)
+    const formIdentity = id ?? null;
+    if (!loading && initializedFor.current !== formIdentity) {
+      if (existing) {
         setDraft({
           name: existing.name,
           aliases: existing.aliases,
@@ -36,9 +44,12 @@ export function ProjectForm() {
           lastKnownState: existing.lastKnownState,
           isActive: existing.isActive,
         });
-      initialized.current = true;
+      } else if (initializedFor.current !== undefined) {
+        setDraft(emptyDraft());
+      }
+      initializedFor.current = formIdentity;
     }
-  }, [existing, loading]);
+  }, [existing, id, loading]);
   useEffect(() => {
     const before = (e: BeforeUnloadEvent) => {
       if (dirty) {
@@ -57,6 +68,11 @@ export function ProjectForm() {
   const leave = () => {
     if (!dirty || confirm("Abandonner les modifications non enregistrées ?"))
       nav(-1);
+  };
+  const advanceFromName = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    aliasesInput.current?.focus();
   };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -122,11 +138,13 @@ export function ProjectForm() {
             Nom <strong>*</strong>
             <input
               autoFocus
+              enterKeyHint="next"
               name="name"
               value={draft.name}
               onChange={(e) => set("name", e.target.value)}
               aria-invalid={!!errors.name}
               aria-describedby="name-error"
+              onKeyDown={advanceFromName}
             />
           </label>
           {errors.name && (
@@ -137,6 +155,8 @@ export function ProjectForm() {
           <label>
             Alias <small>(séparés par des virgules)</small>
             <input
+              ref={aliasesInput}
+              name="aliases"
               value={draft.aliases.join(", ")}
               onChange={(e) =>
                 set(
