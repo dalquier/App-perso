@@ -1,2 +1,11 @@
 modules = ["nodejs-24"]
 run = "./start-equilibre.sh"
+
+[deployment]
+deploymentTarget = "autoscale"
+build = "cd apps/equilibre && npm ci && npm run build"
+run = "cd apps/equilibre && node scripts/replit-server.mjs"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
