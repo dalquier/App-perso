@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "name": "ProjectOS Design Tokens",
+    "version": "0.1",
+    "status": "foundations-locked",
+    "direction": "Dynamic Professional / Electric Royal",
+    "notes": "brand.primary, type scale, spacing base, card radius and icon state model are user-validated. Companion colors, neutrals, shadows, control sizes and dark mode remain candidates pending component QA."
+  },
+  "color": {
+    "brand": {
+      "primary": "#2F5BFF",
+      "cyan": "#00B8D9",
+      "violet": "#7357FF"
+    },
+    "semantic": {
+      "success": "#0F9F6E",
+      "warning": "#F59E0B",
+      "danger": "#E5484D"
+    },
+    "surface": {
+      "canvas": "#F6F8FA",
+      "primary": "#FFFFFF",
+      "secondary": "#F1F4F8"
+    },
+    "border": {
+      "subtle": "#DCE1E8"
+    },
+    "text": {
+      "primary": "#171A21",
+      "secondary": "#68707D",
+      "muted": "#8B93A1"
+    }
+  },
+  "typography": {
+    "fontFamily": "-apple-system, BlinkMacSystemFont, SF Pro Display, SF Pro Text, Segoe UI, sans-serif",
+    "fontSize": {
+      "display": 28,
+      "section": 18,
+      "body": 15,
+      "label": 13,
+      "caption": 12,
+      "micro": 11
+    },
+    "fontWeight": {
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    }
+  },
+  "space": {
+    "1": 4,
+    "2": 8,
+    "3": 12,
+    "4": 16,
+    "5": 20,
+    "6": 24,
+    "8": 32,
+    "10": 40,
+    "12": 48
+  },
+  "radius": {
+    "xs": 4,
+    "sm": 6,
+    "control": 8,
+    "card": 10,
+    "panel": 12,
+    "pill": 999
+  },
+  "shadow": {
+    "card": "0 1px 3px rgba(20,28,45,0.08), 0 1px 2px rgba(20,28,45,0.04)"
+  },
+  "icon": {
+    "glyph": 20,
+    "compact": 28,
+    "standard": 32,
+    "prominent": 40,
+    "rest": "soft-colored-circle",
+    "active": "solid-colored-circle"
+  },
+  "motion": {
+    "fast": 120,
+    "standard": 180,
+    "emphasis": 240
+  }
+}
