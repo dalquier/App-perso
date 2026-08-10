@@ -35,6 +35,15 @@ import { localStorageContextNotice } from "./platform/displayMode.js";
 import { scrollChatToBottom } from "./platform/viewport.js";
 import { SAFETY_MESSAGE } from "./safety/sensitiveGuard.js";
 import { gateProtocolText } from "./safety/textGate.js";
+import { EQUILIBRE_RELEASE } from "./release.js";
+import {
+  createPortableBackup,
+  deliverPortableBackup,
+  inspectStateInventory,
+  MAX_PORTABLE_BACKUP_BYTES,
+  parsePortableBackup,
+  portableBackupFilename,
+} from "./storage/dataSafety.js";
 import { createStore, defaultState } from "./storage/localStore.js";
 
 const provider = createLocalConversationProvider();
@@ -43,6 +52,7 @@ const app = document.querySelector("#app");
 const storageContextNotice = localStorageContextNotice();
 let state = normalizeRuntimeState(store.load());
 let view = "home";
+let dataTransferStatus = null;
 const generations = new Map();
 const protocolUi = {
   screen: "catalog",
@@ -321,7 +331,13 @@ function memoryView() {
 }
 
 function settingsView() {
-  return `<section class="page-heading"><button class="back" data-view="home" aria-label="Retour">←</button><div><p class="eyebrow">Vos choix</p><h1>Confidentialité</h1></div></section><section class="settings-list"><label class="setting"><span><strong>Enregistrer sur cet appareil</strong><small>Désactiver efface les données sauvegardées et en mémoire.</small></span><input id="save-setting" type="checkbox" ${state.settings.saveLocally ? "checked" : ""}></label><label class="setting"><span><strong>Apparence</strong><small>Clair, sombre ou système.</small></span><select id="theme-setting"><option value="system">Système</option><option value="light">Clair</option><option value="dark">Sombre</option></select></label></section><section class="danger-zone"><h2>Vos données</h2><p>Supprime conversations, messages, séances, protocoles et réglages locaux.</p><button id="clear-data" class="danger-button">Effacer toutes mes données</button></section>`;
+  const inventory = inspectStateInventory(state);
+  const counts = inventory.counts;
+  const disabled = state.futureStorageActive ? "disabled" : "";
+  const transferStatus = dataTransferStatus
+    ? `<p class="data-transfer-status ${escapeHtml(dataTransferStatus.kind)}" role="status">${escapeHtml(dataTransferStatus.message)}</p>`
+    : "";
+  return `<section class="page-heading"><button class="back" data-view="home" aria-label="Retour">←</button><div><p class="eyebrow">Vos choix</p><h1>Confidentialité</h1></div></section><section class="settings-list"><label class="setting"><span><strong>Enregistrer sur cet appareil</strong><small>Désactiver efface les données sauvegardées et en mémoire.</small></span><input id="save-setting" type="checkbox" ${state.settings.saveLocally ? "checked" : ""} ${disabled}></label><label class="setting"><span><strong>Apparence</strong><small>Clair, sombre ou système.</small></span><select id="theme-setting" ${disabled}><option value="system">Système</option><option value="light">Clair</option><option value="dark">Sombre</option></select></label></section><section class="data-safety-zone"><p class="eyebrow">Sécurité des données</p><h2>Sauvegarde locale</h2><p>${counts.conversations} conversation(s) · ${counts.messages} message(s) · ${counts.protocolRuns} protocole(s) · ${counts.memoryEntries} mémoire(s)</p><div class="data-actions"><button id="export-data" class="button">Exporter mes données</button><label class="button file-button" for="restore-data">Restaurer une sauvegarde</label><input class="sr-only" id="restore-data" type="file" accept="application/json,.json" ${disabled}></div><p class="privacy-warning">Le fichier exporté contient vos données privées en clair. Conservez-le dans un emplacement personnel et ne l’ajoutez jamais à GitHub.</p>${transferStatus}<small class="release-id">Version ${escapeHtml(EQUILIBRE_RELEASE.label)} · stockage v${EQUILIBRE_RELEASE.storageSchema}</small></section><section class="danger-zone"><h2>Vos données</h2><p>Supprime conversations, messages, séances, protocoles et réglages locaux.</p><button id="clear-data" class="danger-button" ${disabled}>Effacer toutes mes données</button></section>`;
 }
 
 function render({ followChat = false } = {}) {
@@ -405,6 +421,19 @@ function showProtocolSafety(message) {
 app.addEventListener("click", async (event) => {
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) setView(viewButton.dataset.view);
+
+  if (event.target.closest("#export-data")) {
+    if (!confirm("Exporter une copie contenant vos données privées en clair ?")) return;
+    try {
+      const now = new Date();
+      const backup = await createPortableBackup(state, { now });
+      await deliverPortableBackup(JSON.stringify(backup, null, 2), portableBackupFilename(now));
+      dataTransferStatus = { kind: "success", message: "Sauvegarde préparée. Vérifiez qu’elle est bien présente dans Fichiers." };
+    } catch (error) {
+      dataTransferStatus = { kind: "error", message: `Export impossible : ${String(error?.message || error)}` };
+    }
+    render();
+  }
 
   if (event.target.closest("[data-new-conversation]")) {
     interruptOutgoingGeneration();
@@ -625,8 +654,9 @@ app.addEventListener("click", async (event) => {
   if (event.target.closest("#clear-data") && confirm("Effacer définitivement toutes les données locales d’Équilibre ?")) {
     generations.forEach((controller) => controller.abort());
     generations.clear();
-    store.clear();
-    state = defaultState();
+    const cleared = store.clear();
+    state = cleared ? defaultState() : normalizeRuntimeState(store.load());
+    dataTransferStatus = cleared ? null : { kind: "error", message: "Effacement refusé par le verrou de compatibilité." };
     resetProtocolUi();
     setView("home");
   }
@@ -639,10 +669,36 @@ app.addEventListener("input", (event) => {
   }
 });
 
-app.addEventListener("change", (event) => {
+app.addEventListener("change", async (event) => {
   if (event.target.id === "mode-select") {
     const conversation = activeConversation();
     if (conversation) saveConversation(changeConversationMode(conversation, event.target.value));
+    render();
+  }
+
+  if (event.target.id === "restore-data") {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      if (file.size > MAX_PORTABLE_BACKUP_BYTES) throw new Error("Le fichier dépasse 5 Mo.");
+      const parsed = await parsePortableBackup(await file.text());
+      const counts = parsed.inventory.counts;
+      const accepted = confirm(`Restaurer ${counts.conversations} conversation(s), ${counts.messages} message(s), ${counts.protocolRuns} protocole(s) et ${counts.memoryEntries} mémoire(s) ? Les données actuelles seront remplacées après création d’un snapshot local.`);
+      if (!accepted) {
+        dataTransferStatus = { kind: "info", message: "Restauration annulée. Aucune donnée n’a été modifiée." };
+      } else if (!store.restore(parsed.state)) {
+        throw new Error("Le stockage local a refusé la restauration.");
+      } else {
+        generations.forEach((controller) => controller.abort());
+        generations.clear();
+        state = normalizeRuntimeState(store.load());
+        resetProtocolUi();
+        dataTransferStatus = { kind: "success", message: "Sauvegarde restaurée et vérifiée." };
+      }
+    } catch (error) {
+      dataTransferStatus = { kind: "error", message: `Restauration impossible : ${String(error?.message || error)}` };
+    }
+    event.target.value = "";
     render();
   }
 
