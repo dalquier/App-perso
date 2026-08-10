@@ -2,11 +2,11 @@
 
 ## Statut
 
-Candidate isolée. Non intégrée dans `main`, non publiée sur l'origine Replit stable et sans migration de stockage.
+Intégré dans `main` par la PR #134, sans migration de stockage. La promotion sur l'origine Replit stable reste une opération distincte soumise au Runtime Preflight et à la vérification des données.
 
 ## Objectif
 
-C0 prépare les montées de version C1–C4 sans rendre les séances longues visibles. La version stable actuelle reste utilisable pendant la revue de cette candidate.
+C0 prépare les montées de version C1–C4 sans rendre les séances longues visibles. Il conserve le stockage v4 autoritaire jusqu'à la future migration C1.
 
 ## Périmètre livré
 
@@ -47,7 +47,7 @@ La restauration remplace l'état local ; elle ne fusionne jamais deux états. Av
 
 Lorsque `equilibre.local.v1.v5.active` existe, le writer v4 peut présenter la v4 encore lisible mais refuse `save`, `restore` et `clear`. C0 ne crée jamais ce marqueur : son activation appartient exclusivement à C1.
 
-## Preuves automatisées de la candidate
+## Preuves automatisées de l'incrément
 
 - `npm test` : 239 tests sur 239, 11 fichiers sur 11 ;
 - `npm run build` : build Vite production réussi ;
@@ -64,4 +64,4 @@ Lorsque `equilibre.local.v1.v5.active` existe, le writer v4 peut présenter la v
 - aucune modification de schéma ou de l'origine stable ;
 - PR explicitement autorisée à fusionner.
 
-Après intégration de C0, C1 pourra construire storage-v5/IndexedDB sur une nouvelle branche. La promotion Replit reste une opération séparée : même origine publiée, export de sécurité et contrôle des données avant/après.
+C1 peut maintenant construire storage-v5/IndexedDB sur une nouvelle branche depuis le `main` intégrant C0. La promotion Replit reste une opération séparée : même origine publiée, export de sécurité et contrôle des données avant/après.

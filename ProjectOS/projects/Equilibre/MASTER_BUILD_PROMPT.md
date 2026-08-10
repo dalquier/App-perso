@@ -117,7 +117,7 @@ Le prototype `dalquier/Scriptable/TCC_Budy` est chargé uniquement pour inventai
 - convergence conversationnelle du Jalon G versionnée dans `docs/CONVERSATIONAL_ARCHITECTURE_CONVERGENCE.md` ;
 - contrats SESSION-30-A intégrés par la PR #125 au commit `2eaa9425a421967558fd64d1b1f6822f626d872c` ;
 - moteur structuré local SESSION-30-B intégré par la PR #129 ;
-- préparation SESSION-30-C acceptée par la PR #131 ; C0 est une candidate isolée qui ajoute la sécurité des données v4 sans activer storage-v5 ;
+- préparation SESSION-30-C acceptée par la PR #131 ; C0 intégré par la PR #134 ajoute la sécurité des données v4 sans activer storage-v5 ;
 - génération locale progressive, interruption et isolation par conversation ;
 - les 181 tests automatisés, le build, le lancement racine, le HTTP 200 et le smoke iPhone du socle sont verts au SHA de stabilisation ;
 - aucun fournisseur OpenAI réel, backend conversationnel ou stockage distant n'est encore implémenté.
@@ -164,7 +164,7 @@ Préserver signifie comparer et documenter, pas copier aveuglément du Python da
 ## 13. Dettes connues
 
 - utilisation contextuelle des mémoires confirmées non construite ;
-- contrats et moteur structuré des séances longues intégrés ; C0 de sécurité des données en candidate ; persistance storage-v5 et UI encore non intégrées ;
+- contrats et moteur structuré des séances longues intégrés ; C0 de sécurité des données intégré ; persistance storage-v5 et UI encore non intégrées ;
 - fournisseur OpenAI réel et backend sécurisé non construits ;
 - chiffrement, export et synchronisation future à cadrer ;
 - protocoles TCC et règles sensibles à étendre avant diffusion ;
@@ -224,7 +224,7 @@ Le dépôt `dalquier/App-perso` est public. Sont interdits : données personnell
 
 ## 18. Prochaine étape exacte
 
-Relire, valider puis intégrer la candidate C0 selon `docs/SESSION_30_C0_DATA_SAFETY.md`. Ne commencer C1 — migration IndexedDB transactionnelle — qu'après cette intégration. Chaque incrément doit laisser une version publiée stable sur la même origine Replit et prouver la conservation des données. Ne pas introduire de provider ou de dialogue semi-structuré.
+Construire C1 — migration IndexedDB transactionnelle — depuis le `main` contenant C0, selon `docs/SESSION_30_C_STABLE_RELEASE_AND_DATA_PRESERVATION.md`. C1 doit conserver la v4 autoritaire jusqu'au checkpoint v5 validé, prouver l'inventaire avant/après et rester sans UI SESSION-30. Chaque incrément doit laisser une version publiée stable sur la même origine Replit. Ne pas introduire de provider ou de dialogue semi-structuré.
 
 ## 19. Historique des Builds intégrés
 

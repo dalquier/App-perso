@@ -77,10 +77,13 @@ Avant toute recette Replit :
 - `behind = 0` ;
 - branche/runtime rattaché au SHA canonique attendu.
 
-Si le runtime est `dirty`, `ahead` ou `diverged`, ne pas faire `Pull`, `Sync` ou `Push` automatiquement. Classer d’abord les changements locaux. Si aucun travail unique n’existe, réaligner ou recréer le runtime depuis GitHub.
+Si le runtime est `dirty`, `ahead` ou `diverged`, ne pas faire `Pull`, `Sync` ou `Push` automatiquement. Classer d’abord les changements locaux. Si aucun travail unique n’existe, réaligner l’application canonique par Git. Toute recréation exceptionnelle applique d’abord le `REPLIT IMPORT/SETUP CAPABILITY GATE` transverse ; elle n’est jamais une méthode de mise à jour.
 
 ## Fallbacks interdits
 
+- créer une deuxième application Replit pour une mise à jour ordinaire ;
+- réimporter le dépôt au lieu de synchroniser l’application canonique par Git ;
+- répéter un import `UNKNOWN` ou `INCOMPATIBLE` ;
 - `Open Artifact` comme preuve de fonctionnement ;
 - panneau `Validation` comme démarrage produit ;
 - création d’un Workflow manuel permanent pour contourner un runtime mal configuré ;
@@ -116,11 +119,15 @@ Après tout changement touchant le runtime ou avant validation d’un jalon impo
 
 Le statut renforcé `STABLE IN REPLIT — DATA PRESERVED` exige en plus une origine publiée stable, un SHA de release exact, les gates de migration applicables et la vérification des données avant/après définis dans `SESSION_30_C_STABLE_RELEASE_AND_DATA_PRESERVATION.md`.
 
-## Recréation propre depuis GitHub
+## Recréation exceptionnelle depuis GitHub
 
-1. supprimer ou archiver tout runtime divergent uniquement après avoir vérifié qu'il ne contient aucun travail unique ;
-2. importer une seule fois `dalquier/App-perso` depuis GitHub ;
-3. refuser ou fermer tout setup Agent proposant un Artifact, un Workflow ou un fichier `replit.md` ;
-4. vérifier que `.replit` ne contient que le module Node canonique et la commande `run` ;
-5. relever le SHA GitHub exécuté, puis lancer la Preview native ;
-6. exécuter le smoke manuel iPhone et consigner le verdict du Replit Runtime Preflight.
+La mise à jour normale d’Équilibre utilise `GIT_SYNC` dans l’application Replit canonique. La procédure suivante est réservée à un runtime irrécupérable :
+
+1. préserver l’application actuelle et vérifier qu’elle ne contient aucun travail ou donnée unique ;
+2. exécuter le `REPLIT IMPORT/SETUP CAPABILITY GATE` transverse avec `Lifecycle action: EXCEPTIONAL_RECREATION`, `Ingress/setup method: GITHUB_IMPORT` et une preuve actuelle datée ;
+3. ne poursuivre que si le verdict est `ADMISSIBLE` ou si une exception Agent ponctuelle a été explicitement autorisée ;
+4. si le setup Agent est requis, si son refus bloque `Run/Preview` ou si le verdict reste `UNKNOWN`, arrêter, conserver `REPLIT VALIDATION = BLOCKED` et ne pas répéter l’import ;
+5. créer au maximum une candidate de remplacement, sans supprimer ni déclasser l’application canonique existante ;
+6. vérifier que `.replit` ne contient que le module Node canonique et la commande `run`, relever le SHA puis lancer la Preview avec données fictives ou isolées ;
+7. exécuter le Runtime Preflight et le smoke iPhone ; vérifier l’origine stable, la conservation des données et le rollback selon `SESSION_30_C_STABLE_RELEASE_AND_DATA_PRESERVATION.md` ;
+8. promouvoir la remplaçante comme application canonique uniquement après ces preuves, puis archiver l’ancienne selon une décision explicite.
